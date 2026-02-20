@@ -11,7 +11,52 @@ mod bindings {
     include_bindings!("syscalls.rs");
 }
 
+pub use bindings::syscall_args;
+
 pub struct Syscalls;
+
+macro_rules! zeroed_array {
+    ($size:expr) => {
+        [0; $size]
+    };
+    (@accum $array:ident, 0, $item:expr) => {
+        {
+            $array[0] = $item;
+        }
+    };
+    (@accum $array:ident, $size:expr, $idx:expr) => {
+        {
+        }
+    };
+    (@accum $array:ident, $size:expr, $idx:expr, $cur_item:expr $(, $item:expr)*) => {
+        {
+            $array[$idx] = $cur_item;
+            zeroed_array!(@accum $array, $size, ($idx + 1) $(, $item)*);
+        }
+    };
+    ($size:expr $(, $item:expr)*) => {
+        {
+            let mut array = zeroed_array!($size);
+            zeroed_array!(@accum array, $size, 0 $(, $item)*);
+            array
+        }
+    }
+}
+
+macro_rules! wrap_syscall {
+    ($name:ident, $num:expr $(, $param_name:ident: $param_type:ty)* $(,)?) => {
+        pub unsafe fn $name($($param_name: $param_type,)*) -> u64 {
+            let args = syscall_args {
+                num: $num,
+                a: zeroed_array!(5 $(, ($param_name as u64))*),
+            };
+            unsafe { Syscalls::invoke(args) }
+        }
+    };
+}
+
+wrap_syscall!(sys_exit, 0x00,);
+wrap_syscall!(sys_write, 0x01, fd: i32, user_buf: u64, count: usize);
 
 impl Syscalls {
     pub unsafe fn init(scheduler: &'static InterruptSafeSpinLock<Scheduler>) {
@@ -22,14 +67,30 @@ impl Syscalls {
         }
     }
 
+    pub unsafe fn invoke(args: syscall_args) -> u64 {
+        unsafe {
+            bindings::syscalls_raw(args)
+        }
+    }
+
     fn sys_exit(frame: &mut syscall_frame, scheduler: &InterruptSafeSpinLock<Scheduler>) -> u64 {
         unsafe {
             SerialDriver::println("=== EXIT SYSCALL ===");
             let prev_task_interrupt_frame = (*frame.interrupt_frame).cast();
+            let mut scheduler = scheduler.lock();
+
             let prev_task_state = TaskState(prev_task_interrupt_frame);
-            let next_task_state = scheduler.lock().exit_task(prev_task_state);
-            let next_task_interrupt_frame = next_task_state.0;
-            *frame.interrupt_frame = next_task_interrupt_frame.cast();
+            if let Some(prev_task) = scheduler.get_current_task_mut() {
+                prev_task.set_state(prev_task_state);
+            }
+            scheduler.exit_current_task();
+
+            if let Some(next_task) = scheduler.pick_next() {
+                next_task.prepare_switch();
+                let next_task_interrupt_frame = next_task.get_state().0;
+                *frame.interrupt_frame = next_task_interrupt_frame.cast();
+            }
+
             0
         }
     }

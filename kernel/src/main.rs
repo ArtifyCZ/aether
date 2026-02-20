@@ -7,6 +7,7 @@ mod allocator;
 mod entrypoint;
 mod interrupt_safe_spin_lock;
 mod platform;
+mod scheduler;
 mod spin_lock;
 
 use crate::platform::drivers::keyboard::KeyboardDriver;
@@ -41,7 +42,7 @@ use crate::platform::memory_layout::PAGE_FRAME_SIZE;
 use crate::platform::modules::Modules;
 use crate::platform::platform::Platform;
 use crate::platform::scheduler::Scheduler;
-use crate::platform::syscalls::Syscalls;
+use crate::platform::syscalls::{Syscalls, syscall_args};
 use crate::platform::tasks::Task;
 use crate::platform::terminal::Terminal;
 use crate::platform::ticker::Ticker;
@@ -122,6 +123,8 @@ fn main(hhdm_offset: u64, rsdp_address: u64) {
         scheduler.lock().start();
 
         loop {
+            platform::syscalls::sys_exit();
+            hcf();
             // Now just wait for the first interrupt
             // @TODO: use yield or exit syscall
             #[cfg(target_arch = "x86_64")]

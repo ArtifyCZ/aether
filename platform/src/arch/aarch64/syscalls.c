@@ -34,3 +34,25 @@ bool syscalls_interrupt_handler(struct interrupt_frame **frame) {
 
     return true;
 }
+
+uint64_t syscalls_raw(struct syscall_args args) {
+    uint64_t ret;
+    // x8 is the syscall number
+    register uint64_t x8 __asm__("x8") = args.num;
+
+    // x0-x4 are the arguments
+    register uint64_t x0 __asm__("x0") = args.a[0];
+    register uint64_t x1 __asm__("x1") = args.a[1];
+    register uint64_t x2 __asm__("x2") = args.a[2];
+    register uint64_t x3 __asm__("x3") = args.a[3];
+    register uint64_t x4 __asm__("x4") = args.a[4];
+
+    __asm__ volatile (
+        "svc #0"
+        : "+r"(x0) // x0 is input (a[0]) and output (ret)
+        : "r"(x8), "r"(x1), "r"(x2), "r"(x3), "r"(x4)
+        : "memory" // Barrier to prevent compiler reordering
+    );
+    ret = x0;
+    return ret;
+}

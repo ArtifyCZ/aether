@@ -37,3 +37,22 @@ bool syscalls_interrupt_handler(struct interrupt_frame **frame, void *args) {
 
     return true;
 }
+
+uint64_t syscalls_raw(struct syscall_args args) {
+    uint64_t ret;
+    // Tie C variables to specific registers
+    register uint64_t rax __asm__("rax") = args.num;
+    register uint64_t rdi __asm__("rdi") = args.a[0];
+    register uint64_t rsi __asm__("rsi") = args.a[1];
+    register uint64_t rdx __asm__("rdx") = args.a[2];
+    register uint64_t r10 __asm__("r10") = args.a[3];
+    register uint64_t r8 __asm__("r8") = args.a[4];
+
+    __asm__ volatile (
+        "int $0x80"
+        : "=a"(ret) // Return value comes back in RAX
+        : "r"(rax), "r"(rdi), "r"(rsi), "r"(rdx), "r"(r10), "r"(r8)
+        : "rcx", "r11", "memory" // Clobbers
+    );
+    return ret;
+}

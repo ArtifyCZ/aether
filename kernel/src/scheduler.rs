@@ -1,6 +1,6 @@
-use crate::interrupt_safe_spin_lock::{InterruptSafeSpinLock, InterruptSafeSpinLockGuard};
+use crate::interrupt_safe_spin_lock::InterruptSafeSpinLock;
 use crate::platform::drivers::serial::SerialDriver;
-use crate::platform::tasks::{Task, TaskState};
+use crate::platform::tasks::Task;
 use alloc::boxed::Box;
 use alloc::vec::Vec;
 

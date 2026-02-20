@@ -12,3 +12,10 @@ struct syscall_frame {
 typedef uint64_t (*syscall_handler_t)(struct syscall_frame *frame, void *arg);
 
 void syscalls_init(syscall_handler_t syscall_handler, void *syscall_handler_arg);
+
+struct syscall_args {
+    uint64_t num;
+    uint64_t a[5];
+};
+
+uint64_t syscalls_raw(struct syscall_args args);
