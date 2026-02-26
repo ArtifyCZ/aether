@@ -74,6 +74,12 @@ static inline uint64_t syscall_raw(struct syscall_args args) {
         return __DO_SYSCALL(num, (uint64_t)arg1, (uint64_t)arg2, (uint64_t)arg3); \
     }
 
+#define __DEFN_SYSCALL4(name, num, type1, arg1, type2, arg2, type3, arg3, type4, arg4) \
+    static inline uint64_t name(type1 arg1, type2 arg2, type3 arg3, type4 arg4) { \
+        return __DO_SYSCALL(num, (uint64_t)arg1, (uint64_t)arg2, (uint64_t)arg3, (uint64_t)arg4); \
+    }
+
 __DEFN_SYSCALL0(sys_exit, 0x00)
 __DEFN_SYSCALL3(sys_write, 0x01, int, fd, const void*, buf, size_t, count)
 __DEFN_SYSCALL3(sys_clone, 0x02, unsigned long long, flags, const void*, stack_pointer, const void*, entrypoint)
+__DEFN_SYSCALL4(sys_mmap, 0x03, unsigned long long, addr, unsigned long long, length, unsigned int, prot, unsigned int, flags)

@@ -33,13 +33,21 @@ __attribute__ ((noreturn)) void second_thread(void) {
     while (1) {}
 }
 
+void *alloc_stack(void) {
+    const uint64_t length = 0x4000;
+    const uint64_t second_thread_stack = sys_mmap(0x7FFFFFFF8000, length, 0, 0);
+    const uint64_t stack_top = second_thread_stack + length;
+    return (void *) stack_top;
+}
+
 int main(void) {
     const char message[] = "Hello world from user-space!\n";
     print(message);
 
     print("Trying to invoke clone syscall...\n");
     // @TODO: add stack allocation
-    sys_clone(0, (void *) 0x7FFFFFFF8000, second_thread);
+    const void *second_thread_stack = alloc_stack();
+    sys_clone(0, second_thread_stack, second_thread);
     print("Parent is moving on...\n");
 
     rest();

@@ -65,7 +65,7 @@ macro_rules! wrap_syscall {
 wrap_syscall!(sys_exit, 0x00,);
 wrap_syscall!(sys_write, 0x01, fd: i32, user_buf: u64, count: usize);
 wrap_syscall!(sys_clone, 0x02, flags: u64, stack_pointer: usize, entrypoint: usize);
-wrap_syscall!(sys_mmap, 0x03, addr: usize, length: usize, flags: u64);
+wrap_syscall!(sys_mmap, 0x03, addr: usize, length: usize, prot: u32, flags: u32);
 
 impl Syscalls {
     pub unsafe fn init(scheduler: &'static InterruptSafeSpinLock<Scheduler>) {
@@ -116,12 +116,14 @@ impl Syscalls {
         // stdout or stderr
         if fd != 1 && fd != 2 {
             unsafe { task.set_syscall_return_value(1) }; // EBADF: Bad File Descriptor
+            return;
         }
 
         // Basic Range Check: Is the buffer in User Space?
         // On x86_64, user addresses are usually < 0x00007FFFFFFFFFFF
         if user_buf >= 0x800000000000 || (user_buf + count) >= 0x800000000000 {
             unsafe { task.set_syscall_return_value(1) }; // EFAULT: Bad Address
+            return;
         }
 
         let user_buf = user_buf as *const u8;
@@ -157,31 +159,7 @@ impl Syscalls {
                     .unwrap()
                     .set_syscall_return_value(1);
             }
-        }
-        unsafe {
-            SerialDriver::println(&format!(
-                "stack ptr: {}; entrypoint ptr: {}",
-                stack_pointer, entrypoint
-            ));
-            // @TODO: move stack allocation to the init process from the kernel
-            for i in 0..4 {
-                // allocate 4 pages as stack
-                let page_vaddr = stack_pointer - (i + 1) * PAGE_FRAME_SIZE;
-                #[allow(mutable_transmutes)]
-                unsafe {
-                    let page_phys = PhysicalMemoryManager::alloc_frame().unwrap();
-                    let vmm = vmm.as_ref();
-                    let vmm: &mut VirtualMemoryManagerContext = core::mem::transmute(vmm);
-                    vmm.map_page(
-                        VirtualPageAddress::new(page_vaddr).unwrap(),
-                        page_phys,
-                        VirtualMemoryMappingFlags::PRESENT
-                            | VirtualMemoryMappingFlags::USER
-                            | VirtualMemoryMappingFlags::WRITE,
-                    )
-                    .unwrap();
-                }
-            }
+            return;
         }
         let new_task = Task::new_user(vmm, stack_pointer, entrypoint);
         scheduler.add(new_task);
@@ -194,23 +172,46 @@ impl Syscalls {
     }
 
     fn sys_mmap(frame: &mut syscall_frame, scheduler: &InterruptSafeSpinLock<Scheduler>) {
-        // let mut scheduler = scheduler.lock();
+        let mut scheduler = scheduler.lock();
 
-        // let addr = frame.args[0] as usize;
-        // let length = frame.args[1] as usize;
-        // let flags = frame.args[2] as u64;
+        let addr = frame.a[0] as usize;
+        let length = frame.a[1] as usize;
+        let _prot = frame.a[2] as u32;
+        let _flags = frame.a[3] as u32;
 
-        // let vmm = scheduler.get_current_task().unwrap().get_vmm();
-        // let vmm = vmm.as_ref();
-        // let vmm: &mut VirtualMemoryManagerContext = core::mem::transmute(vmm);
-        // vmm.map_page(
-        //     VirtualPageAddress::new(addr).unwrap(),
-        //     PhysicalPageAddress::new(0),
-        //     VirtualMemoryMappingFlags::PRESENT
-        //         | VirtualMemoryMappingFlags::USER
-        //         | VirtualMemoryMappingFlags::WRITE,
-        // )
-        // .unwrap();
+        let task = scheduler.get_current_task_mut().unwrap();
+        let vmm = task.get_virtual_memory_manager();
+
+        if addr >= 0x800000000000 || (addr + length) >= 0x800000000000 {
+            unsafe {
+                task.set_syscall_return_value(0);
+            }
+            return;
+        }
+
+        let addr = addr & !PAGE_FRAME_SIZE;
+        let pages_count = (length + PAGE_FRAME_SIZE - 1) / PAGE_FRAME_SIZE;
+        // @TODO: implement protection flags
+        // @TODO: implement flags
+
+        for page_idx in 0..pages_count {
+            let page_vaddr = VirtualPageAddress::new(addr + page_idx * PAGE_FRAME_SIZE).unwrap();
+            let phys = unsafe { PhysicalMemoryManager::alloc_frame() }.unwrap();
+            unsafe {
+                vmm.map_page(
+                    page_vaddr,
+                    phys,
+                    VirtualMemoryMappingFlags::PRESENT
+                        | VirtualMemoryMappingFlags::USER
+                        | VirtualMemoryMappingFlags::WRITE,
+                )
+                .unwrap();
+            }
+        }
+
+        unsafe {
+            task.set_syscall_return_value(addr as u64);
+        }
     }
 
     unsafe extern "C" fn syscalls_dispatch(
