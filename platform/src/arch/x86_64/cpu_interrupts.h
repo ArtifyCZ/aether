@@ -20,4 +20,4 @@ struct interrupt_frame {
 
     // Pushed automatically by CPU (highest addresses)
     uint64_t rip, cs, rflags, rsp, ss;
-};
+} __attribute__((packed));

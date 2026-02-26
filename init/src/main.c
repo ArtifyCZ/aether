@@ -36,6 +36,10 @@ __attribute__ ((noreturn)) void second_thread(void) {
 void *alloc_stack(void) {
     const uint64_t length = 0x4000;
     const uint64_t second_thread_stack = sys_mmap(0x7FFFFFFF8000, length, 0, 0);
+    if (second_thread_stack == 0) {
+        print("Failed to allocate stack!\n");
+        while (1) {}
+    }
     const uint64_t stack_top = second_thread_stack + length;
     return (void *) stack_top;
 }
@@ -46,8 +50,15 @@ int main(void) {
 
     print("Trying to invoke clone syscall...\n");
     // @TODO: add stack allocation
-    const void *second_thread_stack = alloc_stack();
-    sys_clone(0, second_thread_stack, second_thread);
+    // const void *second_thread_stack = alloc_stack();
+    const uint64_t stack_base = sys_mmap(0x7FFFFFFF8000, 0x4000, 0, 0);
+    const void *stack_top = (void *) (stack_base + 0x4000);
+    if (stack_base < 0x400000) { // If it returned something tiny like 3, it's an error!
+        print("mmap failed or returned invalid address!\n");
+        while(1);
+    }
+
+    sys_clone(0, stack_top - 0x10, second_thread);
     print("Parent is moving on...\n");
 
     rest();

@@ -2,9 +2,11 @@
 
 #include <string.h>
 
-#define GDT_ENTRIES 7
+#define GDT_ENTRIES 10
 static struct gdt_entry g_gdt[GDT_ENTRIES];
 static struct tss_entry g_tss;
+
+static uint8_t g_ist1_stack[8192]; // Dedicated interrupt stack
 
 static void gdt_set_entry(int num, uint32_t base, uint32_t limit, uint8_t access, uint8_t gran) {
     g_gdt[num].base_low = (base & 0xFFFF);
@@ -30,19 +32,29 @@ void gdt_init(void) {
     memset(g_gdt, 0, sizeof(g_gdt));
     memset(&g_tss, 0, sizeof(g_tss));
 
-    // 0x00: Null
-    // 0x08: Kernel Code (Access: 0x9A, Flags: 0x20 for Long Mode)
+    // Index 0: Null
+    // Index 1: Kernel Code (0x08)
     gdt_set_entry(1, 0, 0xFFFFFFFF, 0x9A, 0x20);
-    // 0x10: Kernel Data (Access: 0x92)
+    // Index 2: Kernel Data (0x10)
     gdt_set_entry(2, 0, 0xFFFFFFFF, 0x92, 0x00);
-    // 0x18: User Data   (Access: 0xF2 - DPL 3)
-    gdt_set_entry(3, 0, 0xFFFFFFFF, 0xF2, 0x00);
-    // 0x20: User Code   (Access: 0xFA - DPL 3, Flags: 0x20)
-    gdt_set_entry(4, 0, 0xFFFFFFFF, 0xFA, 0x20);
+
+    // Index 3: Dummy/User 32-bit Code (0x18) - Required by some Intel sysret implementations
+    gdt_set_entry(3, 0, 0xFFFFFFFF, 0xFA, 0x00);
+
+    // Index 4: User Data (0x20) - sysret uses this for SS (STAR[63:48] + 8)
+    gdt_set_entry(4, 0, 0xFFFFFFFF, 0xF2, 0x00);
+
+    // Index 5: User Code 64 (0x28) - sysret uses this for CS (STAR[63:48] + 16)
+    gdt_set_entry(5, 0, 0xFFFFFFFF, 0xFA, 0x20);
+
+    // Index 6 & 7: TSS (0x30)
+    gdt_set_tss_descriptor(6, (uint64_t) &g_tss, sizeof(g_tss) - 1);
+
+    g_tss.ist[0] = (uint64_t) &g_ist1_stack[8192];
 
     // 0x28: TSS (Occupies two slots: 5 and 6)
     g_tss.iopb_offset = sizeof(struct tss_entry);
-    gdt_set_tss_descriptor(5, (uint64_t) &g_tss, sizeof(g_tss) - 1);
+    gdt_set_tss_descriptor(6, (uint64_t) &g_tss, sizeof(g_tss) - 1);
 
     struct {
         uint16_t limit;
@@ -72,7 +84,7 @@ void gdt_init(void) {
         : : : "rax", "memory"
     );
 
-    __asm__ volatile("ltr %%ax" : : "a"(0x28));
+    __asm__ volatile("ltr %%ax" : : "a"(0x30));
 }
 
 void gdt_set_kernel_stack(uintptr_t stack) {

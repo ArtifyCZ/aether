@@ -12,6 +12,8 @@ extern void *exception_vector_table;
 static irq_handler_t handlers[256];
 static void *handler_priv[256];
 
+static uint8_t g_interrupt_disable_nesting = 0;
+
 /**
  * AArch64 ESR_EL1 Exception Class (EC) definitions
  */
@@ -42,15 +44,20 @@ void interrupts_init(void) {
     }
 
     gic_init();
+    g_interrupt_disable_nesting = 1;
 
     serial_println("AArch64: Interrupt system initialized.");
 }
 
 void interrupts_enable(void) {
+    g_interrupt_disable_nesting--;
+    if (g_interrupt_disable_nesting > 0) return;
     __asm__ volatile("msr daifclr, #2" ::: "memory");
 }
 
 void interrupts_disable(void) {
+    g_interrupt_disable_nesting++;
+    if (g_interrupt_disable_nesting > 1) return;
     __asm__ volatile("msr daifset, #2" ::: "memory");
 }
 

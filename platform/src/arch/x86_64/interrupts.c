@@ -29,6 +29,8 @@ static struct idt_entry idt[256];
 static irq_handler_t handlers[256];
 static void *handler_priv[256];
 
+static uint8_t g_interrupt_disable_nesting = 0;
+
 void interrupts_init(void) {
     // This table must be defined in your NASM file (see below)
     extern uint64_t interrupt_stubs[];
@@ -38,7 +40,12 @@ void interrupts_init(void) {
 
         idt[i].isr_low = (uint16_t) (isr & 0xFFFF);
         idt[i].kernel_cs = KERNEL_CODE_SEGMENT;
-        idt[i].ist = 0; // No specific stack switching
+        if (i == 0x0E) {
+            // Page fault
+            idt[i].ist = 1; // Use IST1 stack
+        } else {
+            idt[i].ist = 0; // No specific stack switching
+        }
         uint8_t attributes;
         if (i == SYSCALL_INTERRUPT_NUMBER) {
             // Allow to be manually triggerred from ring 3
@@ -58,13 +65,18 @@ void interrupts_init(void) {
     };
 
     __asm__ volatile("lidt %0" : : "m"(ptr));
+    g_interrupt_disable_nesting = 1;
 }
 
 void interrupts_enable(void) {
+    g_interrupt_disable_nesting--;
+    if (g_interrupt_disable_nesting > 0) return;
     __asm__ volatile("sti");
 }
 
 void interrupts_disable(void) {
+    g_interrupt_disable_nesting++;
+    if (g_interrupt_disable_nesting > 1) return;
     __asm__ volatile("cli");
 }
 
@@ -75,6 +87,36 @@ bool interrupts_register_handler(uint32_t irq, irq_handler_t handler, void *priv
     handler_priv[irq] = priv;
 
     return true;
+}
+
+static void dump_frame(struct interrupt_frame *frame) {
+    serial_println("--- REGISTER DUMP ---");
+    serial_print("RIP: "); serial_print_hex_u64(frame->rip);
+    serial_print(" CS:  "); serial_print_hex_u64(frame->cs);
+    serial_print(" RFL: "); serial_print_hex_u64(frame->rflags);
+    serial_println("");
+
+    serial_print("RSP: "); serial_print_hex_u64(frame->rsp);
+    serial_print(" SS:  "); serial_print_hex_u64(frame->ss);
+    serial_print(" CR3: "); serial_print_hex_u64(frame->cr3);
+    serial_println("");
+
+    serial_print("RAX: "); serial_print_hex_u64(frame->rax);
+    serial_print(" RBX: "); serial_print_hex_u64(frame->rbx);
+    serial_print(" RCX: "); serial_print_hex_u64(frame->rcx);
+    serial_println("");
+
+    serial_print("RDX: "); serial_print_hex_u64(frame->rdx);
+    serial_print(" RDI: "); serial_print_hex_u64(frame->rdi);
+    serial_print(" RSI: "); serial_print_hex_u64(frame->rsi);
+    serial_println("");
+
+    serial_print("RBP: "); serial_print_hex_u64(frame->rbp);
+    serial_print(" R8:  "); serial_print_hex_u64(frame->r8);
+    serial_print(" R9:  "); serial_print_hex_u64(frame->r9);
+    serial_println("");
+
+    serial_println("---------------------");
 }
 
 // The C dispatcher called from NASM
@@ -89,11 +131,16 @@ uintptr_t x86_64_interrupt_dispatcher(struct interrupt_frame *frame) {
         serial_print("Error code received: ");
         serial_print_hex_u64(frame->error_code);
         serial_println("");
-        serial_print("CR2: ");
-        uintptr_t cr2;
-        // retrieve the CR2 value
-        __asm__ volatile("mov %0, %%cr2" : : "r"(cr2));
-        serial_print_hex_u64(cr2);
+        dump_frame(frame);
+        if (frame->interrupt_number == 0x0E) {
+            // Page fault
+            serial_print("CR2: ");
+            uintptr_t cr2;
+            // retrieve the CR2 value
+            __asm__ volatile("mov %0, %%cr2" : : "r"(cr2));
+            serial_print_hex_u64(cr2);
+            serial_println("");
+        }
         hcf();
     }
     struct interrupt_frame *return_frame = frame;

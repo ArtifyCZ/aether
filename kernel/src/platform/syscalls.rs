@@ -184,12 +184,15 @@ impl Syscalls {
 
         if addr >= 0x800000000000 || (addr + length) >= 0x800000000000 {
             unsafe {
+                SerialDriver::println("mmap: EFAULT: Bad Address");
+                SerialDriver::println(&format!("addr: {}; len: {}", addr, length));
                 task.set_syscall_return_value(0);
             }
             return;
         }
 
-        let addr = addr & !PAGE_FRAME_SIZE;
+        const PAGE_MASK: usize = !(PAGE_FRAME_SIZE - 1);
+        let addr = addr & PAGE_MASK;
         let pages_count = (length + PAGE_FRAME_SIZE - 1) / PAGE_FRAME_SIZE;
         // @TODO: implement protection flags
         // @TODO: implement flags

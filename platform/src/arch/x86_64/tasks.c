@@ -4,6 +4,9 @@
 #include "gdt.h"
 #include <string.h>
 
+#include "msr.h"
+#include "drivers/serial.h"
+
 struct interrupt_frame *task_setup_user(
     const struct vmm_context *user_ctx,
     const uintptr_t entrypoint_vaddr,
@@ -20,6 +23,9 @@ struct interrupt_frame *task_setup_user(
     frame->rflags = 0x202; // Interrupts enabled
     frame->cs = USER_CODE_SEGMENT | 3; // 0x23
     frame->rip = entrypoint_vaddr;
+    // for sysret compatibility
+    frame->rcx = entrypoint_vaddr;
+    frame->r11 = 0x202;
 
     frame->cr3 = user_ctx->root;
 
@@ -50,6 +56,7 @@ struct interrupt_frame *task_setup_kernel(
 
 void task_prepare_switch(const uintptr_t kernel_stack_top) {
     gdt_set_kernel_stack(kernel_stack_top);
+    msr_set_kernel_stack(kernel_stack_top);
 }
 
 void task_set_syscall_return_value(struct interrupt_frame *frame, const uint64_t value) {

@@ -20,7 +20,7 @@ static inline uint64_t syscall_raw(struct syscall_args args) {
     register uint64_t r8 __asm__("r8") = args.a[4];
 
     __asm__ volatile (
-        "int $0x80"
+        "syscall"
         : "=a"(ret) // Return value comes back in RAX
         : "r"(rax), "r"(rdi), "r"(rsi), "r"(rdx), "r"(r10), "r"(r8)
         : "rcx", "r11", "memory" // Clobbers
