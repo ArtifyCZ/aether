@@ -1,4 +1,3 @@
-use crate::interrupt_safe_spin_lock::InterruptSafeSpinLock;
 use crate::platform::drivers::serial::SerialDriver;
 use crate::platform::syscalls::bindings::syscall_frame;
 use crate::platform::tasks::{TaskContext, TaskFrame};
@@ -84,21 +83,23 @@ impl Syscalls {
     fn sys_exit(frame: &mut syscall_frame, scheduler: &Scheduler) {
         unsafe {
             SerialDriver::println("=== EXIT SYSCALL ===");
-            let prev_task_interrupt_frame = (*frame.interrupt_frame).cast();
+        }
+        let prev_task_interrupt_frame = (unsafe { *frame.interrupt_frame }).cast();
 
-            let prev_task_state = TaskFrame(prev_task_interrupt_frame);
-            let next_task_state = scheduler
-                .exit_current_task(
-                    |prev_task| {
-                        prev_task.set_state(prev_task_state);
-                    },
-                    |next_task| {
-                        next_task.prepare_switch();
-                        next_task.get_state()
-                    },
-                )
-                .unwrap();
+        let prev_task_state = TaskFrame(prev_task_interrupt_frame);
+        let next_task_state = scheduler
+            .exit_current_task(
+                |prev_task| {
+                    prev_task.set_state(prev_task_state);
+                },
+                |next_task| {
+                    next_task.prepare_switch();
+                    next_task.get_state()
+                },
+            )
+            .unwrap();
 
+        unsafe {
             *frame.interrupt_frame = next_task_state.0.cast();
         }
     }
@@ -200,7 +201,8 @@ impl Syscalls {
         }
 
         unsafe {
-            scheduler.update_current_task_context(|task| task.set_syscall_return_value(addr as u64));
+            scheduler
+                .update_current_task_context(|task| task.set_syscall_return_value(addr as u64));
         }
     }
 

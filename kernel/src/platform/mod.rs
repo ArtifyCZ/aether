@@ -15,7 +15,6 @@ pub mod platform;
 pub mod syscalls;
 pub mod tasks;
 pub mod terminal;
-pub mod ticker;
 pub mod timer;
 pub mod virtual_address;
 pub mod virtual_address_allocator;

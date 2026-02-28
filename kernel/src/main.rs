@@ -10,6 +10,7 @@ mod interrupt_safe_spin_lock;
 mod platform;
 mod scheduler;
 mod spin_lock;
+mod ticker;
 
 use crate::init_process::spawn_init_process;
 use crate::platform::drivers::keyboard::KeyboardDriver;
@@ -43,9 +44,9 @@ use crate::platform::memory_layout::PAGE_FRAME_SIZE;
 use crate::platform::syscalls::Syscalls;
 use crate::platform::tasks::TaskContext;
 use crate::platform::terminal::Terminal;
-use crate::platform::ticker::Ticker;
 use crate::platform::timer::Timer;
 use scheduler::Scheduler;
+use ticker::Ticker;
 fn thread_heartbeat() {
     let mut i = 0;
     loop {

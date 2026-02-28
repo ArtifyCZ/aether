@@ -93,7 +93,7 @@ impl TaskContext {
         }
     }
 
-    pub(super) unsafe fn prepare_switch(&self) {
+    pub fn prepare_switch(&self) {
         unsafe {
             let kernel_stack_top = self.kernel_stack.as_ptr_range().end as usize;
             bindings::task_prepare_switch(kernel_stack_top);
