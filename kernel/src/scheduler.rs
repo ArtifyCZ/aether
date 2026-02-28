@@ -3,7 +3,7 @@ use crate::platform::drivers::serial::SerialDriver;
 use crate::platform::tasks::TaskContext;
 use crate::task_id::TaskId;
 use alloc::boxed::Box;
-use alloc::collections::BTreeMap;
+use alloc::collections::{BTreeMap, VecDeque};
 
 #[derive(Default)]
 pub struct Scheduler(InterruptSafeSpinLock<SchedulerInner>);
@@ -14,6 +14,7 @@ struct SchedulerInner {
     null_task: TaskId,
     started: bool,
     tasks: BTreeMap<TaskId, TaskContext>,
+    ready_tasks: VecDeque<TaskId>,
 }
 
 impl Default for SchedulerInner {
@@ -22,11 +23,14 @@ impl Default for SchedulerInner {
         let null_task = TaskContext::new_kernel_null();
         let mut tasks = BTreeMap::new();
         tasks.insert(null_task_id, null_task);
+        let mut ready_tasks = VecDeque::new();
+        ready_tasks.push_back(null_task_id);
         SchedulerInner {
             started: false,
             current_task: None,
             null_task: null_task_id,
             tasks,
+            ready_tasks,
         }
     }
 }
@@ -37,21 +41,14 @@ impl SchedulerInner {
             return None;
         }
 
-        let tasks_count = self.tasks.len() as u64;
-        for offset in 1..=tasks_count {
-            let idx: TaskId = ((if let Some(current_id) = self.current_task {
-                current_id.get() + offset
-            } else {
-                0
-            }) % tasks_count)
-                .into();
-            self.current_task = Some(idx);
-            if self.tasks.contains_key(&idx) {
-                return self.tasks.get_mut(&idx);
+        while let Some(task_id) = self.ready_tasks.pop_front() {
+            if self.tasks.contains_key(&task_id) {
+                self.current_task = Some(task_id);
+                return Some(self.tasks.get_mut(&task_id).unwrap());
             }
         }
 
-        unreachable!("There should at the very least be the null task")
+        None
     }
 }
 
@@ -74,6 +71,7 @@ impl Scheduler {
         let mut inner = self.0.lock();
         let task_id = TaskId::new();
         inner.tasks.insert(task_id, task);
+        inner.ready_tasks.push_back(task_id);
     }
 
     pub fn update_current_task_context(&self, f: impl FnOnce(&mut TaskContext)) {
@@ -114,6 +112,7 @@ impl Scheduler {
         if let Some(prev_idx) = inner.current_task {
             let prev_task = inner.tasks.get_mut(&prev_idx).unwrap();
             f_prev(prev_task);
+            inner.ready_tasks.push_back(prev_idx);
         }
 
         let next_task = inner.pick_next_task()?;
@@ -140,15 +139,9 @@ impl Scheduler {
             let prev_task = inner.tasks.get_mut(&prev_id).unwrap();
             f_prev(prev_task);
             inner.tasks.remove(&prev_id);
-            let new_prev_id = TaskId::from(if prev_id.get() == 0 {
-                inner.tasks.len() as u64 - 1
-            } else {
-                prev_id.get() - 1
-            });
-            inner.current_task = Some(new_prev_id);
         }
 
-        let next_task = inner.pick_next_task().unwrap();
+        let next_task = inner.pick_next_task()?;
         let result = f_next(next_task);
 
         Some(result)
