@@ -19,6 +19,7 @@ __attribute__((noreturn)) void _start(void) {
     int exit_code = main();
     print("Exiting...\n");
     sys_exit(); // @TODO: also pass the exit code
+    print("SHOULD NOT HAPPEN! init/src/entry.c");
     while (1) {
     }
 }

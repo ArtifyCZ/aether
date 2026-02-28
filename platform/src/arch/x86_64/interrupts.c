@@ -84,6 +84,23 @@ bool interrupts_register_handler(uint32_t irq, irq_handler_t handler, void *priv
     return true;
 }
 
+static void dump_stack(uintptr_t stack_ptr, int qwords) {
+    serial_println("--- STACK DUMP ---");
+    // Basic sanity check: don't dump if pointer is NULL
+    if (stack_ptr < 0x1000) {
+        serial_println("RSP is NULL or invalid.");
+        return;
+    }
+
+    uint64_t* ptr = (uint64_t*)stack_ptr;
+    for (int i = 0; i < qwords; i++) {
+        serial_print_hex_u64(stack_ptr + (i * 8));
+        serial_print(": ");
+        serial_print_hex_u64(ptr[i]);
+        serial_println("");
+    }
+}
+
 static void dump_frame(struct interrupt_frame *frame) {
     serial_println("--- REGISTER DUMP ---");
     serial_print("RIP: "); serial_print_hex_u64(frame->rip);
@@ -136,6 +153,7 @@ uintptr_t x86_64_interrupt_dispatcher(struct interrupt_frame *frame) {
             serial_print_hex_u64(cr2);
             serial_println("");
         }
+        dump_stack(frame->rsp, 16);
         hcf();
     }
     struct interrupt_frame *return_frame = frame;

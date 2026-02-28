@@ -45,11 +45,11 @@ fn allocate_init_stack(init_ctx: &VirtualMemoryManagerContext) -> usize {
     INIT_STACK_TOP_VADDR
 }
 
-pub fn spawn_init_process(scheduler: &InterruptSafeSpinLock<Scheduler>) {
-    let mut init_ctx = unsafe { VirtualMemoryManagerContext::create() };
+pub fn spawn_init_process(scheduler: &Scheduler) {
+    let init_ctx = unsafe { VirtualMemoryManagerContext::create() };
     let entrypoint_vaddr = load_init_into_memory(&init_ctx);
     let stack_top_vaddr = allocate_init_stack(&init_ctx);
 
     let task = TaskContext::new_user(Arc::new(init_ctx), stack_top_vaddr, entrypoint_vaddr);
-    scheduler.lock().add(task);
+    scheduler.add(task);
 }

@@ -1,9 +1,9 @@
 use crate::interrupt_safe_spin_lock::InterruptSafeSpinLock;
 use crate::platform::drivers::serial::SerialDriver;
-use crate::scheduler::Scheduler;
 use crate::platform::syscalls::bindings::syscall_frame;
 use crate::platform::tasks::{TaskContext, TaskFrame};
 use crate::platform::terminal::Terminal;
+use crate::scheduler::Scheduler;
 use alloc::format;
 use core::ffi::c_void;
 use core::ptr::slice_from_raw_parts;
@@ -66,7 +66,7 @@ wrap_syscall!(sys_clone, 0x02, flags: u64, stack_pointer: usize, entrypoint: usi
 wrap_syscall!(sys_mmap, 0x03, addr: usize, length: usize, prot: u32, flags: u32);
 
 impl Syscalls {
-    pub unsafe fn init(scheduler: &'static InterruptSafeSpinLock<Scheduler>) {
+    pub unsafe fn init(scheduler: &'static Scheduler) {
         unsafe {
             SerialDriver::println("Initializing syscalls...");
             bindings::syscalls_init(
@@ -81,46 +81,49 @@ impl Syscalls {
         unsafe { bindings::syscalls_raw(args) }
     }
 
-    fn sys_exit(frame: &mut syscall_frame, scheduler: &InterruptSafeSpinLock<Scheduler>) {
+    fn sys_exit(frame: &mut syscall_frame, scheduler: &Scheduler) {
         unsafe {
             SerialDriver::println("=== EXIT SYSCALL ===");
             let prev_task_interrupt_frame = (*frame.interrupt_frame).cast();
-            let mut scheduler = scheduler.lock();
 
             let prev_task_state = TaskFrame(prev_task_interrupt_frame);
-            if let Some(prev_task) = scheduler.get_current_task_mut() {
-                prev_task.set_state(prev_task_state);
-            }
-            scheduler.exit_current_task();
+            let next_task_state = scheduler
+                .exit_current_task(
+                    |prev_task| {
+                        prev_task.set_state(prev_task_state);
+                    },
+                    |next_task| {
+                        next_task.prepare_switch();
+                        next_task.get_state()
+                    },
+                )
+                .unwrap();
 
-            if let Some(next_task) = scheduler.pick_next() {
-                next_task.prepare_switch();
-                let next_task_interrupt_frame = next_task.get_state().0;
-                *frame.interrupt_frame = next_task_interrupt_frame.cast();
-            }
+            *frame.interrupt_frame = next_task_state.0.cast();
         }
     }
 
-    fn sys_write(
-        frame: &mut bindings::syscall_frame,
-        scheduler: &InterruptSafeSpinLock<Scheduler>,
-    ) {
-        let mut scheduler = scheduler.lock();
-        let task = scheduler.get_current_task_mut().unwrap();
+    fn sys_write(frame: &mut bindings::syscall_frame, scheduler: &Scheduler) {
         let fd = frame.a[0];
         let user_buf = frame.a[1];
         let count = frame.a[2];
 
         // stdout or stderr
         if fd != 1 && fd != 2 {
-            unsafe { task.set_syscall_return_value(1) }; // EBADF: Bad File Descriptor
+            unsafe {
+                // EBADF: Bad File Descriptor
+                scheduler.update_current_task_context(|task| task.set_syscall_return_value(1));
+            }
             return;
         }
 
         // Basic Range Check: Is the buffer in User Space?
         // On x86_64, user addresses are usually < 0x00007FFFFFFFFFFF
         if user_buf >= 0x800000000000 || (user_buf + count) >= 0x800000000000 {
-            unsafe { task.set_syscall_return_value(1) }; // EFAULT: Bad Address
+            unsafe {
+                // EFAULT: Bad Address
+                scheduler.update_current_task_context(|task| task.set_syscall_return_value(1));
+            }
             return;
         }
 
@@ -132,59 +135,44 @@ impl Syscalls {
             SerialDriver::write(user_buf);
             Terminal::print_bytes(user_buf);
         }
-        unsafe { task.set_syscall_return_value(0) };
+
+        unsafe {
+            scheduler.update_current_task_context(|task| task.set_syscall_return_value(0));
+        }
     }
 
-    fn sys_clone(
-        frame: &mut bindings::syscall_frame,
-        scheduler: &'static InterruptSafeSpinLock<Scheduler>,
-    ) {
-        let mut scheduler = scheduler.lock();
-        let vmm = {
-            let current_task = scheduler
-                .get_current_task_mut()
-                .expect("The scheduler must have been started!");
-            current_task.get_virtual_memory_manager().clone()
-        };
+    fn sys_clone(frame: &mut bindings::syscall_frame, scheduler: &Scheduler) {
+        let vmm = scheduler
+            .access_current_task_context(|task| task.get_virtual_memory_manager().clone())
+            .expect("Scheduler is not started yet!");
         // @TODO: implement flags
         let _flags = frame.a[0];
         let stack_pointer = frame.a[1] as usize;
         let entrypoint = frame.a[2] as usize;
         if stack_pointer >= 0x800000000000 || entrypoint >= 0x800000000000 {
             unsafe {
-                scheduler
-                    .get_current_task_mut()
-                    .unwrap()
-                    .set_syscall_return_value(1);
+                scheduler.update_current_task_context(|task| task.set_syscall_return_value(1));
             }
             return;
         }
         let new_task = TaskContext::new_user(vmm, stack_pointer, entrypoint);
         scheduler.add(new_task);
         unsafe {
-            scheduler
-                .get_current_task_mut()
-                .unwrap()
-                .set_syscall_return_value(0);
+            scheduler.update_current_task_context(|task| task.set_syscall_return_value(0));
         }
     }
 
-    fn sys_mmap(frame: &mut syscall_frame, scheduler: &InterruptSafeSpinLock<Scheduler>) {
-        let mut scheduler = scheduler.lock();
-
+    fn sys_mmap(frame: &mut syscall_frame, scheduler: &Scheduler) {
         let addr = frame.a[0] as usize;
         let length = frame.a[1] as usize;
         let _prot = frame.a[2] as u32;
         let _flags = frame.a[3] as u32;
 
-        let task = scheduler.get_current_task_mut().unwrap();
-        let vmm = task.get_virtual_memory_manager();
-
         if addr >= 0x800000000000 || (addr + length) >= 0x800000000000 {
             unsafe {
                 SerialDriver::println("mmap: EFAULT: Bad Address");
                 SerialDriver::println(&format!("addr: {}; len: {}", addr, length));
-                task.set_syscall_return_value(0);
+                scheduler.update_current_task_context(|task| task.set_syscall_return_value(0));
             }
             return;
         }
@@ -199,19 +187,20 @@ impl Syscalls {
             let page_vaddr = VirtualPageAddress::new(addr + page_idx * PAGE_FRAME_SIZE).unwrap();
             let phys = unsafe { PhysicalMemoryManager::alloc_frame() }.unwrap();
             unsafe {
-                vmm.map_page(
-                    page_vaddr,
-                    phys,
-                    VirtualMemoryMappingFlags::PRESENT
-                        | VirtualMemoryMappingFlags::USER
-                        | VirtualMemoryMappingFlags::WRITE,
-                )
-                .unwrap();
+                scheduler.access_current_task_context(|task| {
+                    task.get_virtual_memory_manager().map_page(
+                        page_vaddr,
+                        phys,
+                        VirtualMemoryMappingFlags::PRESENT
+                            | VirtualMemoryMappingFlags::USER
+                            | VirtualMemoryMappingFlags::WRITE,
+                    )
+                });
             }
         }
 
         unsafe {
-            task.set_syscall_return_value(addr as u64);
+            scheduler.update_current_task_context(|task| task.set_syscall_return_value(addr as u64));
         }
     }
 
@@ -220,7 +209,7 @@ impl Syscalls {
         scheduler: *mut c_void,
     ) {
         let frame = unsafe { frame.as_mut() }.unwrap();
-        let scheduler: &'static InterruptSafeSpinLock<Scheduler> = unsafe { &*scheduler.cast() };
+        let scheduler: &'static Scheduler = unsafe { &*scheduler.cast() };
         match frame.num {
             0x00 => Self::sys_exit(frame, scheduler),
             0x01 => Self::sys_write(frame, scheduler),

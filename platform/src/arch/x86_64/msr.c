@@ -47,6 +47,7 @@ void msr_init(void) {
 
     // Set the KERNEL_GS_BASE to our local storage
     // When swapgs is called in kernel entry, GS will point here
+    wrmsr(0xC0000101, (uint64_t)&g_cpu_local_storage);
     wrmsr(0xC0000102, (uint64_t)&g_cpu_local_storage);
 }
 

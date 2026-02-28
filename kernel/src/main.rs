@@ -69,7 +69,7 @@ fn thread_keyboard() {
     }
 }
 
-fn spawn_thread<F>(scheduler: &mut Scheduler, f: F)
+fn spawn_thread<F>(scheduler: &Scheduler, f: F)
 where
     F: FnOnce() + 'static,
 {
@@ -105,11 +105,11 @@ fn main(hhdm_offset: u64, rsdp_address: u64) {
 
         Ticker::init(scheduler);
 
-        spawn_thread(scheduler.lock().deref_mut(), thread_heartbeat);
-        spawn_thread(scheduler.lock().deref_mut(), thread_keyboard);
+        spawn_thread(scheduler, thread_heartbeat);
+        spawn_thread(scheduler, thread_keyboard);
         spawn_init_process(scheduler);
 
-        scheduler.lock().start();
+        scheduler.start();
 
         loop {
             platform::syscalls::sys_exit();
