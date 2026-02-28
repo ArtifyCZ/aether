@@ -15,3 +15,6 @@ The current task's id stored in GS base could be set as a part of the task_prepa
 
 - There might be a bug in the handling of the `syscall` instruction, particularly when
 switching to a different user-space task, as the rcx register is getting overwritten.
+This might be solvable by switching to the `iretq` instruction when returning to a different
+task than the one that invoked the syscall. This way is already used when returning from a syscall
+to a kernel thread.
