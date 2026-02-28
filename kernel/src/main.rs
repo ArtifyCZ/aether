@@ -8,15 +8,14 @@ mod entrypoint;
 mod init_process;
 mod interrupt_safe_spin_lock;
 mod platform;
+mod scheduler;
 mod spin_lock;
 
 use crate::init_process::spawn_init_process;
 use crate::platform::drivers::keyboard::KeyboardDriver;
 use crate::platform::platform::Platform;
 use alloc::boxed::Box;
-use alloc::ffi::CString;
 use alloc::string::ToString;
-use alloc::sync::Arc;
 use core::ffi::c_void;
 use core::ops::DerefMut;
 use core::str::FromStr;
@@ -41,14 +40,12 @@ use crate::platform::drivers::serial::SerialDriver;
 use crate::platform::elf::Elf;
 use crate::platform::interrupts::Interrupts;
 use crate::platform::memory_layout::PAGE_FRAME_SIZE;
-use crate::platform::scheduler::Scheduler;
 use crate::platform::syscalls::Syscalls;
 use crate::platform::tasks::TaskContext;
 use crate::platform::terminal::Terminal;
 use crate::platform::ticker::Ticker;
 use crate::platform::timer::Timer;
-use crate::platform::virtual_memory_manager_context::VirtualMemoryManagerContext;
-
+use scheduler::Scheduler;
 fn thread_heartbeat() {
     let mut i = 0;
     loop {

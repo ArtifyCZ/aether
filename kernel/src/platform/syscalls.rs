@@ -1,12 +1,12 @@
 use crate::interrupt_safe_spin_lock::InterruptSafeSpinLock;
 use crate::platform::drivers::serial::SerialDriver;
-use crate::platform::scheduler::Scheduler;
+use crate::scheduler::Scheduler;
 use crate::platform::syscalls::bindings::syscall_frame;
 use crate::platform::tasks::{TaskContext, TaskFrame};
 use crate::platform::terminal::Terminal;
 use alloc::format;
 use core::ffi::c_void;
-use core::ptr::{null_mut, slice_from_raw_parts};
+use core::ptr::slice_from_raw_parts;
 
 mod bindings {
     include_bindings!("syscalls.rs");
@@ -14,9 +14,7 @@ mod bindings {
 
 use crate::platform::memory_layout::PAGE_FRAME_SIZE;
 use crate::platform::physical_memory_manager::PhysicalMemoryManager;
-use crate::platform::virtual_memory_manager_context::{
-    VirtualMemoryManagerContext, VirtualMemoryMappingFlags,
-};
+use crate::platform::virtual_memory_manager_context::VirtualMemoryMappingFlags;
 use crate::platform::virtual_page_address::VirtualPageAddress;
 pub use bindings::syscall_args;
 

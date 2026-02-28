@@ -5,7 +5,7 @@ use core::ffi::c_void;
 use core::ptr::null_mut;
 use crate::interrupt_safe_spin_lock::InterruptSafeSpinLock;
 use crate::platform::drivers::serial::SerialDriver;
-use crate::platform::scheduler::Scheduler;
+use crate::scheduler::Scheduler;
 use crate::platform::tasks::TaskFrame;
 
 pub struct Ticker;
