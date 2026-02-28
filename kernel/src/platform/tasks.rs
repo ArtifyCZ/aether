@@ -1,16 +1,13 @@
 use crate::platform::memory_layout::PAGE_FRAME_SIZE;
-use crate::platform::physical_memory_manager::PhysicalMemoryManager;
 use crate::platform::tasks::bindings::vmm_context;
-use crate::platform::virtual_memory_manager_context::{
-    VirtualMemoryManagerContext, VirtualMemoryMappingFlags,
-};
-use crate::platform::virtual_page_address::VirtualPageAddress;
+use crate::platform::virtual_memory_manager_context::VirtualMemoryManagerContext;
 use alloc::boxed::Box;
 use alloc::sync::Arc;
 use core::ffi::c_void;
 use core::pin::Pin;
+use core::ptr::null_mut;
 
-pub(super) mod bindings {
+mod bindings {
     include_bindings!("tasks.rs");
 }
 
@@ -31,7 +28,11 @@ pub struct TaskContext {
 }
 
 impl TaskContext {
-    pub fn new_user(user_ctx: Arc<VirtualMemoryManagerContext>, user_stack_vaddr: usize, entrypoint_vaddr: usize) -> Self {
+    pub fn new_user(
+        user_ctx: Arc<VirtualMemoryManagerContext>,
+        user_stack_vaddr: usize,
+        entrypoint_vaddr: usize,
+    ) -> Self {
         let kernel_stack = unsafe {
             Pin::new_unchecked(Box::<[u8]>::new_zeroed_slice(TASK_KERNEL_STACK_SIZE).assume_init())
         };
@@ -65,7 +66,11 @@ impl TaskContext {
 
         let state = unsafe {
             let kernel_stack_top = kernel_stack.as_ptr_range().end as usize;
-            TaskFrame(bindings::task_setup_kernel(kernel_stack_top, Some(function), arg))
+            TaskFrame(bindings::task_setup_kernel(
+                kernel_stack_top,
+                Some(function),
+                arg,
+            ))
         };
 
         Self {
@@ -73,6 +78,22 @@ impl TaskContext {
             kernel_stack,
             state,
         }
+    }
+
+    pub fn new_kernel_null() -> Self {
+        unsafe extern "C" fn null_thread(_arg: *mut c_void) {
+            loop {
+                unsafe {
+                    #[cfg(target_arch = "x86_64")]
+                    core::arch::asm!("hlt", options(nomem, nostack, preserves_flags));
+
+                    #[cfg(target_arch = "aarch64")]
+                    core::arch::asm!("wfi", options(nomem, nostack, preserves_flags));
+                }
+            }
+        }
+
+        Self::new_kernel(null_thread, null_mut(), PAGE_FRAME_SIZE)
     }
 
     pub fn get_virtual_memory_manager(&self) -> &Arc<VirtualMemoryManagerContext> {

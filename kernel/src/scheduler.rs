@@ -1,11 +1,8 @@
-use crate::interrupt_safe_spin_lock::{InterruptSafeSpinLock, InterruptSafeSpinLockGuard};
+use crate::interrupt_safe_spin_lock::InterruptSafeSpinLock;
 use crate::platform::drivers::serial::SerialDriver;
-use crate::platform::tasks::{TaskContext, TaskFrame};
+use crate::platform::tasks::TaskContext;
 use alloc::boxed::Box;
 use alloc::vec::Vec;
-use core::ffi::c_void;
-use core::ptr::null_mut;
-use crate::platform::memory_layout::PAGE_FRAME_SIZE;
 
 #[derive(Default)]
 pub struct Scheduler(InterruptSafeSpinLock<SchedulerInner>);
@@ -23,18 +20,6 @@ impl Default for SchedulerInner {
             current_task: -1,
             started: false,
             tasks: Vec::with_capacity(16),
-        }
-    }
-}
-
-unsafe extern "C" fn scheduler_null_thread(_arg: *mut c_void) {
-    loop {
-        unsafe {
-            #[cfg(target_arch = "x86_64")]
-            core::arch::asm!("hlt", options(nomem, nostack, preserves_flags));
-
-            #[cfg(target_arch = "aarch64")]
-            core::arch::asm!("wfi", options(nomem, nostack, preserves_flags));
         }
     }
 }
@@ -59,7 +44,7 @@ impl Scheduler {
         unsafe {
             SerialDriver::println("Initializing scheduler...");
             let scheduler: &'static Self = Box::leak(Box::new(Default::default()));
-            scheduler.add(TaskContext::new_kernel(scheduler_null_thread, null_mut(), PAGE_FRAME_SIZE));
+            scheduler.add(TaskContext::new_kernel_null());
             SerialDriver::println("Scheduler initialized!");
             scheduler
         }
@@ -84,7 +69,10 @@ impl Scheduler {
         f(&mut inner.tasks[current_task]);
     }
 
-    pub fn access_current_task_context<TOut>(&self, f: impl FnOnce(&TaskContext) -> TOut) -> Option<TOut> {
+    pub fn access_current_task_context<TOut>(
+        &self,
+        f: impl FnOnce(&TaskContext) -> TOut,
+    ) -> Option<TOut> {
         let inner = self.0.lock();
         if !inner.started {
             return None;
