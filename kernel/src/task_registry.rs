@@ -46,10 +46,10 @@ impl TaskRegistry {
         let id = TaskId::new();
         self.insert(id, match spec {
             TaskSpec::User { virtual_memory_manager_context, user_stack_vaddr, entrypoint_vaddr } => {
-                TaskContext::new_user(virtual_memory_manager_context, user_stack_vaddr, entrypoint_vaddr)
+                TaskContext::new_user(id, virtual_memory_manager_context, user_stack_vaddr, entrypoint_vaddr)
             }
             TaskSpec::Kernel { function, arg, kernel_stack_size } => {
-                TaskContext::new_kernel(function, arg, kernel_stack_size)
+                TaskContext::new_kernel(id, function, arg, kernel_stack_size)
             }
         });
         id

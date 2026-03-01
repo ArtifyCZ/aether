@@ -16,6 +16,7 @@ static inline void wrmsr(uint32_t msr, uint64_t val) {
 struct cpu_local_storage {
     uint64_t kernel_stack;
     uint64_t user_rsp_scratch;
+    uint64_t task_id;
 };
 
 static struct cpu_local_storage g_cpu_local_storage;
@@ -49,8 +50,19 @@ void msr_init(void) {
     // When swapgs is called in kernel entry, GS will point here
     wrmsr(0xC0000101, (uint64_t)&g_cpu_local_storage);
     wrmsr(0xC0000102, (uint64_t)&g_cpu_local_storage);
+    g_cpu_local_storage.kernel_stack = 0;
+    g_cpu_local_storage.user_rsp_scratch = 0;
+    g_cpu_local_storage.task_id = 0;
 }
 
 void msr_set_kernel_stack(const uint64_t stack) {
     g_cpu_local_storage.kernel_stack = stack;
+}
+
+uint64_t msr_get_task_id(void) {
+    return g_cpu_local_storage.task_id;
+}
+
+void msr_set_task_id(const uint64_t task_id) {
+    g_cpu_local_storage.task_id = task_id;
 }

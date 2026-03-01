@@ -18,6 +18,8 @@ struct interrupt_frame *task_setup_kernel(
     void *arg
 );
 
-void task_prepare_switch(uintptr_t kernel_stack_top);
+void task_prepare_switch(uintptr_t kernel_stack_top, uint64_t task_id);
+
+uint64_t task_get_current_id(void);
 
 void task_set_syscall_return_value(struct interrupt_frame *frame, uint64_t error_code, uint64_t value);

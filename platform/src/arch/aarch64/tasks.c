@@ -2,6 +2,8 @@
 
 #include "cpu_interrupts.h"
 #include <stdint.h>
+
+#include "cpu_local.h"
 #include "string.h"
 #include "virtual_memory_manager.h"
 
@@ -50,8 +52,14 @@ struct interrupt_frame *task_setup_kernel(
     return (struct interrupt_frame *) sp;
 }
 
-void task_prepare_switch(uintptr_t kernel_stack_top) {
+void task_prepare_switch(const uintptr_t kernel_stack_top, const uint64_t task_id) {
     // Do nothing
+    struct cpu_local_storage *cpu_local = cpu_local_get();
+    cpu_local->task_id = task_id;
+}
+
+uint64_t task_get_current_id(void) {
+    return cpu_local_get()->task_id;
 }
 
 void task_set_syscall_return_value(struct interrupt_frame *frame, const uint64_t error_code, const uint64_t value) {

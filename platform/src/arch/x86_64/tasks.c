@@ -54,9 +54,14 @@ struct interrupt_frame *task_setup_kernel(
 
 }
 
-void task_prepare_switch(const uintptr_t kernel_stack_top) {
+void task_prepare_switch(const uintptr_t kernel_stack_top, const uint64_t task_id) {
     gdt_set_kernel_stack(kernel_stack_top);
     msr_set_kernel_stack(kernel_stack_top);
+    msr_set_task_id(task_id);
+}
+
+uint64_t task_get_current_id(void) {
+    return msr_get_task_id();
 }
 
 void task_set_syscall_return_value(struct interrupt_frame *frame, const uint64_t error_code, const uint64_t value) {

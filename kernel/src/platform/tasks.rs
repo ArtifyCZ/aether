@@ -6,6 +6,7 @@ use alloc::boxed::Box;
 use alloc::sync::Arc;
 use core::ffi::c_void;
 use core::pin::Pin;
+use crate::task_id::TaskId;
 
 mod bindings {
     include_bindings!("tasks.rs");
@@ -22,6 +23,7 @@ unsafe impl Send for TaskFrame {}
 
 #[derive(Debug)]
 pub struct TaskContext {
+    task_id: TaskId,
     #[allow(unused)]
     user_ctx: Option<Arc<VirtualMemoryManagerContext>>,
     kernel_stack: Pin<Box<[u8]>>,
@@ -30,6 +32,7 @@ pub struct TaskContext {
 
 impl TaskContext {
     pub fn new_user(
+        task_id: TaskId,
         user_ctx: Arc<VirtualMemoryManagerContext>,
         user_stack_vaddr: usize,
         entrypoint_vaddr: usize,
@@ -50,6 +53,7 @@ impl TaskContext {
         };
 
         Self {
+            task_id,
             user_ctx: Some(user_ctx),
             kernel_stack,
             state,
@@ -57,6 +61,7 @@ impl TaskContext {
     }
 
     pub fn new_kernel(
+        task_id: TaskId,
         function: unsafe extern "C" fn(arg: *mut c_void),
         arg: *mut c_void,
         kernel_stack_size: usize,
@@ -75,6 +80,7 @@ impl TaskContext {
         };
 
         Self {
+            task_id,
             user_ctx: None,
             kernel_stack,
             state,
@@ -92,9 +98,23 @@ impl TaskContext {
     pub fn activate(&self) -> TaskFrame {
         let kernel_stack_top = self.kernel_stack.as_ptr_range().end as usize;
         unsafe {
-            bindings::task_prepare_switch(kernel_stack_top);
+            bindings::task_prepare_switch(kernel_stack_top, self.task_id.get());
         }
         self.state
+    }
+}
+
+impl TaskId {
+    /// Returns the current task id of the current CPU (the CPU core this function is invoked on).
+    pub fn get_current() -> Option<Self> {
+        let task_id = unsafe {
+            bindings::task_get_current_id()
+        };
+        if task_id == 0 {
+            None
+        } else {
+            Some(unsafe { TaskId::from_u64(task_id) })
+        }
     }
 }
 

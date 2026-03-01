@@ -1,14 +1,14 @@
 use crate::interrupt_safe_spin_lock::InterruptSafeSpinLock;
 use crate::platform::drivers::serial::SerialDriver;
+use crate::platform::memory_layout::PAGE_FRAME_SIZE;
 use crate::platform::tasks::{TaskContext, TaskFrame};
 use crate::task_id::TaskId;
 use crate::task_registry::{TaskGuard, TaskRegistry, TaskSpec};
 use alloc::boxed::Box;
 use alloc::collections::VecDeque;
 use core::ffi::c_void;
-use core::ops::{Deref, DerefMut};
+use core::ops::Deref;
 use core::ptr::null_mut;
-use crate::platform::memory_layout::PAGE_FRAME_SIZE;
 
 #[derive(Debug)]
 pub struct Scheduler(InterruptSafeSpinLock<SchedulerInner>);
@@ -16,7 +16,6 @@ pub struct Scheduler(InterruptSafeSpinLock<SchedulerInner>);
 #[derive(Debug)]
 #[repr(C)]
 struct SchedulerInner {
-    current_task: Option<TaskId>,
     null_task: TaskId,
     started: bool,
     tasks: &'static TaskRegistry,
@@ -31,7 +30,6 @@ impl SchedulerInner {
 
         while let Some(task_id) = self.ready_tasks.pop_front() {
             if let Some(task) = self.tasks.get(task_id) {
-                self.current_task = Some(task_id);
                 return Some(task);
             }
         }
@@ -66,7 +64,6 @@ impl Scheduler {
             let scheduler: &'static Self = Box::leak(Box::new(Scheduler(
                 InterruptSafeSpinLock::new(SchedulerInner {
                     started: false,
-                    current_task: None,
                     null_task: null_task_id,
                     tasks: task_registry,
                     ready_tasks,
@@ -89,19 +86,6 @@ impl Scheduler {
         id
     }
 
-    pub fn update_current_task_context(&self, f: impl FnOnce(&mut TaskContext)) {
-        let mut inner = self.0.lock();
-        if !inner.started {
-            return;
-        }
-        let task_id = match inner.current_task {
-            Some(task_id) => task_id,
-            None => return,
-        };
-        let mut task = inner.tasks.get(task_id).unwrap();
-        f(task.deref_mut());
-    }
-
     pub fn access_current_task_context<TOut>(
         &self,
         f: impl FnOnce(&TaskContext) -> TOut,
@@ -110,7 +94,7 @@ impl Scheduler {
         if !inner.started {
             return None;
         }
-        let task_id = inner.current_task?;
+        let task_id = TaskId::get_current()?;
         let task = inner.tasks.get(task_id).unwrap();
         Some(f(task.deref()))
     }
@@ -121,10 +105,10 @@ impl Scheduler {
             return None;
         }
 
-        if let Some(prev_idx) = inner.current_task {
-            let mut prev_task = inner.tasks.get(prev_idx).unwrap();
+        if let Some(prev_task_id) = TaskId::get_current() {
+            let mut prev_task = inner.tasks.get(prev_task_id).unwrap();
             prev_task.set_frame(prev_frame);
-            inner.ready_tasks.push_back(prev_idx);
+            inner.ready_tasks.push_back(prev_task_id);
         }
 
         let next_task = inner.pick_next_task()?;
@@ -137,7 +121,7 @@ impl Scheduler {
             return None;
         }
 
-        if let Some(prev_id) = inner.current_task {
+        if let Some(prev_id) = TaskId::get_current() {
             let mut prev_task = inner.tasks.get(prev_id).unwrap();
             prev_task.set_frame(prev_frame);
             if let Some((idx, _)) = inner
