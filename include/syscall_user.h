@@ -20,12 +20,14 @@ typedef struct syscall_result sys_result_t;
 #define _SS_LIST2(t1, n1, ...)   t1 n1, _SS_LIST1(__VA_ARGS__)
 #define _SS_LIST3(t1, n1, ...)   t1 n1, _SS_LIST2(__VA_ARGS__)
 #define _SS_LIST4(t1, n1, ...)   t1 n1, _SS_LIST3(__VA_ARGS__)
+#define _SS_LIST5(t1, n1, ...)   t1 n1, _SS_LIST4(__VA_ARGS__)
 
 #define _SS_VAL0()               0
 #define _SS_VAL1(t1, n1)         (uint64_t)(n1)
 #define _SS_VAL2(t1, n1, ...)    (uint64_t)(n1), _SS_VAL1(__VA_ARGS__)
 #define _SS_VAL3(t1, n1, ...)    (uint64_t)(n1), _SS_VAL2(__VA_ARGS__)
 #define _SS_VAL4(t1, n1, ...)    (uint64_t)(n1), _SS_VAL3(__VA_ARGS__)
+#define _SS_VAL5(t1, n1, ...)    (uint64_t)(n1), _SS_VAL4(__VA_ARGS__)
 
 /* --- The Dual-Register Wrapper Generator --- */
 

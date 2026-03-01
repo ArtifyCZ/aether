@@ -7,7 +7,9 @@
 
 void gic_init(void);
 
-void gic_enable_interrupt(uint32_t vector);
+void gic_mask_vector(uint32_t intid);
+
+void gic_unmask_vector(uint32_t intid);
 
 void gic_configure_interrupt(uint32_t vector, uint8_t priority);
 

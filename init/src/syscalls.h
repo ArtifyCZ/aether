@@ -59,3 +59,5 @@ static inline sys_result_t syscall_raw(struct syscall_args args) {
 })
 
 SYSCALLS_LIST(SYSCALL_USER_WRAPPER);
+
+const char *sys_err_get_message(sys_err_t err_code);

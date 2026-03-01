@@ -20,11 +20,6 @@ PLATFORM_SRC_FILES += $(wildcard $(platform_src_dir)/common/**/*.c)
 PLATFORM_SRC_FILES += $(wildcard $(platform_src_dir)/arch/$(ARCH)/*.c)
 PLATFORM_ASM_FILES += $(wildcard $(platform_src_dir)/arch/$(ARCH)/*.asm) $(wildcard $(platform_src_dir)/arch/$(ARCH)/*.S)
 
-# Keyboard driver files
-PLATFORM_SRC_FILES += $(wildcard $(platform_src_dir)/drivers/keyboard/common/*.c)
-PLATFORM_SRC_FILES += $(wildcard $(platform_src_dir)/drivers/keyboard/$(ARCH)/*.c)
-PLATFORM_SRC_FILES += $(wildcard $(platform_src_dir)/drivers/keyboard/$(ARCH)/**.c)
-
 # Serial driver files
 PLATFORM_SRC_FILES += $(wildcard $(platform_src_dir)/drivers/serial/$(ARCH)/*.c)
 PLATFORM_SRC_FILES += $(wildcard $(platform_src_dir)/drivers/serial/$(ARCH)/**.c)

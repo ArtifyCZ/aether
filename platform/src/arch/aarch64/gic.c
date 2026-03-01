@@ -9,6 +9,11 @@
 #define GIC_DIST_BASE 0x08000000
 #define GIC_CPU_BASE  0x08010000
 
+// 0x00-0x0F are used for software-generated interrupts
+// 0x10-0x1F are used for private-peripheral interrupts
+// 0x20+ are used for shared peripheral interrupts
+#define IRQ_INTID_OFFSET 0x20
+
 static uint64_t g_gic_dist_base = 0;
 
 static uint64_t g_gic_cpu_base = 0;
@@ -31,26 +36,61 @@ void gic_init(void) {
         VMM_FLAG_PRESENT | VMM_FLAG_WRITE | VMM_FLAG_DEVICE
     );
 
-    // 1. Enable Distributor: Bit 0 = Group 0, Bit 1 = Group 1
+    // 1. Disable Distributor while configuring
+    *(volatile uint32_t *) (g_gic_dist_base + 0x000) = 0x0;
+
+    // 2. Mask all interrupts initially (assuming 256 max for now)
+    for (int i = 0; i < 256 / 32; i++) {
+        *(volatile uint32_t *)(g_gic_dist_base + 0x180 + (i * 4)) = 0xFFFFFFFF;
+    }
+
+    // 3. Set all interrupts to Group 1 (standard IRQs)
+    for (int i = 0; i < 256 / 32; i++) {
+        *(volatile uint32_t *)(g_gic_dist_base + 0x080 + (i * 4)) = 0xFFFFFFFF;
+    }
+
+    // 4. Enable Distributor and CPU Interface
     *(volatile uint32_t *) (g_gic_dist_base + 0x000) = 0x3;
-
-    // 2. Enable CPU Interface:
-    // Bit 0: Enable Group 0
-    // Bit 1: Enable Group 1
-    // Bit 2: AckCtl (Allows Group 1 to be acked)
-    // Bit 3: FIQEn (Optional, routes Group 0 as FIQ)
-    // Bit 4: CBPR (Common Binary Point Register)
-    *(volatile uint32_t *) (g_gic_cpu_base + 0x000) = 0x1F; // Enable all logic
-
-    // 3. Set Priority Mask to allow all interrupts
-    *(volatile uint32_t *) (g_gic_cpu_base + 0x004) = 0xFF;
+    *(volatile uint32_t *) (g_gic_cpu_base + 0x000) = 0x1F;
+    *(volatile uint32_t *) (g_gic_cpu_base + 0x004) = 0xF0; // Priority mask
 }
 
-void gic_enable_interrupt(uint32_t vector) {
-    // Each bit in GICD_ISENABLERn enables one interrupt
-    uint32_t reg = vector / 32;
-    uint32_t bit = vector % 32;
+// Helper to set priority without grouped configuration logic
+void gic_set_priority(uint32_t vector, uint8_t priority) {
+    uint32_t prio_reg = vector / 4;
+    uint32_t prio_off = (vector % 4) * 8;
+
+    volatile uint32_t *reg = (uint32_t *)(g_gic_dist_base + 0x400 + (prio_reg * 4));
+    uint32_t val = *reg;
+    val &= ~(0xFF << prio_off);
+    val |= (priority << prio_off);
+    *reg = val;
+}
+
+void gic_mask_vector(const uint32_t intid) {
+    // GICD_ICENABLERn (Interrupt Clear-Enable Registers)
+    // Offset: 0x180 + (reg * 4)
+    const uint32_t reg = intid / 32;
+    const uint32_t bit = intid % 32;
+
+    // Writing a 1 to a bit in ICENABLER disables the corresponding interrupt.
+    // Writing 0 has no effect.
+    *(volatile uint32_t *) (g_gic_dist_base + 0x180 + (reg * 4)) = (1 << bit);
+}
+
+void gic_unmask_vector(const uint32_t intid) {
+    // GICD_ISENABLERn (Interrupt Set-Enable Registers)
+    // Offset: 0x100 + (reg * 4)
+    const uint32_t reg = intid / 32;
+    const uint32_t bit = intid % 32;
+
+    // Writing a 1 to a bit in ISENABLER enables the corresponding interrupt.
+    // Writing 0 has no effect.
     *(volatile uint32_t *) (g_gic_dist_base + 0x100 + (reg * 4)) = (1 << bit);
+
+    // Ensure priority is set to something "runnable" (e.g., 0xA0)
+    // Higher numbers are lower priority in GIC.
+    gic_set_priority(intid, 0xA0);
 }
 
 void gic_configure_interrupt(uint32_t vector, uint8_t priority) {

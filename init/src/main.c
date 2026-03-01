@@ -1,3 +1,4 @@
+#include "keyboard.h"
 #include "syscalls.h"
 
 void print(const char *message) {
@@ -49,8 +50,10 @@ int main(void) {
         while(1);
     }
 
-    sys_clone(0, stack_top - 0x10, second_thread, NULL);
+    sys_clone(0, stack_top, second_thread, NULL);
     print("Parent is moving on...\n");
+    keyboard_init();
+    print("Keyboard initialized!\n");
 
     rest();
     return 0;

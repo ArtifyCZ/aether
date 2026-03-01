@@ -14,7 +14,7 @@ mod bindings {
 
 pub const TASK_KERNEL_STACK_SIZE: usize = 4 * PAGE_FRAME_SIZE;
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 #[repr(transparent)]
 #[must_use]
 pub struct TaskFrame(pub(super) *mut bindings::interrupt_frame);
@@ -28,6 +28,7 @@ pub struct TaskContext {
     user_ctx: Option<Arc<VirtualMemoryManagerContext>>,
     kernel_stack: Pin<Box<[u8]>>,
     state: TaskFrame,
+    pending_syscall_return_value: Option<Result<SyscallReturnValue, SyscallError>>,
 }
 
 impl TaskContext {
@@ -57,6 +58,7 @@ impl TaskContext {
             user_ctx: Some(user_ctx),
             kernel_stack,
             state,
+            pending_syscall_return_value: None,
         }
     }
 
@@ -84,6 +86,7 @@ impl TaskContext {
             user_ctx: None,
             kernel_stack,
             state,
+            pending_syscall_return_value: None,
         }
     }
 
@@ -95,12 +98,22 @@ impl TaskContext {
         self.state = state;
     }
 
-    pub fn activate(&self) -> TaskFrame {
+    pub fn return_syscall_value(&mut self, value: Result<impl SyscallReturnable, SyscallError>) {
+        self.pending_syscall_return_value = Some(value.map(|value| value.into_return_value()));
+    }
+
+    pub fn activate(&mut self) -> TaskFrame {
         let kernel_stack_top = self.kernel_stack.as_ptr_range().end as usize;
         unsafe {
             bindings::task_prepare_switch(kernel_stack_top, self.task_id.get());
         }
-        self.state
+        let mut frame = self.state;
+        if let Some(value) = self.pending_syscall_return_value.take() {
+            unsafe {
+                frame.set_syscall_return_value(value);
+            }
+        }
+        frame
     }
 }
 

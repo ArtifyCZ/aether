@@ -4,6 +4,9 @@ mod sys_mmap;
 mod sys_write;
 mod user_ptr;
 mod user_slice;
+mod sys_irq_wait;
+mod sys_irq_unmask;
+mod sys_mmap_dev;
 
 use crate::platform::syscalls::{
     SyscallContext, SyscallError, SyscallIntent, SyscallReturnValue, SyscallReturnable, syscall_num,
@@ -15,6 +18,9 @@ use crate::syscall_handler::sys_mmap::SysMmapCommand;
 use crate::syscall_handler::sys_write::SysWriteCommand;
 use crate::task_registry::TaskRegistry;
 use alloc::boxed::Box;
+use crate::syscall_handler::sys_irq_unmask::SysIrqUnmaskCommand;
+use crate::syscall_handler::sys_irq_wait::SysIrqWaitCommand;
+use crate::syscall_handler::sys_mmap_dev::SysMmapDevCommand;
 
 macro_rules! define_syscall_request {
     ($name:ident, { $(
@@ -64,6 +70,9 @@ define_syscall_request!(
         syscall_num::SYS_WRITE => Write: SysWriteCommand,
         syscall_num::SYS_CLONE => Clone: SysCloneCommand,
         syscall_num::SYS_MMAP => Mmap: SysMmapCommand,
+        syscall_num::SYS_IRQ_WAIT => IrqWait: SysIrqWaitCommand,
+        syscall_num::SYS_IRQ_UNMASK => IrqUnmask: SysIrqUnmaskCommand,
+        syscall_num::SYS_MMAP_DEV => MmapDev: SysMmapDevCommand,
     },
 );
 

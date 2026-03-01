@@ -20,7 +20,8 @@ struct interrupt_frame *task_setup_user(
 
     frame->ss = USER_DATA_SEGMENT | 3; // 0x1B
     frame->rsp = (user_stack_top & ~0xFULL);
-    frame->rflags = 0x202; // Interrupts enabled
+    // @TODO: add some way to specify whether a task should have access to IO ports, and best if only to specific ports
+    frame->rflags = 0x202 | (3 << 12); // Interrupts enabled and IO ports allowed
     frame->cs = USER_CODE_SEGMENT | 3; // 0x23
     frame->rip = entrypoint_vaddr;
     // for sysret compatibility

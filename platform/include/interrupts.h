@@ -10,6 +10,7 @@ struct interrupt_frame;
 // Callback signature for an interrupt handler.
 // Returns true if the interrupt was handled.
 typedef bool (*irq_handler_t)(struct interrupt_frame **frame, void *priv);
+typedef bool (*irq_handler_new_t)(struct interrupt_frame **frame, uint8_t irq, void *priv);
 
 // High-level interrupt types
 typedef enum {
@@ -29,6 +30,12 @@ void interrupts_init(void);
 // Enable/Disable interrupts globally on the current CPU
 void interrupts_enable(void);
 void interrupts_disable(void);
+
+void interrupts_set_irq_handler(irq_handler_new_t handler, void *priv);
+
+void interrupts_mask_irq(uint8_t irq);
+
+void interrupts_unmask_irq(uint8_t irq);
 
 /**
  * IRQ Routing

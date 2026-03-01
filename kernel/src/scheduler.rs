@@ -1,13 +1,13 @@
 use crate::interrupt_safe_spin_lock::InterruptSafeSpinLock;
 use crate::platform::drivers::serial::SerialDriver;
 use crate::platform::memory_layout::PAGE_FRAME_SIZE;
-use crate::platform::tasks::{TaskContext, TaskFrame};
+use crate::platform::tasks::TaskFrame;
 use crate::task_id::TaskId;
 use crate::task_registry::{TaskGuard, TaskRegistry, TaskSpec};
 use alloc::boxed::Box;
-use alloc::collections::VecDeque;
+use alloc::collections::{BTreeMap, VecDeque};
+use alloc::format;
 use core::ffi::c_void;
-use core::ops::Deref;
 use core::ptr::null_mut;
 
 #[derive(Debug)]
@@ -20,6 +20,8 @@ struct SchedulerInner {
     started: bool,
     tasks: &'static TaskRegistry,
     ready_tasks: VecDeque<TaskId>,
+    waiting_for_irq_tasks: BTreeMap<u8, TaskId>,
+    pending_irq_interrupts: u64,
 }
 
 impl SchedulerInner {
@@ -34,7 +36,7 @@ impl SchedulerInner {
             }
         }
 
-        None
+        Some(self.tasks.get(self.null_task)?)
     }
 }
 
@@ -67,6 +69,8 @@ impl Scheduler {
                     null_task: null_task_id,
                     tasks: task_registry,
                     ready_tasks,
+                    waiting_for_irq_tasks: BTreeMap::new(),
+                    pending_irq_interrupts: 0,
                 }),
             )));
             SerialDriver::println("Scheduler initialized!");
@@ -98,7 +102,52 @@ impl Scheduler {
             inner.ready_tasks.push_back(prev_task_id);
         }
 
-        let next_task = inner.pick_next_task()?;
+        let mut next_task = inner.pick_next_task()?;
+        Some(next_task.activate())
+    }
+
+    pub fn wait_for_irq(&self, irq: u8, prev_frame: TaskFrame) -> Option<TaskFrame> {
+        let mut inner = self.0.lock();
+        if !inner.started {
+            return None;
+        }
+        let pending_irq_bitmask = 1u64 << irq;
+        if inner.pending_irq_interrupts & pending_irq_bitmask != 0 {
+            inner.pending_irq_interrupts &= !pending_irq_bitmask;
+            return Some(prev_frame);
+        }
+        {
+            let prev_task_id = TaskId::get_current().unwrap();
+            let mut prev_task = inner.tasks.get(prev_task_id).unwrap();
+            prev_task.set_frame(prev_frame);
+            inner.waiting_for_irq_tasks.insert(irq, prev_task_id);
+        }
+
+        let mut next_task = inner.pick_next_task()?;
+        Some(next_task.activate())
+    }
+
+    pub fn signal_irq(&self, irq: u8, prev_frame: TaskFrame) -> Option<TaskFrame> {
+        let mut inner = self.0.lock();
+        if !inner.started {
+            return None;
+        }
+
+        let next_task_id = match inner.waiting_for_irq_tasks.remove(&irq) {
+            Some(waiting_task_id) => waiting_task_id,
+            None => {
+                inner.pending_irq_interrupts |= 1u64 << irq;
+                return Some(prev_frame);
+            },
+        };
+
+        if let Some(prev_task_id) = TaskId::get_current() {
+            let mut prev_task = inner.tasks.get(prev_task_id).unwrap();
+            prev_task.set_frame(prev_frame);
+            inner.ready_tasks.push_back(prev_task_id);
+        }
+
+        let mut next_task = inner.tasks.get(next_task_id)?;
         Some(next_task.activate())
     }
 
@@ -121,7 +170,7 @@ impl Scheduler {
             }
         }
 
-        let next_task = inner.pick_next_task()?;
+        let mut next_task = inner.pick_next_task()?;
         Some(next_task.activate())
     }
 }

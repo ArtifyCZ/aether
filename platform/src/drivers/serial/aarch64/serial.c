@@ -5,8 +5,6 @@
 #include "interrupts.h"
 #include "virtual_address_allocator.h"
 #include "virtual_memory_manager.h"
-#include "../../keyboard/common/keyboard_priv.h"
-#include "../../../arch/aarch64/gic.h"
 
 // Private register offsets for the PL011
 #define UART_DR    (0x00 / 4)
@@ -25,28 +23,6 @@
 #define INT_RX     (1 << 4) // Receive Interrupt bit
 
 static volatile uint32_t *uart_base = NULL;
-
-bool pl011_irq_handler(struct interrupt_frame **frame, void *priv) {
-    if (!uart_base) return false;
-
-    // Check if it's actually an RX interrupt
-    if (uart_base[UART_MIS] & INT_RX) {
-        // Drain the FIFO
-        while (!(uart_base[UART_FR] & FR_RXFE)) {
-            uint32_t data = uart_base[UART_DR];
-            uint8_t ch = (uint8_t) (data & 0xFF);
-            const char c = ch == '\r' ? '\n' : ch;
-
-            keyboard_buffer_push(c);
-        }
-
-        // Clear the interrupt
-        uart_base[UART_ICR] = INT_RX;
-        return true;
-    }
-
-    return false;
-}
 
 /**
  * serial_init: Should be called VERY early.
@@ -77,26 +53,6 @@ int serial_init(uintptr_t physical_base) {
     uart_base[UART_CR] = (1 << 0) | (1 << 8) | (1 << 9);
 
     return 0;
-}
-
-/**
- * keyboard_arch_init: Called after interrupts and GIC are ready.
- * Switches the UART from Polling-Input to Interrupt-Input.
- */
-void keyboard_arch_init(void) {
-    if (!uart_base) return;
-
-    // 1. Enable Receive Interrupt Mask in UART hardware
-    uart_base[UART_IMSC] = INT_RX;
-
-    // 2. Configure GIC
-    // UART0 on QEMU 'virt' is SPI 1 -> IRQ 33
-    uint32_t uart_irq = 33;
-    gic_configure_interrupt(uart_irq, 0x80);
-    gic_set_target_cpu(uart_irq, 0x01);
-    interrupts_register_handler(uart_irq, pl011_irq_handler, NULL);
-
-    serial_println("Serial Keyboard: Interrupts enabled.");
 }
 
 static int is_transmit_empty() {

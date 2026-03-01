@@ -40,3 +40,19 @@ void ioapic_set_entry(uint8_t pin, uint32_t vector) {
     // So bits 13 and 15 stay 0.
     ioapic_write(low_index, vector);
 }
+
+void ioapic_set_mask(const uint8_t pin, const bool mask) {
+    // The Redirection Table entry is 64 bits (two 32-bit registers)
+    // Register 0x10 + (pin * 2) is the LOW 32 bits.
+    // Bit 16 (Mask) is in the LOW 32 bits.
+
+    uint32_t low_index = 0x10 + (pin * 2);
+
+    uint32_t val = ioapic_read(low_index); // Read current LOW bits
+    if (mask) {
+        val |= (1 << 16);  // Set bit 16 to MASK
+    } else {
+        val &= ~(1 << 16); // Clear bit 16 to UNMASK
+    }
+    ioapic_write(low_index, val);
+}

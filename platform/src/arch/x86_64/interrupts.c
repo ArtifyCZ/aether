@@ -1,13 +1,19 @@
 #include "interrupts.h"
 #include "cpu_interrupts.h"
 
+#include <stddef.h>
 #include <stdint.h>
-
 #include "boot.h"
 #include "gdt.h"
+#include "ioapic.h"
 #include "io_wrapper.h"
 #include "lapic.h"
 #include "drivers/serial.h"
+
+// 0x00 <= n < 0x20 are CPU exceptions
+// 0x20 <= n < 0x30 usually are the legacy PIC interrupt vectors
+// 0x30 <= n < 0xFF should be free to use for APIC
+#define IRQ_INTERRUPT_VECTOR_OFFSET 0x30
 
 // The IDT structure
 struct idt_entry {
@@ -29,11 +35,16 @@ static struct idt_entry idt[256];
 static irq_handler_t handlers[256];
 static void *handler_priv[256];
 
+static irq_handler_new_t g_irq_handler;
+static void *g_irq_handler_priv;
+
 static uint8_t g_interrupt_disable_nesting = 0;
 
 void interrupts_init(void) {
     // This table must be defined in your NASM file (see below)
     extern uint64_t interrupt_stubs[];
+    g_irq_handler = NULL;
+    g_irq_handler_priv = NULL;
 
     for (int i = 0; i < 256; i++) {
         uint64_t isr = interrupt_stubs[i];
@@ -75,8 +86,22 @@ void interrupts_disable(void) {
     __asm__ volatile("cli");
 }
 
+void interrupts_set_irq_handler(irq_handler_new_t handler, void *priv) {
+    g_irq_handler = handler;
+    g_irq_handler_priv = priv;
+}
+
+void interrupts_mask_irq(uint8_t irq) {
+    ioapic_set_mask(irq, true);
+}
+
+void interrupts_unmask_irq(uint8_t irq) {
+    ioapic_set_mask(irq, false);
+    ioapic_set_entry(irq, irq + IRQ_INTERRUPT_VECTOR_OFFSET);
+}
+
 bool interrupts_register_handler(uint32_t irq, irq_handler_t handler, void *priv) {
-    if (irq < 0x30 || irq > 0xFF) return false; // allow APIC only (and we are mapping APIC from 0x30 to 0xFF)
+    if (irq < IRQ_INTERRUPT_VECTOR_OFFSET || irq > 0xFF) return false; // allow APIC only (and we are mapping APIC from 0x30 to 0xFF)
 
     handlers[irq] = handler;
     handler_priv[irq] = priv;
@@ -158,7 +183,7 @@ uintptr_t x86_64_interrupt_dispatcher(struct interrupt_frame *frame) {
     }
     struct interrupt_frame *return_frame = frame;
 
-    if (frame->interrupt_number < 0x30) {
+    if (frame->interrupt_number < IRQ_INTERRUPT_VECTOR_OFFSET) {
         serial_print("WARNING: legacy PIC interrupt");
         serial_print_hex_u64(frame->interrupt_number);
         serial_println("");
@@ -166,10 +191,14 @@ uintptr_t x86_64_interrupt_dispatcher(struct interrupt_frame *frame) {
 
     if (handlers[frame->interrupt_number]) {
         handlers[frame->interrupt_number](&return_frame, handler_priv[frame->interrupt_number]);
-    } else {
-        serial_print("Unhandled interrupt: ");
-        serial_print_hex_u64(frame->interrupt_number);
-        serial_println("");
+    }
+
+    if (frame->interrupt_number >= IRQ_INTERRUPT_VECTOR_OFFSET) {
+        const uint8_t irq = frame->interrupt_number - IRQ_INTERRUPT_VECTOR_OFFSET;
+        if (g_irq_handler != NULL && irq != 0x00) {
+            // IRQ 0x00 is the LAPIC timer, which we don't want to redirect to the userspace
+            g_irq_handler(&return_frame, irq, g_irq_handler_priv);
+        }
     }
 
     if (frame->interrupt_number >= 0x20 && frame->interrupt_number <= 0x2F) {
@@ -179,7 +208,7 @@ uintptr_t x86_64_interrupt_dispatcher(struct interrupt_frame *frame) {
         outb(0x20, 0x20); // Send EOI to Master PIC
     }
 
-    if (0x30 <= frame->interrupt_number && frame->interrupt_number < 0x80) {
+    if (IRQ_INTERRUPT_VECTOR_OFFSET <= frame->interrupt_number && frame->interrupt_number <= 0xFF) {
         // APIC interrupts
         lapic_eoi();
     }

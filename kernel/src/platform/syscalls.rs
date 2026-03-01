@@ -89,6 +89,7 @@ impl<T> From<SyscallIntent<T>> for SyscallIntent<SyscallReturnValue> where T: Sy
     }
 }
 
+#[derive(Debug)]
 pub struct SyscallReturnValue(pub u64);
 
 pub trait SyscallReturnable {
@@ -112,7 +113,7 @@ impl Syscalls {
         {
             let f: *mut F = arg.cast();
             let f: &mut F = unsafe { &mut *f };
-            let syscall_frame: &mut syscall_frame = unsafe { &mut *syscall_frame };
+            let syscall_frame: &mut syscall_frame = unsafe { syscall_frame.as_mut() }.unwrap();
             let mut task_frame = TaskFrame(unsafe { syscall_frame.interrupt_frame.read() }.cast());
             let context = SyscallContext {
                 task_frame: &task_frame,

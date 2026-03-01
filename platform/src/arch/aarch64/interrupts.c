@@ -12,6 +12,9 @@ extern void *exception_vector_table;
 static irq_handler_t handlers[256];
 static void *handler_priv[256];
 
+static irq_handler_new_t g_irq_handler;
+static void *g_irq_handler_priv;
+
 static uint8_t g_interrupt_disable_nesting = 0;
 
 /**
@@ -25,6 +28,11 @@ static uint8_t g_interrupt_disable_nesting = 0;
 #define EC_INST_ABORT_LOWER 0x20
 #define EC_INST_ABORT_SAME  0x21
 #define EC_ALIGNED_FAULT    0x26
+
+// 0x00-0x0F are used for software-generated interrupts
+// 0x10-0x1F are used for private-peripheral interrupts
+// 0x20+ are used for shared peripheral interrupts
+#define IRQ_INTID_OFFSET 0x20
 
 void interrupts_init(void) {
     // 1. Install the vector table
@@ -45,6 +53,8 @@ void interrupts_init(void) {
 
     gic_init();
     g_interrupt_disable_nesting = 1;
+    g_irq_handler = NULL;
+    g_irq_handler_priv = NULL;
 
     serial_println("AArch64: Interrupt system initialized.");
 }
@@ -61,6 +71,19 @@ void interrupts_disable(void) {
     __asm__ volatile("msr daifset, #2" ::: "memory");
 }
 
+void interrupts_set_irq_handler(irq_handler_new_t handler, void *priv) {
+    g_irq_handler = handler;
+    g_irq_handler_priv = priv;
+}
+
+void interrupts_mask_irq(const uint8_t irq) {
+    gic_mask_vector(irq + IRQ_INTID_OFFSET);
+}
+
+void interrupts_unmask_irq(const uint8_t irq) {
+    gic_unmask_vector(irq + IRQ_INTID_OFFSET);
+}
+
 bool interrupts_register_handler(uint32_t irq, irq_handler_t handler, void *priv) {
     if (irq >= 256) return false;
 
@@ -70,7 +93,7 @@ bool interrupts_register_handler(uint32_t irq, irq_handler_t handler, void *priv
     handlers[irq] = handler;
     handler_priv[irq] = priv;
 
-    gic_enable_interrupt(irq);
+    gic_unmask_vector(irq);
 
     // Note: In a full implementation, you would talk to the GIC here
     // to unmask the IRQ and set its priority.
@@ -163,18 +186,19 @@ uintptr_t handle_sync_exception(struct interrupt_frame *frame) {
 // Returns a pointer to a stack the assembly code should switch to
 // If the frame pointer == returned address, then the interrupt returns exactly where it was interrupted
 uintptr_t handle_irq_exception(struct interrupt_frame *frame) {
-    const uint32_t irq_id = gic_acknowledge_interrupt();
+    const uint32_t intid = gic_acknowledge_interrupt();
 
     struct interrupt_frame *return_frame = frame;
-    if (irq_id < 256 && handlers[irq_id]) {
-        handlers[irq_id](&return_frame, handler_priv[irq_id]);
-    } else {
-        serial_print("Unhandled IRQ: ");
-        serial_print_hex_u64(irq_id);
-        serial_println("");
+    if (intid < 256 && handlers[intid]) {
+        handlers[(uint8_t) intid](&return_frame, handler_priv[intid]);
     }
 
-    gic_end_of_interrupt(irq_id);
+    if (g_irq_handler != NULL && intid >= IRQ_INTID_OFFSET && intid <= 0xFF) {
+        const uint8_t irq = intid - IRQ_INTID_OFFSET;
+        g_irq_handler(&return_frame, irq, g_irq_handler_priv);
+    }
+
+    gic_end_of_interrupt(intid);
 
     return (uintptr_t) return_frame;
 }

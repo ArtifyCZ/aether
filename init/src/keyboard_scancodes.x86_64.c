@@ -3,6 +3,8 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+void print(const char *str);
+
 static bool g_is_shift_down = false;
 
 static const char map_no_shift[128] = {
