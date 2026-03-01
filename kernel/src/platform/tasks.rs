@@ -15,6 +15,7 @@ pub const TASK_KERNEL_STACK_SIZE: usize = 4 * PAGE_FRAME_SIZE;
 
 #[derive(Debug, Copy, Clone)]
 #[repr(transparent)]
+#[must_use]
 pub struct TaskFrame(pub(super) *mut bindings::interrupt_frame);
 
 unsafe impl Send for TaskFrame {}
@@ -104,8 +105,9 @@ impl TaskContext {
         self.state = state;
     }
 
-    pub(super) unsafe fn set_syscall_return_value(&mut self, value: u64) {
+    pub unsafe fn set_syscall_return_value(&mut self, value: u64) {
         unsafe {
+            // @TODO: make this function again visible for the platform module only (visibility `super`)
             bindings::task_set_syscall_return_value(self.state.0, value);
         }
     }

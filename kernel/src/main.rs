@@ -10,6 +10,7 @@ mod interrupt_safe_spin_lock;
 mod platform;
 mod scheduler;
 mod spin_lock;
+mod syscall_handler;
 mod task_id;
 mod task_registry;
 mod ticker;
@@ -41,12 +42,13 @@ use crate::platform::drivers::serial::SerialDriver;
 use crate::platform::elf::Elf;
 use crate::platform::interrupts::Interrupts;
 use crate::platform::memory_layout::PAGE_FRAME_SIZE;
-use crate::platform::syscalls::{sys_exit, Syscalls};
+use crate::platform::syscalls::{Syscalls, sys_exit};
 use crate::platform::terminal::Terminal;
 use crate::platform::timer::Timer;
 use crate::task_registry::{TaskRegistry, TaskSpec};
 use scheduler::Scheduler;
 use ticker::Ticker;
+use crate::syscall_handler::SyscallHandler;
 
 fn thread_heartbeat() {
     let mut i = 0;
@@ -102,7 +104,8 @@ fn main(hhdm_offset: u64, rsdp_address: u64) {
 
         let scheduler = Scheduler::init(registry);
 
-        Syscalls::init(scheduler);
+        let syscall_handler = SyscallHandler::init(scheduler);
+        Syscalls::init(|ctx| syscall_handler.handle(ctx));
         Elf::init(hhdm_offset);
         Timer::init(100);
 
