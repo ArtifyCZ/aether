@@ -1,5 +1,6 @@
 mod sys_exit;
 mod sys_write;
+mod sys_clone;
 
 use crate::platform::drivers::serial::SerialDriver;
 use crate::platform::memory_layout::PAGE_FRAME_SIZE;
@@ -14,6 +15,7 @@ use crate::task_registry::TaskSpec;
 use alloc::boxed::Box;
 use alloc::format;
 use core::ptr::slice_from_raw_parts;
+use crate::syscall_handler::sys_clone::SysCloneCommand;
 use crate::syscall_handler::sys_write::SysWriteCommand;
 
 pub struct SyscallHandler {
@@ -40,30 +42,10 @@ impl SyscallHandler {
         match ctx.num {
             syscall_num::SYS_EXIT => self.handle_command(SysExitCommand::parse(ctx).unwrap()),
             syscall_num::SYS_WRITE => self.handle_command(SysWriteCommand::parse(ctx).unwrap()),
-            syscall_num::SYS_CLONE => self.sys_clone(ctx),
+            syscall_num::SYS_CLONE => self.handle_command(SysCloneCommand::parse(ctx).unwrap()),
             syscall_num::SYS_MMAP => self.sys_mmap(ctx),
             _ => panic!("Non-existent syscall triggered!"), // @TODO: add better handling
         }
-    }
-
-    fn sys_clone(&self, ctx: &SyscallContext<'_>) -> SyscallIntent {
-        let vmm = self
-            .scheduler
-            .access_current_task_context(|task| task.get_virtual_memory_manager().clone())
-            .expect("Scheduler is not started yet!");
-        // @TODO: implement flags
-        let _flags = ctx.args[0];
-        let stack_pointer = ctx.args[1] as usize;
-        let entrypoint = ctx.args[2] as usize;
-        if stack_pointer >= 0x800000000000 || entrypoint >= 0x800000000000 {
-            return SyscallIntent::Return(0);
-        }
-        let pid = self.scheduler.spawn(TaskSpec::User {
-            virtual_memory_manager_context: vmm,
-            user_stack_vaddr: stack_pointer,
-            entrypoint_vaddr: entrypoint,
-        });
-        SyscallIntent::Return(pid.get())
     }
 
     fn sys_mmap(&self, ctx: &SyscallContext<'_>) -> SyscallIntent {
