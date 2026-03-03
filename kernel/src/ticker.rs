@@ -1,9 +1,8 @@
-use crate::platform::drivers::serial::SerialDriver;
 use crate::platform::tasks::TaskFrame;
 use crate::platform::timer::Timer;
+use crate::println;
 use crate::scheduler::Scheduler;
 use alloc::boxed::Box;
-use alloc::format;
 
 pub struct Ticker {
     scheduler: &'static Scheduler,
@@ -25,9 +24,7 @@ impl Ticker {
             .unwrap_or(prev_frame);
         let ticks = Timer::get_ticks();
         if ticks % 100 == 0 {
-            unsafe {
-                SerialDriver::println(&format!("Timer ticks: {}", ticks));
-            }
+            println!("Timer ticks: {:08X}", ticks);
         }
 
         next_frame

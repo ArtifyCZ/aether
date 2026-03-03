@@ -1,6 +1,6 @@
-use crate::platform::drivers::serial::SerialDriver;
-use crate::platform::syscalls::{SyscallContext, SyscallError, SyscallIntent, SyscallReturnValue};
+use crate::platform::syscalls::{SyscallContext, SyscallError, SyscallIntent};
 use crate::platform::tasks::TaskFrame;
+use crate::println;
 use crate::syscall_handler::{SyscallCommand, SyscallCommandHandler, SyscallHandler};
 
 pub struct SysExitCommand {
@@ -25,9 +25,7 @@ impl SyscallCommandHandler<SysExitCommand> for SyscallHandler {
     type Err = SyscallError;
 
     fn handle_command(&self, command: SysExitCommand) -> Result<SyscallIntent<Self::Ok>, Self::Err> {
-        unsafe {
-            SerialDriver::println("=== EXIT SYSCALL ===");
-        }
+        println!("=== EXIT SYSCALL ===");
         let next_task_state = self
             .scheduler
             .exit_current_task(command.task_frame)

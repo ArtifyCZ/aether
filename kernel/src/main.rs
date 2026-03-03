@@ -7,6 +7,7 @@ mod allocator;
 mod entrypoint;
 mod init_process;
 mod interrupt_safe_spin_lock;
+mod logging;
 mod platform;
 mod scheduler;
 mod spin_lock;
@@ -23,11 +24,13 @@ use core::ffi::c_void;
 
 #[panic_handler]
 #[cfg(not(test))]
-fn panic(info: &::core::panic::PanicInfo) -> ! {
+fn panic(info: &core::panic::PanicInfo) -> ! {
+    println!();
+    println!("====================");
+    println!("    KERNEL PANIC    ");
+    println!("====================");
+    println!("{}", info);
     unsafe {
-        SerialDriver::write(b"Panic occurred, attempting to print message:\n");
-        let message = info.to_string();
-        SerialDriver::println(&message);
         hcf()
     }
 }
@@ -37,11 +40,10 @@ unsafe extern "C" {
     fn hcf() -> !;
 }
 
-use crate::platform::drivers::serial::SerialDriver;
 use crate::platform::elf::Elf;
 use crate::platform::interrupts::Interrupts;
 use crate::platform::memory_layout::PAGE_FRAME_SIZE;
-use crate::platform::syscalls::{Syscalls, sys_exit};
+use crate::platform::syscalls::{sys_exit, Syscalls};
 use crate::platform::terminal::Terminal;
 use crate::platform::timer::Timer;
 use crate::syscall_handler::SyscallHandler;
@@ -88,7 +90,7 @@ fn main(hhdm_offset: u64, rsdp_address: u64) {
         Interrupts::init();
         Platform::init(rsdp_address);
 
-        SerialDriver::println("Hello from Rust!");
+        println!("Hello from Rust!");
         let registry = TaskRegistry::new();
 
         let scheduler = Scheduler::init(registry);

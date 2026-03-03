@@ -2,19 +2,16 @@ use core::str::FromStr;
 
 use alloc::{ffi::CString, sync::Arc};
 
-use crate::{
-    interrupt_safe_spin_lock::InterruptSafeSpinLock,
-    platform::{
-        elf::Elf, modules::Modules, tasks::TaskContext,
-        virtual_memory_manager_context::VirtualMemoryManagerContext,
-    },
-};
 use crate::platform::memory_layout::PAGE_FRAME_SIZE;
 use crate::platform::physical_memory_manager::PhysicalMemoryManager;
 use crate::platform::virtual_memory_manager_context::VirtualMemoryMappingFlags;
 use crate::platform::virtual_page_address::VirtualPageAddress;
 use crate::scheduler::Scheduler;
 use crate::task_registry::TaskSpec;
+use crate::platform::{
+    elf::Elf, modules::Modules,
+    virtual_memory_manager_context::VirtualMemoryManagerContext,
+};
 
 fn load_init_into_memory(init_ctx: &VirtualMemoryManagerContext) -> usize {
     let init_elf_string = CString::from_str("init.elf").expect("Failed to create CString");

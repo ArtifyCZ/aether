@@ -1,12 +1,11 @@
 use crate::interrupt_safe_spin_lock::InterruptSafeSpinLock;
-use crate::platform::drivers::serial::SerialDriver;
 use crate::platform::memory_layout::PAGE_FRAME_SIZE;
 use crate::platform::tasks::TaskFrame;
+use crate::println;
 use crate::task_id::TaskId;
 use crate::task_registry::{TaskGuard, TaskRegistry, TaskSpec};
 use alloc::boxed::Box;
 use alloc::collections::{BTreeMap, VecDeque};
-use alloc::format;
 use core::ffi::c_void;
 use core::ptr::null_mut;
 
@@ -54,28 +53,26 @@ unsafe extern "C" fn null_thread(_arg: *mut c_void) {
 
 impl Scheduler {
     pub fn init(task_registry: &'static TaskRegistry) -> &'static Self {
-        unsafe {
-            SerialDriver::println("Initializing scheduler...");
-            let null_task_id = task_registry.create_task(TaskSpec::Kernel {
-                function: null_thread,
-                arg: null_mut(),
-                kernel_stack_size: PAGE_FRAME_SIZE,
-            });
-            let mut ready_tasks = VecDeque::new();
-            ready_tasks.push_back(null_task_id);
-            let scheduler: &'static Self = Box::leak(Box::new(Scheduler(
-                InterruptSafeSpinLock::new(SchedulerInner {
-                    started: false,
-                    null_task: null_task_id,
-                    tasks: task_registry,
-                    ready_tasks,
-                    waiting_for_irq_tasks: BTreeMap::new(),
-                    pending_irq_interrupts: 0,
-                }),
-            )));
-            SerialDriver::println("Scheduler initialized!");
-            scheduler
-        }
+        println!("Initializing scheduler...");
+        let null_task_id = task_registry.create_task(TaskSpec::Kernel {
+            function: null_thread,
+            arg: null_mut(),
+            kernel_stack_size: PAGE_FRAME_SIZE,
+        });
+        let mut ready_tasks = VecDeque::new();
+        ready_tasks.push_back(null_task_id);
+        let scheduler: &'static Self = Box::leak(Box::new(Scheduler(InterruptSafeSpinLock::new(
+            SchedulerInner {
+                started: false,
+                null_task: null_task_id,
+                tasks: task_registry,
+                ready_tasks,
+                waiting_for_irq_tasks: BTreeMap::new(),
+                pending_irq_interrupts: 0,
+            },
+        ))));
+        println!("Scheduler initialized!");
+        scheduler
     }
 
     pub fn start(&self) {
@@ -138,7 +135,7 @@ impl Scheduler {
             None => {
                 inner.pending_irq_interrupts |= 1u64 << irq;
                 return Some(prev_frame);
-            },
+            }
         };
 
         if let Some(prev_task_id) = TaskId::get_current() {

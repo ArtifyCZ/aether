@@ -1,4 +1,3 @@
-use crate::platform::drivers::serial::SerialDriver;
 use crate::platform::syscalls::bindings::syscall_frame;
 use crate::platform::tasks::TaskFrame;
 use alloc::boxed::Box;
@@ -16,6 +15,7 @@ mod syscall_nums {
     include_bindings!("syscall_nums.rs");
 }
 
+use crate::println;
 pub use bindings::syscall_args;
 pub use syscall_errs::syscall_err as SyscallError;
 pub use syscall_nums::syscall_num;
@@ -137,14 +137,14 @@ impl Syscalls {
             }
         }
 
+        println!("Initializing syscalls...");
         unsafe {
-            SerialDriver::println("Initializing syscalls...");
             bindings::syscalls_init(
                 Some(trampoline::<F>),
                 Box::into_raw(Box::new(f)) as *mut c_void,
             );
-            SerialDriver::println("Syscalls initialized!");
         }
+        println!("Syscalls initialized!");
     }
 
     unsafe fn invoke(args: syscall_args) -> u64 {

@@ -13,10 +13,9 @@ impl SerialDriver {
         }
     }
 
-    pub unsafe fn println(message: &str) {
+    pub unsafe fn print(message: &str) {
         unsafe {
             Self::write(message.as_bytes());
-            Self::write(&[b'\n']);
         }
     }
 }
