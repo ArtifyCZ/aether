@@ -1,4 +1,5 @@
 use crate::platform::drivers::serial::SerialDriver;
+use crate::platform::terminal::Terminal;
 
 #[macro_export]
 macro_rules! println {
@@ -13,7 +14,7 @@ pub struct Logger;
 impl core::fmt::Write for Logger {
     fn write_str(&mut self, s: &str) -> core::fmt::Result {
         unsafe {
-            SerialDriver::print(s);
+            Terminal::print(s);
         }
         Ok(())
     }

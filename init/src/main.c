@@ -1,5 +1,6 @@
 #include "keyboard.h"
 #include "syscalls.h"
+#include "serial.h"
 
 void print(const char *message) {
     size_t length = 0;
@@ -7,7 +8,8 @@ void print(const char *message) {
         length++;
     }
 
-    sys_write(1, message, length);
+    // sys_write(1, message, length);
+    serial_print(message);
 }
 
 void rest(void) {
@@ -15,10 +17,8 @@ void rest(void) {
 
     while (1) {
         for (volatile int i = 0; i < 10000000; i++);
-        char number = j + '0';
-        sys_write(1, &number, 1);
-        char newline = '\n';
-        sys_write(1, &newline, 1);
+        const char number[] = {j + '0', '\n', 0x00};
+        print(number);
         j++;
         if (j == 10) {
             break;
@@ -35,6 +35,12 @@ __attribute__ ((noreturn)) void second_thread(void) {
 }
 
 int main(void) {
+    if (serial_init()) {
+        const char message[] = "Failed to initialize serial port!\n";
+        sys_write(1, message, sizeof(message));
+        while(1);
+    }
+
     const char message[] = "Hello world from user-space!\n";
     print(message);
 

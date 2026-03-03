@@ -42,7 +42,6 @@ impl SyscallCommandHandler<SysWriteCommand> for SyscallHandler {
         }
 
         unsafe {
-            SerialDriver::write(command.buf.as_slice());
             Terminal::print_bytes(command.buf.as_slice());
         }
 

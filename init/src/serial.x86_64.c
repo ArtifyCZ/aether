@@ -1,20 +1,18 @@
-#include "drivers/serial.h"
+#if defined (__x86_64__)
 
-#include <stdbool.h>
+#include "serial.h"
+
 #include <stdint.h>
 #include <stddef.h>
 
-#include "io_wrapper.h"
+#include "io.x86_64.h"
 
 #define PORT 0x3f8
-
-static bool g_is_initialized = false;
 
 /**
  * @TODO: replace PORT constant with the base parameter
  */
-int serial_init(uintptr_t base) {
-    g_is_initialized = true;
+bool serial_init(void) {
     outb(PORT + 1, 0x00); // Disable all interrupts
     outb(PORT + 3, 0x80); // Enable DLAB (set baud rate divisor)
     outb(PORT + 0, 0x03); // Set divisor to 3 (lo byte) 38400 baud
@@ -41,10 +39,6 @@ static int is_transmit_empty() {
 }
 
 static void write_serial(char a) {
-    if (!g_is_initialized) {
-        return;
-    }
-
     while (is_transmit_empty() == 0) {
         __asm__ volatile ("pause");
     }
@@ -61,14 +55,18 @@ void serial_write(const uint8_t byte) {
 }
 
 void serial_print(const char *message) {
-    for (size_t i = 0; message[i] != 0x00; i++) {
-        write_serial(message[i]);
+    if (message != NULL) {
+        for (size_t i = 0; message[i] != 0x00; i++) {
+            write_serial(message[i]);
+        }
     }
 }
 
 void serial_println(const char *message) {
-    for (size_t i = 0; message[i] != 0x00; i++) {
-        write_serial(message[i]);
+    if (message != NULL) {
+        for (size_t i = 0; message[i] != 0x00; i++) {
+            write_serial(message[i]);
+        }
     }
     write_serial('\n');
 }
@@ -81,3 +79,5 @@ void serial_print_hex_u64(uint64_t value) {
         write_serial(hex[nib]);
     }
 }
+
+#endif
