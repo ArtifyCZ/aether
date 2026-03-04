@@ -1,4 +1,4 @@
-#include "keyboard_priv.x86_64.h"
+#include "keyboard_priv.h"
 
 #include <stdbool.h>
 #include <stdint.h>

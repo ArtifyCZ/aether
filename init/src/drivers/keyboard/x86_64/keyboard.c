@@ -1,13 +1,11 @@
-#if defined (__x86_64__)
+#include "drivers/keyboard/keyboard.h"
 
-#include "keyboard.h"
-
-#include "keyboard_priv.x86_64.h"
+#include "keyboard_priv.h"
 #include "stdbool.h"
 #include "stddef.h"
 #include "stdint.h"
-#include "io.x86_64.h"
-#include "syscalls.h"
+#include "../../../io.x86_64.h"
+#include "../../../syscalls.h"
 
 #define KEYBOARD_COMMAND_PORT 0x64
 #define KEYBOARD_DATA_PORT 0x60
@@ -70,5 +68,3 @@ static bool keyboard_read_scancode(uint8_t *out) {
     *out = inb(KEYBOARD_DATA_PORT);
     return true;
 }
-
-#endif

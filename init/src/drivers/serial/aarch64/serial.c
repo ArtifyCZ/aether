@@ -1,10 +1,8 @@
-#if defined (__aarch64__)
-
-#include "serial.h"
+#include "drivers/serial/serial.h"
 
 #include <stdint.h>
 #include <stddef.h>
-#include "syscalls.h"
+#include "../../../syscalls.h"
 
 // Private register offsets for the PL011
 #define UART_DR    (0x00 / 4)
@@ -109,5 +107,3 @@ void serial_print_hex_u64(uint64_t value) {
         write_serial(hex[nib]);
     }
 }
-
-#endif

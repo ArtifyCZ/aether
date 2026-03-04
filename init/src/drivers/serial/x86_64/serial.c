@@ -1,11 +1,9 @@
-#if defined (__x86_64__)
-
-#include "serial.h"
+#include "drivers/serial/serial.h"
 
 #include <stdint.h>
 #include <stddef.h>
 
-#include "io.x86_64.h"
+#include "../../../io.x86_64.h"
 
 #define PORT 0x3f8
 
@@ -79,5 +77,3 @@ void serial_print_hex_u64(uint64_t value) {
         write_serial(hex[nib]);
     }
 }
-
-#endif

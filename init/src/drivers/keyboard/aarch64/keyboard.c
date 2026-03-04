@@ -1,8 +1,6 @@
-#if defined (__aarch64__)
+#include "drivers/keyboard/keyboard.h"
 
-#include "keyboard.h"
-
-#include "syscalls.h"
+#include "../../../syscalls.h"
 
 #define UART_IRQ 0x01
 
@@ -82,5 +80,3 @@ static __attribute__((noreturn)) void keyboard_thread(void) {
         }
     }
 }
-
-#endif

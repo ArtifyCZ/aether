@@ -11,6 +11,9 @@ init_obj_build_dir := $(BUILD)/$(call relative_path_from_srctree,$(init_dir))/ob
 INIT_SRC_FILES :=
 INIT_SRC_FILES += $(wildcard $(init_src_dir)/*.c)
 
+# Driver files
+INIT_SRC_FILES += $(wildcard $(init_src_dir)/drivers/*/$(ARCH)/*.c)
+
 INIT_ASM_FILES :=
 INIT_ASM_FILES += $(wildcard $(init_src_dir)/*.$(ARCH).asm)
 INIT_ASM_FILES += $(wildcard $(init_src_dir)/*.$(ARCH).S)
@@ -21,11 +24,11 @@ INIT_OBJS += $(patsubst $(init_src_dir)/%.$(Arch).asm,$(init_obj_build_dir)/%.$(
 INIT_OBJS += $(patsubst $(init_src_dir)/%.$(Arch).S,$(init_obj_build_dir)/%.$(ARCH).o,$(INIT_ASM_FILES))
 
 
-INCLUDE_HEADERS := $(DEPS)/freestnd-c-hdrs/include
+init_inc_headers := $(DEPS)/freestnd-c-hdrs/include
+init_inc_headers += $(init_dir)/include
 
 
 CFLAGS :=
-CFLAGS += $(addprefix -I ,$(INCLUDE_HEADERS))
 CFLAGS += -g -O0 -pipe
 CFLAGS += -target $(ARCH)-none-elf
 CFLAGS += -Wall \
@@ -62,7 +65,7 @@ $(init_obj_build_dir)/%.aarch64.o: $(init_src_dir)/%.aarch64.S $(BUILD)
 
 $(init_obj_build_dir)/%.$(ARCH).o: $(init_src_dir)/%.c $(BUILD)
 	(mkdir -p $(dir $@) || true)
-	$(CC) $(CFLAGS) -c $< -o $@
+	$(CC) $(CFLAGS) $(addprefix -I ,$(init_inc_headers)) -c $< -o $@
 
 
 $(BUILD)/init.$(ARCH).elf: $(BUILD) $(INIT_OBJS)

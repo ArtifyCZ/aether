@@ -1,6 +1,6 @@
-#include "keyboard.h"
 #include "syscalls.h"
-#include "serial.h"
+#include "drivers/keyboard/keyboard.h"
+#include "drivers/serial/serial.h"
 
 void print(const char *message) {
     size_t length = 0;
