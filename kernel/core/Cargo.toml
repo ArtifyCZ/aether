@@ -1,5 +1,5 @@
 [package]
-name = "kernel"
+name = "kernel_core"
 edition = "2024"
 
 [features]
@@ -7,7 +7,7 @@ default = []
 
 [lib]
 crate-type = ["staticlib"]
-path = "src/main.rs"
+path = "src/lib.rs"
 
 [profile.dev]
 panic = "abort"

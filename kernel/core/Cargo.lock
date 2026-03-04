@@ -85,7 +85,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "kernel"
+name = "kernel_core"
 version = "0.0.0"
 dependencies = [
  "bindgen",

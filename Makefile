@@ -1,27 +1,7 @@
 default: help
 .SUFFIXES:            # Delete the default suffixes
 
--include local.mk
-
-# --- Toolchain Configuration ---
-ARCH ?= x86_64
-CC := clang
-LD := ld.lld
-NASM := nasm
-AARCH64_ELF_AS ?= aarch64-linux-gnu-as
-
-# Fallback QEMU EFI firmware for aarch64
-QEMU_AARCH64_BIOS ?= /usr/share/edk2/aarch64/QEMU_EFI.fd
-
-
-BUILD := $(abspath ./build)
-DEPS := $(abspath ./dependencies)
-
-
-get_current_dir = $(realpath $(dir $(lastword $(MAKEFILE_LIST))))
-srctree := $(call get_current_dir)
-
-relative_path_from_srctree = $(1:$(srctree)/%=%)
+include common.mk
 
 $(BUILD):
 	mkdir -p $(BUILD)
@@ -38,18 +18,6 @@ all:: $(BUILD)/kernel.$(ARCH).img
 endif
 
 
-LDFLAGS :=
-LDFLAGS += -nostdlib \
-	-static \
-	-z max-page-size=0x1000 \
-	--no-dynamic-linker \
-	--gc-sections
-LDFLAGS += -T kernel.$(ARCH).ld
-LDFLAGS += -L $(BUILD)
-LDFLAGS += -l:libplatform.$(ARCH).a
-LDFLAGS += -l:libkernel.$(ARCH).a
-
-
 MAKE_LIMINE := $(MAKE) -C $(BUILD)/limine
 MAKE_LIMINE += CC="$(CC)"
 MAKE_LIMINE += CFLAGS="-g -O2 -pipe"
@@ -58,24 +26,16 @@ MAKE_LIMINE += LDFLAGS=""
 MAKE_LIMINE += LIBS=""
 
 
-include init/Makefile
-include kernel/Makefile
-include platform/Makefile
-
-
-$(BUILD)/kernel.$(ARCH).elf: $(BUILD) $(BUILD)/libplatform.$(ARCH).a $(BUILD)/libkernel.$(ARCH).a
-	$(LD) $(LDFLAGS) -o $(BUILD)/kernel.$(ARCH).elf
-
 isofiles_dir := $(BUILD)/isofiles/$(ARCH)
 
 .PHONY: $(BUILD)/kernel.x86_64.iso
-$(BUILD)/kernel.x86_64.iso: $(BUILD)/kernel.$(ARCH).elf $(BUILD)/init.$(ARCH).elf $(BUILD)/limine/limine $(BUILD)
+$(BUILD)/kernel.x86_64.iso: $(KERNEL_MODULE__KERNEL_ELF) $(INIT_MODULE__INIT_ELF) $(BUILD)/limine/limine $(BUILD)
 	mkdir -p $(isofiles_dir)/boot/limine/
 	cp -v limine.conf $(isofiles_dir)/boot/limine/
 	mkdir -p $(isofiles_dir)/EFI/BOOT
 
-	cp $(BUILD)/kernel.$(ARCH).elf $(isofiles_dir)/boot/kernel.elf
-	cp $(BUILD)/init.$(ARCH).elf $(isofiles_dir)/boot/init.elf
+	cp $(KERNEL_MODULE__KERNEL_ELF) $(isofiles_dir)/boot/kernel.elf
+	cp $(INIT_MODULE__INIT_ELF) $(isofiles_dir)/boot/init.elf
 	cp Mik_8x16.psf $(isofiles_dir)/boot/kernel-font.psf
 
 	cp -v $(BUILD)/limine/limine-bios.sys $(BUILD)/limine/limine-bios-cd.bin $(BUILD)/limine/limine-uefi-cd.bin $(isofiles_dir)/boot/limine/
@@ -89,21 +49,21 @@ $(BUILD)/kernel.x86_64.iso: $(BUILD)/kernel.$(ARCH).elf $(BUILD)/init.$(ARCH).el
 	$(BUILD)/limine/limine bios-install $(BUILD)/kernel.$(ARCH).iso
 
 .PHONY: $(BUILD)/kernel.aarch64.img
-$(BUILD)/kernel.aarch64.img: $(BUILD)/kernel.$(ARCH).elf $(BUILD)/init.$(ARCH).elf $(BUILD)/limine/limine $(BUILD)
+$(BUILD)/kernel.aarch64.img: $(KERNEL_MODULE__KERNEL_ELF) $(INIT_MODULE__INIT_ELF) $(BUILD)/limine/limine $(BUILD)
 	(rm -rf $(BUILD)/kernel.aarch64.img || true)
 	dd if=/dev/zero of=$@ bs=1M count=64
 	mformat -i $@ ::
 	mmd -i $@ ::/EFI ::/EFI/BOOT ::/boot ::/boot/limine
 	mcopy -i $@ $(BUILD)/limine/BOOTAA64.EFI ::/EFI/BOOT/
 	mcopy -i $@ $(srctree)/limine.conf ::/boot/limine/
-	mcopy -i $@ $(BUILD)/kernel.$(ARCH).elf ::/boot/kernel.elf
-	mcopy -i $@ $(BUILD)/init.$(ARCH).elf ::/boot/init.elf
+	mcopy -i $@ $(KERNEL_MODULE__KERNEL_ELF) ::/boot/kernel.elf
+	mcopy -i $@ $(INIT_MODULE__INIT_ELF) ::/boot/init.elf
 	mcopy -i $@ $(srctree)/Mik_8x16.psf ::/boot/kernel-font.psf
 
 
 $(BUILD)/limine/limine:
 	rm -rf $(BUILD)/limine
-	git clone https://codeberg.org/Limine/Limine.git $(BUILD)/limine --branch=v10.x-binary --depth=1
+	git clone https://github.com/limine-bootloader/limine.git $(BUILD)/limine --branch=v10.x-binary --depth=1
 	$(MAKE_LIMINE)
 
 $(BUILD)/raspi4b-uefi-firmware:

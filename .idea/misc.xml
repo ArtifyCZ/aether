@@ -5,17 +5,17 @@
   </component>
   <component name="CidrRootsConfiguration">
     <sourceRoots>
-      <file path="$PROJECT_DIR$/kernel/src" />
-      <file path="$PROJECT_DIR$/platform/src" />
+      <file path="$PROJECT_DIR$/kernel/core/core/src" />
+      <file path="$PROJECT_DIR$/kernel/platform/src" />
     </sourceRoots>
     <libraryRoots>
-      <file path="$PROJECT_DIR$/platform/dependencies" />
+      <file path="$PROJECT_DIR$/kernel/platform/dependencies" />
     </libraryRoots>
     <excludeRoots>
       <file path="$PROJECT_DIR$/build" />
       <file path="$PROJECT_DIR$/dependencies" />
-      <file path="$PROJECT_DIR$/kernel/target" />
-      <file path="$PROJECT_DIR$/platform/build" />
+      <file path="$PROJECT_DIR$/kernel/core/core/target" />
+      <file path="$PROJECT_DIR$/kernel/platform/build" />
     </excludeRoots>
   </component>
   <component name="ExternalStorageConfigurationManager" enabled="true" />
