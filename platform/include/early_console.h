@@ -9,6 +9,8 @@
 
 void early_console_init(uintptr_t serial_base);
 
+void early_console_disable(void);
+
 void early_console_write(uint8_t byte);
 
 void early_console_print(const char *message);

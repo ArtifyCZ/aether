@@ -31,6 +31,23 @@ void early_console_init(uintptr_t serial_base) {
     outb(PORT + 4, 0x0F);
 }
 
+void early_console_disable(void) {
+    // 1. Wait for everything to be sent (TEMT bit = 0x40)
+    // Bit 5 (0x20) is 'FIFO empty', Bit 6 (0x40) is 'Entire Line empty'
+    while ((inb(PORT + 5) & 0x40) == 0) {
+        __asm__ volatile ("pause");
+    }
+
+    // 2. Disable all interrupts (IER = 0)
+    outb(PORT + 1, 0x00);
+
+    // 3. Disable the Modem Control signals (DTR/RTS/OUT2)
+    outb(PORT + 4, 0x00);
+
+    // Note: We don't usually 'null' a port constant, but we can stop
+    // using it by logic if we had a g_port variable.
+}
+
 static int is_transmit_empty() {
     return inb(PORT + 5) & 0x20;
 }

@@ -22,6 +22,7 @@
 // Register bits
 #define FR_RXFE    (1 << 4) // Receive FIFO Empty
 #define FR_TXFF    (1 << 5) // Transmit FIFO Full
+#define FR_BUSY    (1 << 3)
 #define INT_RX     (1 << 4) // Receive Interrupt bit
 
 static volatile uint32_t *uart_base = NULL;
@@ -49,6 +50,30 @@ void early_console_init(uintptr_t serial_base) {
 
     // Enable UART, TX, and RX (Polling mode is now active)
     uart_base[UART_CR] = (1 << 0) | (1 << 8) | (1 << 9);
+}
+
+void early_console_disable(void) {
+    if (!uart_base) return;
+
+    // Wait for the UART to no longer be busy
+    // This ensures the FIFO and the transmit shifter are both empty.
+    while (uart_base[UART_FR] & FR_BUSY) {
+        __asm__ volatile("yield");
+    }
+
+    // Disable UART, TX, and RX in the Control Register
+    uart_base[UART_CR] = 0;
+
+    // Mask all interrupts just in case
+    uart_base[UART_IMSC] = 0;
+
+    // Clear any remaining sticky interrupt flags
+    uart_base[UART_ICR] = 0x7FF;
+
+    // Invalidate the pointer so accidental calls return immediately
+    // Note: In a microkernel, you might also want to unmap the page here
+    // using vmm_unmap_page to be truly 'hard'.
+    uart_base = NULL;
 }
 
 static int is_transmit_empty() {

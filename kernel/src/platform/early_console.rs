@@ -5,6 +5,12 @@ mod bindings {
 pub struct EarlyConsole;
 
 impl EarlyConsole {
+    pub unsafe fn disable() {
+        unsafe {
+            bindings::early_console_disable();
+        }
+    }
+
     pub unsafe fn write(byte: u8) {
         unsafe {
             bindings::early_console_write(byte);

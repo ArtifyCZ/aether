@@ -44,7 +44,7 @@ unsafe extern "C" {
 use crate::platform::elf::Elf;
 use crate::platform::interrupts::Interrupts;
 use crate::platform::memory_layout::PAGE_FRAME_SIZE;
-use crate::platform::syscalls::{Syscalls, sys_exit};
+use crate::platform::syscalls::{sys_exit, Syscalls};
 use crate::platform::terminal::Terminal;
 use crate::platform::timer::Timer;
 use crate::syscall_handler::SyscallHandler;
@@ -109,6 +109,8 @@ fn main(hhdm_offset: u64, rsdp_address: u64) {
 
         spawn_thread(scheduler, thread_heartbeat);
         spawn_init_process(scheduler);
+
+        logging::disable_early_console();
 
         scheduler.start();
 
