@@ -1,6 +1,7 @@
 #include "interrupts.h"
 #include "cpu_interrupts.h"
 
+#include "emergency_console.h"
 #include <stddef.h>
 #include <stdint.h>
 #include "boot.h"
@@ -8,7 +9,6 @@
 #include "ioapic.h"
 #include "io_wrapper.h"
 #include "lapic.h"
-#include "drivers/serial.h"
 
 // 0x00 <= n < 0x20 are CPU exceptions
 // 0x20 <= n < 0x30 usually are the legacy PIC interrupt vectors
@@ -110,50 +110,52 @@ bool interrupts_register_handler(uint32_t irq, irq_handler_t handler, void *priv
 }
 
 static void dump_stack(uintptr_t stack_ptr, int qwords) {
-    serial_println("--- STACK DUMP ---");
+    emergency_console_println("--- STACK DUMP ---");
     // Basic sanity check: don't dump if pointer is NULL
     if (stack_ptr < 0x1000) {
-        serial_println("RSP is NULL or invalid.");
+        emergency_console_println("RSP is NULL or invalid.");
+        emergency_console_print("RSP: ");
+        emergency_console_print_hex_u64(stack_ptr);
         return;
     }
 
     uint64_t* ptr = (uint64_t*)stack_ptr;
     for (int i = 0; i < qwords; i++) {
-        serial_print_hex_u64(stack_ptr + (i * 8));
-        serial_print(": ");
-        serial_print_hex_u64(ptr[i]);
-        serial_println("");
+        emergency_console_print_hex_u64(stack_ptr + (i * 8));
+        emergency_console_print(": ");
+        emergency_console_print_hex_u64(ptr[i]);
+        emergency_console_println("");
     }
 }
 
 static void dump_frame(struct interrupt_frame *frame) {
-    serial_println("--- REGISTER DUMP ---");
-    serial_print("RIP: "); serial_print_hex_u64(frame->rip);
-    serial_print(" CS:  "); serial_print_hex_u64(frame->cs);
-    serial_print(" RFL: "); serial_print_hex_u64(frame->rflags);
-    serial_println("");
+    emergency_console_println("--- REGISTER DUMP ---");
+    emergency_console_print("RIP: "); emergency_console_print_hex_u64(frame->rip);
+    emergency_console_print(" CS:  "); emergency_console_print_hex_u64(frame->cs);
+    emergency_console_print(" RFL: "); emergency_console_print_hex_u64(frame->rflags);
+    emergency_console_println("");
 
-    serial_print("RSP: "); serial_print_hex_u64(frame->rsp);
-    serial_print(" SS:  "); serial_print_hex_u64(frame->ss);
-    serial_print(" CR3: "); serial_print_hex_u64(frame->cr3);
-    serial_println("");
+    emergency_console_print("RSP: "); emergency_console_print_hex_u64(frame->rsp);
+    emergency_console_print(" SS:  "); emergency_console_print_hex_u64(frame->ss);
+    emergency_console_print(" CR3: "); emergency_console_print_hex_u64(frame->cr3);
+    emergency_console_println("");
 
-    serial_print("RAX: "); serial_print_hex_u64(frame->rax);
-    serial_print(" RBX: "); serial_print_hex_u64(frame->rbx);
-    serial_print(" RCX: "); serial_print_hex_u64(frame->rcx);
-    serial_println("");
+    emergency_console_print("RAX: "); emergency_console_print_hex_u64(frame->rax);
+    emergency_console_print(" RBX: "); emergency_console_print_hex_u64(frame->rbx);
+    emergency_console_print(" RCX: "); emergency_console_print_hex_u64(frame->rcx);
+    emergency_console_println("");
 
-    serial_print("RDX: "); serial_print_hex_u64(frame->rdx);
-    serial_print(" RDI: "); serial_print_hex_u64(frame->rdi);
-    serial_print(" RSI: "); serial_print_hex_u64(frame->rsi);
-    serial_println("");
+    emergency_console_print("RDX: "); emergency_console_print_hex_u64(frame->rdx);
+    emergency_console_print(" RDI: "); emergency_console_print_hex_u64(frame->rdi);
+    emergency_console_print(" RSI: "); emergency_console_print_hex_u64(frame->rsi);
+    emergency_console_println("");
 
-    serial_print("RBP: "); serial_print_hex_u64(frame->rbp);
-    serial_print(" R8:  "); serial_print_hex_u64(frame->r8);
-    serial_print(" R9:  "); serial_print_hex_u64(frame->r9);
-    serial_println("");
+    emergency_console_print("RBP: "); emergency_console_print_hex_u64(frame->rbp);
+    emergency_console_print(" R8:  "); emergency_console_print_hex_u64(frame->r8);
+    emergency_console_print(" R9:  "); emergency_console_print_hex_u64(frame->r9);
+    emergency_console_println("");
 
-    serial_println("---------------------");
+    emergency_console_println("---------------------");
 }
 
 // The C dispatcher called from NASM
@@ -162,21 +164,21 @@ static void dump_frame(struct interrupt_frame *frame) {
 uintptr_t x86_64_interrupt_dispatcher(struct interrupt_frame *frame) {
     if (frame->error_code != 0 || frame->interrupt_number < 0x20) {
         // non-zero error code and/or exceptions
-        serial_print("Interrupt: ");
-        serial_print_hex_u64(frame->interrupt_number);
-        serial_println("");
-        serial_print("Error code received: ");
-        serial_print_hex_u64(frame->error_code);
-        serial_println("");
+        emergency_console_print("Interrupt: ");
+        emergency_console_print_hex_u64(frame->interrupt_number);
+        emergency_console_println("");
+        emergency_console_print("Error code received: ");
+        emergency_console_print_hex_u64(frame->error_code);
+        emergency_console_println("");
         dump_frame(frame);
         if (frame->interrupt_number == 0x0E) {
             // Page fault
-            serial_print("CR2: ");
+            emergency_console_print("CR2: ");
             uintptr_t cr2;
             // retrieve the CR2 value
             __asm__ volatile("mov %0, %%cr2" : : "r"(cr2));
-            serial_print_hex_u64(cr2);
-            serial_println("");
+            emergency_console_print_hex_u64(cr2);
+            emergency_console_println("");
         }
         dump_stack(frame->rsp, 16);
         hcf();
@@ -184,9 +186,10 @@ uintptr_t x86_64_interrupt_dispatcher(struct interrupt_frame *frame) {
     struct interrupt_frame *return_frame = frame;
 
     if (frame->interrupt_number < IRQ_INTERRUPT_VECTOR_OFFSET) {
-        serial_print("WARNING: legacy PIC interrupt");
-        serial_print_hex_u64(frame->interrupt_number);
-        serial_println("");
+        emergency_console_print("KERNEL PANIC: legacy PIC interrupt");
+        emergency_console_print_hex_u64(frame->interrupt_number);
+        emergency_console_println("");
+        hcf();
     }
 
     if (handlers[frame->interrupt_number]) {

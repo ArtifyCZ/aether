@@ -1,12 +1,8 @@
-//
-// Created by artify on 2/3/26.
-//
-
 #include "physical_memory_manager.h"
 
 #include "limine.h"
 #include "early_console.h"
-#include "drivers/serial.h"
+#include "emergency_console.h"
 
 static inline uint64_t align_up_u64(uint64_t v, uint64_t a) {
     return (v + (a - 1)) & ~(a - 1);
@@ -31,7 +27,7 @@ static void push_page_frame(const uintptr_t page_frame) {
 
 static uintptr_t pop_page_frame(void) {
     if (page_frames_count == 0) {
-        serial_println("Cannot pop from empty stack!");
+        emergency_console_println("Cannot pop from empty stack!");
         return 0; // NULL
     }
 
@@ -74,12 +70,12 @@ uintptr_t pmm_alloc_frame(void) {
 
 bool pmm_free_frame(uintptr_t physical_frame_address) {
     if (physical_frame_address == 0x0) {
-        serial_println("Trying to free NULL ptr as physical frame address!");
+        emergency_console_println("Trying to free NULL ptr as physical frame address!");
         return false;
     }
 
     if (physical_frame_address % PPM_PAGE_SIZE != 0) {
-        serial_println("Trying to free non-aligned physical frame address!");
+        emergency_console_println("Trying to free non-aligned physical frame address!");
         return false;
     }
 

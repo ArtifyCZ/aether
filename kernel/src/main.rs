@@ -25,14 +25,15 @@ use core::ffi::c_void;
 #[panic_handler]
 #[cfg(not(test))]
 fn panic(info: &core::panic::PanicInfo) -> ! {
+    unsafe {
+        logging::switch_to_emergency_console();
+    }
     println!();
     println!("====================");
     println!("    KERNEL PANIC    ");
     println!("====================");
     println!("{}", info);
-    unsafe {
-        hcf()
-    }
+    unsafe { hcf() }
 }
 
 unsafe extern "C" {
@@ -43,7 +44,7 @@ unsafe extern "C" {
 use crate::platform::elf::Elf;
 use crate::platform::interrupts::Interrupts;
 use crate::platform::memory_layout::PAGE_FRAME_SIZE;
-use crate::platform::syscalls::{sys_exit, Syscalls};
+use crate::platform::syscalls::{Syscalls, sys_exit};
 use crate::platform::terminal::Terminal;
 use crate::platform::timer::Timer;
 use crate::syscall_handler::SyscallHandler;

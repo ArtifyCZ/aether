@@ -2,11 +2,13 @@
 #include "cpu_interrupts.h"
 
 #include "early_console.h"
+#include "emergency_console.h"
 #include "gic.h"
 #include "stddef.h"
 #include <stdint.h>
+
+#include "boot.h"
 #include "syscalls_priv.h"
-#include "drivers/serial.h"
 
 extern void *exception_vector_table;
 
@@ -115,16 +117,16 @@ void interrupts_configure_irq(uint32_t irq, irq_type_t type, uint8_t priority) {
 
 // Helper to dump registers on panic
 static void dump_frame(struct interrupt_frame *frame) {
-    serial_println("Register Dump:");
+    emergency_console_println("Register Dump:");
     for (int i = 0; i < 31; i++) {
-        serial_print("x");
-        serial_print_hex_u64(i);
-        serial_print(": ");
-        serial_print_hex_u64(frame->x[i]);
-        if (i % 2 == 1) serial_println("");
-        else serial_print("  ");
+        emergency_console_print("x");
+        emergency_console_print_hex_u64(i);
+        emergency_console_print(": ");
+        emergency_console_print_hex_u64(frame->x[i]);
+        if (i % 2 == 1) emergency_console_println("");
+        else emergency_console_print("  ");
     }
-    serial_println("");
+    emergency_console_println("");
 }
 
 // This is called by sync_handler_stub in vectors.S
@@ -142,44 +144,44 @@ uintptr_t handle_sync_exception(struct interrupt_frame *frame) {
     uint64_t far;
     __asm__ volatile("mrs %0, far_el1" : "=r"(far));
 
-    serial_println("------------------------------------------");
-    serial_println("!!! KERNEL PANIC: Synchronous Abort !!!");
+    emergency_console_println("------------------------------------------");
+    emergency_console_println("!!! KERNEL PANIC: Synchronous Abort !!!");
 
-    serial_print("ESR_EL1: ");
-    serial_print_hex_u64(frame->esr);
-    serial_print(" (EC: ");
-    serial_print_hex_u64(ec);
-    serial_println(")");
+    emergency_console_print("ESR_EL1: ");
+    emergency_console_print_hex_u64(frame->esr);
+    emergency_console_print(" (EC: ");
+    emergency_console_print_hex_u64(ec);
+    emergency_console_println(")");
 
-    serial_print("ELR_EL1 (PC): ");
-    serial_print_hex_u64(frame->elr);
-    serial_println("");
-    serial_print("FAR_EL1 (Addr): ");
-    serial_print_hex_u64(far);
-    serial_println("");
+    emergency_console_print("ELR_EL1 (PC): ");
+    emergency_console_print_hex_u64(frame->elr);
+    emergency_console_println("");
+    emergency_console_print("FAR_EL1 (Addr): ");
+    emergency_console_print_hex_u64(far);
+    emergency_console_println("");
 
     switch (ec) {
         case EC_DATA_ABORT_SAME:
         case EC_DATA_ABORT_LOWER:
-            serial_println("Reason: Data Abort (Check FAR for faulting address)");
+            emergency_console_println("Reason: Data Abort (Check FAR for faulting address)");
             break;
         case EC_INST_ABORT_SAME:
         case EC_INST_ABORT_LOWER:
-            serial_println("Reason: Instruction Abort (Check ELR for faulting PC)");
+            emergency_console_println("Reason: Instruction Abort (Check ELR for faulting PC)");
             break;
         case EC_SIMD_FP:
-            serial_println("Reason: Access to SIMD/FP register trapped");
+            emergency_console_println("Reason: Access to SIMD/FP register trapped");
             break;
         case EC_ALIGNED_FAULT:
-            serial_println("Reason: Misaligned memory access");
+            emergency_console_println("Reason: Misaligned memory access");
             break;
         default:
-            serial_println("Reason: Unknown/Unhandled Exception Class");
+            emergency_console_println("Reason: Unknown/Unhandled Exception Class");
             break;
     }
 
     dump_frame(frame);
-    serial_println("------------------------------------------");
+    emergency_console_println("------------------------------------------");
 
     while (1) { __asm__("wfi"); }
 }
@@ -206,12 +208,13 @@ uintptr_t handle_irq_exception(struct interrupt_frame *frame) {
 
 // Fast Interrupts (FIQ) - Usually reserved for secure monitor or high-priority tasks
 void handle_fiq_exception(struct interrupt_frame *frame) {
-    serial_println("Caught FIQ!");
+    emergency_console_println("KERNEL PANIC: FIQ NOT IMPLEMENTED!!!");
+    hcf();
 }
 
 // System Errors (SERROR) - Usually asynchronous hardware errors (bad bus access)
 void handle_serror_exception(struct interrupt_frame *frame) {
-    serial_println("!!! KERNEL PANIC: SError (System Error) !!!");
+    emergency_console_println("!!! KERNEL PANIC: SError (System Error) !!!");
     dump_frame(frame);
-    while (1) { __asm__("wfi"); }
+    hcf();
 }

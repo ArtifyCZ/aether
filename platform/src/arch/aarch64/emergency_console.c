@@ -1,4 +1,4 @@
-#include "early_console.h"
+#include "emergency_console.h"
 
 #include "boot.h"
 #include <stdint.h>
@@ -26,9 +26,19 @@
 
 static volatile uint32_t *uart_base = NULL;
 
-void early_console_init(uintptr_t serial_base) {
+#define UART_PHYS_ADDR 0x9000000
+
+#define INIT_FAILED_UART_BASE 0x1234
+
+void emergency_console_init(const uintptr_t serial_base) {
+    __asm__ volatile("msr daifset, #2"); // Hard interrupts disable
+
+    if ((uintptr_t) uart_base == INIT_FAILED_UART_BASE) {
+        // Double-faulting... already tried to initialize the emergency console...
+        hcf();
+    }
+    uart_base = (void *) INIT_FAILED_UART_BASE;
     const uintptr_t virtual_base = vaa_alloc_range(VMM_PAGE_SIZE);
-    uart_base = (volatile uint32_t *) virtual_base;
 
     if (!vmm_map_page(
         &g_kernel_context,
@@ -38,6 +48,7 @@ void early_console_init(uintptr_t serial_base) {
     )) {
         hcf();
     }
+    uart_base = (volatile uint32_t *) virtual_base;
 
     // Hardware Reset - Disable everything first
     uart_base[UART_CR] = 0;
@@ -49,6 +60,13 @@ void early_console_init(uintptr_t serial_base) {
 
     // Enable UART, TX, and RX (Polling mode is now active)
     uart_base[UART_CR] = (1 << 0) | (1 << 8) | (1 << 9);
+
+    interrupts_disable();
+
+    emergency_console_println("=========================");
+    emergency_console_println("    Emergency Console    ");
+    emergency_console_println("=========================");
+    emergency_console_println("");
 }
 
 static int is_transmit_empty() {
@@ -58,8 +76,9 @@ static int is_transmit_empty() {
 }
 
 static void write_serial(char a) {
-    if (!uart_base)
-        return;
+    if (uart_base == NULL) {
+        emergency_console_init(UART_PHYS_ADDR);
+    }
 
     if (a == '\n') {
         write_serial('\r');
@@ -72,9 +91,10 @@ static void write_serial(char a) {
     uart_base[UART_DR] = (uint32_t) a;
 }
 
-void early_console_write(const uint8_t byte) {
-    if (!uart_base)
-        return;
+void emergency_console_write(const uint8_t byte) {
+    if (!uart_base) {
+        emergency_console_init(UART_PHYS_ADDR);
+    }
 
     if (byte == '\n') {
         write_serial('\r');
@@ -87,7 +107,7 @@ void early_console_write(const uint8_t byte) {
     uart_base[UART_DR] = (uint32_t) byte;
 }
 
-void early_console_print(const char *message) {
+void emergency_console_print(const char *message) {
     if (!message)
         return;
     for (size_t i = 0; message[i] != '\0'; i++) {
@@ -95,14 +115,14 @@ void early_console_print(const char *message) {
     }
 }
 
-void early_console_println(const char *message) {
-    early_console_print(message);
+void emergency_console_println(const char *message) {
+    emergency_console_print(message);
     write_serial('\n');
 }
 
-void early_console_print_hex_u64(const uint64_t value) {
+void emergency_console_print_hex_u64(const uint64_t value) {
     static const char *hex = "0123456789abcdef";
-    early_console_print("0x");
+    emergency_console_print("0x");
     for (int i = 60; i >= 0; i -= 4) {
         uint8_t nib = (value >> i) & 0xF;
         write_serial(hex[nib]);

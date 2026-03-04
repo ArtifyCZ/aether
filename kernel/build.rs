@@ -9,6 +9,7 @@ fn main() {
         ("../include/syscall_errs.h", "syscall_errs.rs"),
         ("../include/syscall_nums.h", "syscall_nums.rs"),
         ("../platform/include/early_console.h", "early_console.rs"),
+        ("../platform/include/emergency_console.h", "emergency_console.rs"),
         ("../platform/include/elf.h", "elf.rs"),
         ("../platform/include/interrupts.h", "interrupts.rs"),
         ("../platform/include/modules.h", "modules.rs"),

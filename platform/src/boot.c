@@ -6,11 +6,11 @@
 #include <limine.h>
 
 #include "early_console.h"
+#include "emergency_console.h"
 #include "interrupts.h"
 #include "modules.h"
 #include "physical_memory_manager.h"
 #include "psf.h"
-#include "drivers/serial.h"
 #include "terminal.h"
 #include "virtual_address_allocator.h"
 #include "virtual_memory_manager.h"
@@ -202,7 +202,7 @@ __attribute__((used)) void boot(void) {
 
     kernel_main(g_hhdm_offset, (uintptr_t) rsdp_request.response->address);
 
-    serial_println("=== KERNEL PANIC ===");
-    serial_println("kernel_main function has returned");
+    emergency_console_println("=== KERNEL PANIC ===");
+    emergency_console_println("kernel_main function has returned");
     hcf();
 }
