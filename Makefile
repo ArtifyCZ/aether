@@ -17,6 +17,18 @@ all:: $(BUILD)/kernel.$(ARCH).img
 
 endif
 
+INIT_MODULE__INIT_ELF := $(BUILD)/init.$(ARCH).elf
+
+.PHONY: $(INIT_MODULE__INIT_ELF)
+
+$(INIT_MODULE__INIT_ELF): ; bazel build //init:init --config $(ARCH)_user && rm -f "$@" && cp "$$(bazel cquery //init:init --config $(ARCH)_user --output=files | head -n 1)" "$@"
+
+KERNEL_MODULE__KERNEL_ELF := $(BUILD)/kernel.$(ARCH).elf
+
+.PHONY: $(KERNEL_MODULE__KERNEL_ELF)
+
+$(KERNEL_MODULE__KERNEL_ELF): ; mkdir -p $(BUILD) && bazel build //kernel:kernel --config $(ARCH) && rm -f "$@" && cp "$$(bazel cquery //kernel:kernel --config $(ARCH) --output=files | head -n 1)" "$@"
+
 
 MAKE_LIMINE := $(MAKE) -C $(BUILD)/limine
 MAKE_LIMINE += CC="$(CC)"
@@ -30,6 +42,7 @@ isofiles_dir := $(BUILD)/isofiles/$(ARCH)
 
 .PHONY: $(BUILD)/kernel.x86_64.iso
 $(BUILD)/kernel.x86_64.iso: $(KERNEL_MODULE__KERNEL_ELF) $(INIT_MODULE__INIT_ELF) $(BUILD)/limine/limine $(BUILD)
+	rm -rf $(isofiles_dir) || true
 	mkdir -p $(isofiles_dir)/boot/limine/
 	cp -v limine.conf $(isofiles_dir)/boot/limine/
 	mkdir -p $(isofiles_dir)/EFI/BOOT
@@ -113,7 +126,6 @@ qemu-debug: $(QEMU_IMAGE)
 ## Removes all local artifacts
 clean::
 	rm -rf $(BUILD)/
-	rm -rf $(DEPS)/
 
 .PHONY: help
 ## This help screen

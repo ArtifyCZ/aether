@@ -35,12 +35,5 @@ export QEMU_AARCH64_BIOS
 export srctree
 
 BUILD := $(abspath $(srctree)/build/$(ARCH))
-DEPS := $(abspath $(srctree)/dependencies)
 
 export BUILD
-export DEPS
-
-relative_path_from_srctree = $(1:$(srctree)/%=%)
-
-include $(srctree)/init/module.mk
-include $(srctree)/kernel/module.mk

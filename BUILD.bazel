@@ -1,18 +1,23 @@
-load("@rules_cc//cc:defs.bzl", "cc_toolchain", "cc_toolchain_suite")
+load("@bazel_skylib//rules:native_binary.bzl", "native_binary")
+load("@rules_cc//cc:defs.bzl", "cc_import", "cc_toolchain", "cc_toolchain_suite")
+load("@rules_rust//rust:toolchain.bzl", "rust_toolchain")
+load("@rules_rust_bindgen//:defs.bzl", "rust_bindgen_toolchain")
 load(":cc_toolchain_config.bzl", "cc_toolchain_config")
 
 package(default_visibility = ["//visibility:public"])
 
-exports_files(["BUILD.limine-protocol"])
+exports_files([
+    "BUILD.freestnd-c-hdrs",
+    "BUILD.limine-protocol",
+])
 
-# 1. Generate the Configuration Info (The "Brain" of the toolchain)
-# This maps our freestanding flags to the actual actions.
 cc_toolchain_config(
     name = "x86_64_kernel_config",
+    ar = "@llvm_toolchain_llvm//:bin/llvm-ar",
     cpu = "x86_64",
+    cxx_builtin_include_directories = "@llvm_toolchain_llvm//:cxx_builtin_include",
     gcc = "@llvm_toolchain_llvm//:bin/clang",
     ld = "@llvm_toolchain_llvm//:bin/ld.lld",
-    ar = "@llvm_toolchain_llvm//:bin/llvm-ar",
     nm = "@llvm_toolchain_llvm//:bin/llvm-nm",
     objcopy = "@llvm_toolchain_llvm//:bin/llvm-objcopy",
     objdump = "@llvm_toolchain_llvm//:bin/llvm-objdump",
@@ -21,10 +26,37 @@ cc_toolchain_config(
 
 cc_toolchain_config(
     name = "aarch64_kernel_config",
+    ar = "@llvm_toolchain_llvm//:bin/llvm-ar",
     cpu = "aarch64",
+    cxx_builtin_include_directories = "@llvm_toolchain_llvm//:cxx_builtin_include",
     gcc = "@llvm_toolchain_llvm//:bin/clang",
     ld = "@llvm_toolchain_llvm//:bin/ld.lld",
+    nm = "@llvm_toolchain_llvm//:bin/llvm-nm",
+    objcopy = "@llvm_toolchain_llvm//:bin/llvm-objcopy",
+    objdump = "@llvm_toolchain_llvm//:bin/llvm-objdump",
+    strip = "@llvm_toolchain_llvm//:bin/llvm-strip",
+)
+
+cc_toolchain_config(
+    name = "x86_64_user_config",
     ar = "@llvm_toolchain_llvm//:bin/llvm-ar",
+    cpu = "x86_64",
+    cxx_builtin_include_directories = "@llvm_toolchain_llvm//:cxx_builtin_include",
+    gcc = "@llvm_toolchain_llvm//:bin/clang",
+    ld = "@llvm_toolchain_llvm//:bin/ld.lld",
+    nm = "@llvm_toolchain_llvm//:bin/llvm-nm",
+    objcopy = "@llvm_toolchain_llvm//:bin/llvm-objcopy",
+    objdump = "@llvm_toolchain_llvm//:bin/llvm-objdump",
+    strip = "@llvm_toolchain_llvm//:bin/llvm-strip",
+)
+
+cc_toolchain_config(
+    name = "aarch64_user_config",
+    ar = "@llvm_toolchain_llvm//:bin/llvm-ar",
+    cpu = "aarch64",
+    cxx_builtin_include_directories = "@llvm_toolchain_llvm//:cxx_builtin_include",
+    gcc = "@llvm_toolchain_llvm//:bin/clang",
+    ld = "@llvm_toolchain_llvm//:bin/ld.lld",
     nm = "@llvm_toolchain_llvm//:bin/llvm-nm",
     objcopy = "@llvm_toolchain_llvm//:bin/llvm-objcopy",
     objdump = "@llvm_toolchain_llvm//:bin/llvm-objdump",
@@ -35,21 +67,19 @@ filegroup(
     name = "llvm_all",
     srcs = [
         "@llvm_toolchain_llvm//:bin",
-        "@llvm_toolchain_llvm//:lib",
         "@llvm_toolchain_llvm//:include",
+        "@llvm_toolchain_llvm//:lib",
     ],
 )
 
-# 2. Define the CC Toolchain "Containers"
-# We point these to the files provided by the LLVM module in MODULE.bazel
 cc_toolchain(
-    name = "cc_toolchain_x86_64",
+    name = "cc_toolchain_x86_64_kernel",
     all_files = ":llvm_all",
     ar_files = ":llvm_all",
     as_files = ":llvm_all",
     compiler_files = ":llvm_all",
-    linker_files = ":llvm_all",
     dwp_files = ":llvm_all",
+    linker_files = ":llvm_all",
     objcopy_files = ":llvm_all",
     strip_files = ":llvm_all",
     supports_param_files = 0,
@@ -58,13 +88,13 @@ cc_toolchain(
 )
 
 cc_toolchain(
-    name = "cc_toolchain_aarch64",
+    name = "cc_toolchain_aarch64_kernel",
     all_files = ":llvm_all",
     ar_files = ":llvm_all",
     as_files = ":llvm_all",
     compiler_files = ":llvm_all",
-    linker_files = ":llvm_all",
     dwp_files = ":llvm_all",
+    linker_files = ":llvm_all",
     objcopy_files = ":llvm_all",
     strip_files = ":llvm_all",
     supports_param_files = 0,
@@ -72,8 +102,36 @@ cc_toolchain(
     toolchain_identifier = "kernel-aarch64",
 )
 
-# 3. Register the High-Level Toolchains
-# This is what allows Bazel to pick the right one based on Platforms.
+cc_toolchain(
+    name = "cc_toolchain_x86_64_user",
+    all_files = ":llvm_all",
+    ar_files = ":llvm_all",
+    as_files = ":llvm_all",
+    compiler_files = ":llvm_all",
+    dwp_files = ":llvm_all",
+    linker_files = ":llvm_all",
+    objcopy_files = ":llvm_all",
+    strip_files = ":llvm_all",
+    supports_param_files = 0,
+    toolchain_config = ":x86_64_user_config",
+    toolchain_identifier = "user-x86_64",
+)
+
+cc_toolchain(
+    name = "cc_toolchain_aarch64_user",
+    all_files = ":llvm_all",
+    ar_files = ":llvm_all",
+    as_files = ":llvm_all",
+    compiler_files = ":llvm_all",
+    dwp_files = ":llvm_all",
+    linker_files = ":llvm_all",
+    objcopy_files = ":llvm_all",
+    strip_files = ":llvm_all",
+    supports_param_files = 0,
+    toolchain_config = ":aarch64_user_config",
+    toolchain_identifier = "user-aarch64",
+)
+
 toolchain(
     name = "x86_64_kernel_toolchain",
     exec_compatible_with = [
@@ -84,7 +142,7 @@ toolchain(
         "@platforms//cpu:x86_64",
         "//platforms:kernel_mode",
     ],
-    toolchain = ":cc_toolchain_x86_64",
+    toolchain = ":cc_toolchain_x86_64_kernel",
     toolchain_type = "@bazel_tools//tools/cpp:toolchain_type",
 )
 
@@ -98,6 +156,114 @@ toolchain(
         "@platforms//cpu:aarch64",
         "//platforms:kernel_mode",
     ],
-    toolchain = ":cc_toolchain_aarch64",
+    toolchain = ":cc_toolchain_aarch64_kernel",
     toolchain_type = "@bazel_tools//tools/cpp:toolchain_type",
+)
+
+toolchain(
+    name = "x86_64_user_toolchain",
+    exec_compatible_with = [
+        "@platforms//os:macos",
+        "@platforms//cpu:aarch64",
+    ],
+    target_compatible_with = [
+        "@platforms//cpu:x86_64",
+        "//platforms:user_mode",
+    ],
+    toolchain = ":cc_toolchain_x86_64_user",
+    toolchain_type = "@bazel_tools//tools/cpp:toolchain_type",
+)
+
+toolchain(
+    name = "aarch64_user_toolchain",
+    exec_compatible_with = [
+        "@platforms//os:macos",
+        "@platforms//cpu:aarch64",
+    ],
+    target_compatible_with = [
+        "@platforms//cpu:aarch64",
+        "//platforms:user_mode",
+    ],
+    toolchain = ":cc_toolchain_aarch64_user",
+    toolchain_type = "@bazel_tools//tools/cpp:toolchain_type",
+)
+
+rust_toolchain(
+    name = "rust_toolchain_x86_64_impl",
+    binary_ext = "",
+    dylib_ext = ".so",
+    exec_triple = "aarch64-apple-darwin",
+    rust_doc = "@rust_macos_aarch64__x86_64-unknown-none__stable_tools//:rustdoc",
+    # The target name usually includes the triple suffix
+    rust_std = "@rust_macos_aarch64__x86_64-unknown-none__stable_tools//:rust_std-x86_64-unknown-none",
+    rustc = "@rust_macos_aarch64__x86_64-unknown-none__stable_tools//:rustc",
+    staticlib_ext = ".a",
+    stdlib_linkflags = [],
+    target_triple = "x86_64-unknown-none",
+)
+
+rust_toolchain(
+    name = "rust_toolchain_aarch64_impl",
+    binary_ext = "",
+    dylib_ext = ".so",
+    exec_triple = "aarch64-apple-darwin",
+    rust_doc = "@rust_macos_aarch64__aarch64-unknown-none__stable_tools//:rustdoc",
+    rust_std = "@rust_macos_aarch64__aarch64-unknown-none__stable_tools//:rust_std-aarch64-unknown-none",
+    rustc = "@rust_macos_aarch64__aarch64-unknown-none__stable_tools//:rustc",
+    staticlib_ext = ".a",
+    stdlib_linkflags = [],
+    target_triple = "aarch64-unknown-none",
+)
+
+toolchain(
+    name = "x86_64_kernel_toolchain_rust",
+    exec_compatible_with = [
+        "@platforms//os:macos",
+        "@platforms//cpu:aarch64",
+    ],
+    target_compatible_with = [
+        "@platforms//cpu:x86_64",
+        "//platforms:kernel_mode",
+        "@platforms//os:none",
+    ],
+    toolchain = ":rust_toolchain_x86_64_impl",
+    toolchain_type = "@rules_rust//rust:toolchain_type",
+)
+
+toolchain(
+    name = "aarch64_kernel_toolchain_rust",
+    exec_compatible_with = [
+        "@platforms//os:macos",
+        "@platforms//cpu:aarch64",
+    ],
+    target_compatible_with = [
+        "@platforms//cpu:aarch64",
+        "//platforms:kernel_mode",
+        "@platforms//os:uefi",
+    ],
+    toolchain = ":rust_toolchain_aarch64_impl",
+    toolchain_type = "@rules_rust//rust:toolchain_type",
+)
+
+native_binary(
+    name = "clang",
+    src = "@llvm_toolchain_llvm//:bin/clang",
+)
+
+cc_import(
+    name = "libclang_import",
+    shared_library = "@llvm_toolchain_llvm//:libclang",
+)
+
+rust_bindgen_toolchain(
+    name = "bindgen_toolchain_impl",
+    bindgen = "@crates//:bindgen-cli__bindgen",
+    clang = ":clang",
+    libclang = ":libclang_import",
+)
+
+toolchain(
+    name = "bindgen_toolchain",
+    toolchain = ":bindgen_toolchain_impl",
+    toolchain_type = "@rules_rust_bindgen//:toolchain_type",
 )

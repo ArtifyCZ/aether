@@ -1,6 +1,6 @@
-package(default_visibility = ["//visibility:public"])
-
 load("@rules_cc//cc:cc_library.bzl", "cc_library")
+
+package(default_visibility = ["//visibility:public"])
 
 [
     genrule(
@@ -14,21 +14,16 @@ load("@rules_cc//cc:cc_library.bzl", "cc_library")
 
 cc_library(
     name = "kernel_platform",
-    hdrs = glob(["include/*.h"]),
-    deps = [
-        "@limine-protocol//:limine-protocol",
-        "@freestnd-c-hdrs//:freestnd-c-hdrs",
-    ],
-    includes = [
-        "include",
-    ],
-    srcs = glob(["src/*.c", "src/common/**/*.c"]) + select({
+    srcs = glob([
+        "src/*.c",
+        "src/common/**/*.c",
+    ]) + select({
         "@platforms//cpu:x86_64": glob([
             "src/arch/x86_64/*.c",
             "src/arch/x86_64/*.h",
         ]) + [
-            ":asm_syscall_entry",
             ":asm_interrupt_entry",
+            ":asm_syscall_entry",
         ],
         "@platforms//cpu:aarch64": glob([
             "src/arch/aarch64/*.c",
@@ -36,6 +31,24 @@ cc_library(
             "src/arch/aarch64/*.S",
         ]),
     }),
+    hdrs = glob(["include/*.h"]),
     features = ["kernel_compile_flags"],
+    includes = [
+        "include",
+    ],
     linkstatic = True,
+    target_compatible_with = ["@//platforms:kernel_mode"] + select({
+        "@platforms//cpu:aarch64": [
+            "@platforms//cpu:aarch64",
+            "@platforms//os:uefi",
+        ],
+        "@platforms//cpu:x86_64": [
+            "@platforms//cpu:x86_64",
+            "@platforms//os:none",
+        ],
+    }),
+    deps = [
+        "@freestnd-c-hdrs//:freestnd-c-hdrs",
+        "@limine-protocol//:limine-protocol",
+    ],
 )

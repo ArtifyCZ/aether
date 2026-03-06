@@ -3,4 +3,11 @@
 build/
 dependencies/
 local.mk
-qemu.log
+/qemu.log
+rust-project.json
+.DS_Store
+/virt.dtb
+/.cache/
+/aquery_out.json
+/compile_commands.json
+/external

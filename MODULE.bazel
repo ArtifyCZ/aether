@@ -3,42 +3,95 @@ module(
     version = "0.1.0",
 )
 
-# Pull in the LLVM toolchain support
-bazel_dep(name = "toolchains_llvm", version = "1.3.0")
-
 # Pull in the CC rules
 bazel_dep(name = "rules_cc", version = "0.2.14")
 
-# Pull in the Rust rules
-#bazel_dep(name = "rules_rust", version = "0.54.1")
-
 # Pull in standard platform definitions (x86_64, aarch64, etc.)
+bazel_dep(name = "bazel_skylib", version = "1.8.2")
 bazel_dep(name = "platforms", version = "1.0.0")
+bazel_dep(name = "toolchains_llvm", version = "1.6.0")
+bazel_dep(name = "rules_rust", version = "0.69.0")
+bazel_dep(name = "rules_rust_bindgen", version = "0.69.0")
 
-# Configure the LLVM toolchain
-llvm = use_extension("@toolchains_llvm//toolchain/extensions:llvm.bzl", "llvm")
-
-llvm.toolchain(
-    name = "llvm_toolchain",
-    llvm_version = "17.0.6", # Specific version for consistency
+rust = use_extension("@rules_rust//rust:extensions.bzl", "rust")
+rust.toolchain(
+    edition = "2024",
+    extra_target_triples = [
+        "x86_64-unknown-none",
+        "aarch64-unknown-none",
+        "aarch64-unknown-uefi",
+    ],
+    versions = ["1.94.0"],
+)
+use_repo(
+    rust,
+    "rust_macos_aarch64__aarch64-unknown-none__stable_tools",
+    "rust_macos_aarch64__aarch64-unknown-uefi__stable_tools",
+    "rust_macos_aarch64__x86_64-unknown-none__stable_tools",
+    "rust_toolchains",
 )
 
-# Register the toolchain so Bazel actually uses it
-use_repo(llvm, "llvm_toolchain", "llvm_toolchain_llvm")
+rust_host_tools = use_extension("@rules_rust//rust:extensions.bzl", "rust_host_tools")
+rust_host_tools.host_tools(
+    name = "rust_host_tools_nightly",
+    version = "nightly",
+)
+use_repo(rust_host_tools, "rust_host_tools_nightly")
+
+crates = use_extension("@rules_rust//crate_universe:extension.bzl", "crate")
+crates.spec(
+    artifact = "bin",
+    package = "bindgen-cli",
+    version = "=0.72.1",
+)
+crates.annotation(
+    crate = "bindgen-cli",
+    gen_all_binaries = True,
+)
+crates.spec(
+    package = "bitflags",
+    version = "2.11.0",
+)
+crates.spec(
+    package = "thiserror-no-std",
+    version = "2.0.2",
+)
+crates.from_specs(
+    name = "crates",
+    host_tools = "@rust_host_tools_nightly",
+    supported_platform_triples = [
+        "x86_64-unknown-none",
+        "aarch64-unknown-uefi",
+        "aarch64-apple-darwin",  # Required for your Mac host
+    ],
+)
+use_repo(crates, "crates")
+
+llvm = use_extension("@toolchains_llvm//toolchain/extensions:llvm.bzl", "llvm")
+llvm.toolchain(
+    llvm_version = "19.1.1",
+)
+use_repo(llvm, "llvm_toolchain")
+use_repo(llvm, "llvm_toolchain_llvm")  # if you depend on specific tools in scripts
+
 register_toolchains("//:all")
+
+register_toolchains("@llvm_toolchain_llvm//:all")
+
+register_toolchains("@rust_toolchains//:all")
 
 git_repository = use_repo_rule("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
 
 git_repository(
     name = "freestnd-c-hdrs",
-    remote = "https://github.com/osdev0/freestnd-c-hdrs-0bsd.git",
-    commit = "5e4e9e70278fe89ea328d359a58aff4f4a94b165",
     build_file = "BUILD.freestnd-c-hdrs",
+    commit = "5e4e9e70278fe89ea328d359a58aff4f4a94b165",
+    remote = "https://github.com/osdev0/freestnd-c-hdrs-0bsd.git",
 )
 
 git_repository(
     name = "limine-protocol",
-    remote = "https://github.com/limine-bootloader/limine-protocol.git",
-    commit = "42e836e30242c2c14f889fd76c6f9a57b0c18ec2",
     build_file = "BUILD.limine-protocol",
+    commit = "42e836e30242c2c14f889fd76c6f9a57b0c18ec2",
+    remote = "https://github.com/limine-bootloader/limine-protocol.git",
 )
