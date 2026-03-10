@@ -6,4 +6,4 @@ build:aarch64_user --platforms=//platforms:user_aarch64
 run:aarch64 --platforms=//platforms:kernel_aarch64
 build --@rules_rust//rust/settings:no_std=alloc
 
-build --action_env=PATH=/opt/homebrew/opt/llvm/bin:/usr/bin:/bin:/usr/local/bin:/Users/artify/.cargo/bin
+build --action_env=PATH=/opt/homebrew/opt/llvm/bin:/opt/homebrew/bin:/usr/bin:/bin:/usr/local/bin:/Users/artify/.cargo/bin

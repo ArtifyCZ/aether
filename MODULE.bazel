@@ -5,6 +5,7 @@ module(
 
 # Pull in the CC rules
 bazel_dep(name = "rules_cc", version = "0.2.14")
+bazel_dep(name = "rules_foreign_cc", version = "0.15.1")
 
 # Pull in standard platform definitions (x86_64, aarch64, etc.)
 bazel_dep(name = "bazel_skylib", version = "1.8.2")
@@ -87,6 +88,13 @@ git_repository(
     build_file = "BUILD.freestnd-c-hdrs",
     commit = "5e4e9e70278fe89ea328d359a58aff4f4a94b165",
     remote = "https://github.com/osdev0/freestnd-c-hdrs-0bsd.git",
+)
+
+git_repository(
+    name = "limine-bootloader",
+    build_file = "BUILD.limine-bootloader",
+    branch = "v10.x-binary",
+    remote = "https://github.com/limine-bootloader/limine.git",
 )
 
 git_repository(

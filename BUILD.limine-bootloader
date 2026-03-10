@@ -1,0 +1,23 @@
+load("@rules_cc//cc:cc_binary.bzl", "cc_binary")
+
+cc_binary(
+    name = "limine_tool",
+    srcs = glob(["*.c", "*.h"]),
+    copts = ["-std=c99"],
+    visibility = ["//visibility:public"],
+)
+
+# Use this to export the static bootloader files (.sys, .bin, .EFI)
+filegroup(
+    name = "boot_artifacts",
+    srcs = glob([
+        "limine-bios.sys",
+        "limine-bios-cd.bin",
+        "limine-uefi-cd.bin",
+        "BOOTX64.EFI",
+        "BOOTAA64.EFI",
+        "BOOTIA32.EFI",
+        "BOOTRISCV64.EFI",
+    ]),
+    visibility = ["//visibility:public"],
+)

@@ -90,7 +90,7 @@ $(BUILD)/raspi4b-uefi-firmware:
 QEMU := qemu-system-$(ARCH)
 
 ifeq ($(ARCH),x86_64)
-QEMU_IMAGE := $(BUILD)/kernel.$(ARCH).iso
+QEMU_IMAGE := $(srctree)/bazel-bin/kernel.iso
 
 QEMUFLAGS += -cdrom $(QEMU_IMAGE)
 #QEMUFLAGS += -d int,cpu_reset
@@ -116,7 +116,7 @@ endif
 
 .PHONY: qemu qemu-debug
 
-qemu: $(QEMU_IMAGE)
+qemu:
 	$(QEMU) $(QEMUFLAGS)
 
 qemu-debug: $(QEMU_IMAGE)

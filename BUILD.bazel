@@ -3,6 +3,7 @@ load("@rules_cc//cc:defs.bzl", "cc_import", "cc_toolchain", "cc_toolchain_suite"
 load("@rules_rust//rust:toolchain.bzl", "rust_toolchain")
 load("@rules_rust_bindgen//:defs.bzl", "rust_bindgen_toolchain")
 load(":cc_toolchain_config.bzl", "cc_toolchain_config")
+load(":transitions.bzl", "platform_binary_wrapper")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -266,4 +267,47 @@ toolchain(
     name = "bindgen_toolchain",
     toolchain = ":bindgen_toolchain_impl",
     toolchain_type = "@rules_rust_bindgen//:toolchain_type",
+)
+
+platform_binary_wrapper(
+    name = "init_elf",
+    target = "//init:init",
+    platform = select({
+        "@platforms//cpu:x86_64": "//platforms:user_x86_64",
+        "@platforms//cpu:aarch64": "//platforms:user_aarch64",
+    }),
+)
+
+genrule(
+    name = "kernel_iso",
+    srcs = [
+        "//kernel:kernel",
+        ":init_elf",
+        "@limine-bootloader//:boot_artifacts",
+        "limine.conf",
+        "Mik_8x16.psf",
+    ],
+    target_compatible_with = [
+        "@platforms//cpu:x86_64",
+    ],
+    outs = ["kernel.iso"],
+    cmd = """
+    mkdir -p staging/boot/limine/
+    cp $(location //kernel:kernel) staging/boot/kernel.elf
+    cp $(location :init_elf) staging/boot/init.elf
+    cp $(location :Mik_8x16.psf) staging/boot/kernel-font.psf
+
+    # Grab all boot artifacts from the filegroup
+    cp $(locations @limine-bootloader//:boot_artifacts) staging/boot/limine/
+    cp $(location limine.conf) staging/boot/limine/
+
+    xorriso -as mkisofs -R -r -J -b boot/limine/limine-bios-cd.bin \
+		-no-emul-boot -boot-load-size 4 -boot-info-table -hfsplus \
+		-apm-block-size 2048 --efi-boot boot/limine/limine-uefi-cd.bin \
+		-efi-boot-part --efi-boot-image --protective-msdos-label \
+		staging/ -o $@
+    
+    $(location @limine-bootloader//:limine_tool) bios-install $@
+    """,
+    tools = ["@limine-bootloader//:limine_tool"],
 )
