@@ -41,7 +41,7 @@ pkg_files(
     srcs = [
         "//kernel",
         ":init",
-        "initrd.txt",
+        ":initrd_tar",
         "Mik_8x16.psf",
     ],
     prefix = "/boot",
@@ -56,6 +56,15 @@ pkg_tar(
     ],
     mode = "0644",
     out = "kernel.tar",
+)
+
+pkg_tar(
+    name = "initrd_tar",
+    srcs = [
+        "initrd_message.txt",
+    ],
+    mode = "0644",
+    out = "initrd.tar",
 )
 
 genrule(

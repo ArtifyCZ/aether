@@ -1,7 +1,10 @@
+#include "init/include/tar.h"
 #include "kernel/api/init/boot_info.h"
 #include "libs/libsyscall/syscalls.h"
 #include "drivers/keyboard/keyboard.h"
 #include "drivers/serial/serial.h"
+#include <stddef.h>
+#include <stdint.h>
 
 void print(const char *message) {
     size_t length = 0;
@@ -62,11 +65,18 @@ int main(struct boot_info *boot_info) {
     keyboard_init();
     print("Keyboard initialized!\n");
 
-    print("Trying to access initrd...\n");
-    char *initrd_data = (char *) boot_info->initrd_start;
-    print("Message: ");
-    print(initrd_data);
-    print(";\n");
+    print("Trying to parse initrd...\n");
+    char *initrd_message;
+    size_t initrd_message_size;
+    tar_find_file(boot_info->initrd_start, boot_info->initrd_size, "initrd_message.txt", &initrd_message, &initrd_message_size);
+    if (initrd_message) {
+        print("Found initrd_message.txt in initrd! Contents:\n");
+        print(initrd_message);
+        print("\n");
+    } else {
+        print("Failed to find initrd_message.txt in initrd!\n");
+    }
+    print("Finished parsing initrd!\n");
 
     return 0;
 }
