@@ -2,7 +2,7 @@
 #include "kernel/api/init/boot_info.h"
 #include <stdint.h>
 
-int main(void);
+int main(struct boot_info *boot_info);
 
 static void print(const char *message) {
     size_t length = 0;
@@ -16,15 +16,9 @@ static void print(const char *message) {
 __attribute__((noreturn)) void _start(struct boot_info *boot_info) {
     sys_write(1, "1", 1);
     sys_write(1, "2", 1);
-    if (boot_info->arg == 42) {
-        print("Received argument correctly!\n");
-    } else {
-        print("Argument was not passed correctly!\n");
-        sys_exit();
-    }
     print("Hello from _start!\n");
     print("Hello from _start again!\n");
-    int exit_code = main();
+    int exit_code = main(boot_info);
     print("Exiting...\n");
     sys_exit(); // @TODO: also pass the exit code
     print("SHOULD NOT HAPPEN! init/src/entry.c");

@@ -1,3 +1,4 @@
+#include "kernel/api/init/boot_info.h"
 #include "libs/libsyscall/syscalls.h"
 #include "drivers/keyboard/keyboard.h"
 #include "drivers/serial/serial.h"
@@ -34,7 +35,7 @@ __attribute__ ((noreturn)) void second_thread(void) {
     while (1) {}
 }
 
-int main(void) {
+int main(struct boot_info *boot_info) {
     if (serial_init()) {
         const char message[] = "Failed to initialize serial port!\n";
         sys_write(1, message, sizeof(message));
@@ -62,7 +63,7 @@ int main(void) {
     print("Keyboard initialized!\n");
 
     print("Trying to access initrd...\n");
-    char *initrd_data = (char *) 0x7FFFFFF00000ull;
+    char *initrd_data = (char *) boot_info->initrd_start;
     print("Message: ");
     print(initrd_data);
     print(";\n");

@@ -1,7 +1,9 @@
 #pragma once
 
+#include <stddef.h>
 #include <stdint.h>
 
 struct boot_info {
-    uint64_t arg;
+    void *initrd_start;
+    size_t initrd_size;
 };

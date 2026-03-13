@@ -20,7 +20,7 @@ fn load_init_into_memory(init_ctx: &VirtualMemoryManagerContext) -> usize {
     entrypoint_vaddr
 }
 
-fn load_initrd_into_memory(init_ctx: &VirtualMemoryManagerContext) {
+fn load_initrd_into_memory(init_ctx: &VirtualMemoryManagerContext) -> (usize, usize) {
     let initrd_string = CString::from_str("initrd").expect("Failed to create CString");
     const INITRD_VADDR: usize = 0x7FFFFFF00000usize; // arbitrary high virtual address for initrd
     let initrd = unsafe { Modules::find(CString::from_str("initrd").unwrap().as_c_str()) }
@@ -59,9 +59,15 @@ fn load_initrd_into_memory(init_ctx: &VirtualMemoryManagerContext) {
             }
         }
     }
+
+    (INITRD_VADDR, initrd_size)
 }
 
-fn load_boot_info_into_memory(init_ctx: &VirtualMemoryManagerContext, arg: u64) -> u64 {
+fn load_boot_info_into_memory(
+    init_ctx: &VirtualMemoryManagerContext,
+    initrd_start: usize,
+    initrd_size: usize,
+) -> u64 {
     const BOOT_INFO_VADDR: usize = 0x7FFFFFE00000usize; // arbitrary high virtual address for boot info
     const BOOT_INFO_SIZE: usize = core::mem::size_of::<init_contract_rust::boot_info>();
     let kernel_vaddr = unsafe { VirtualAddressAllocator::alloc_range(BOOT_INFO_SIZE) };
@@ -90,8 +96,10 @@ fn load_boot_info_into_memory(init_ctx: &VirtualMemoryManagerContext, arg: u64) 
 
     unsafe {
         let boot_info = kernel_vaddr.start().inner() as *mut init_contract_rust::boot_info;
-        let boot_info = &mut *boot_info;
-        boot_info.arg = arg;
+        boot_info.write(init_contract_rust::boot_info {
+            initrd_start: initrd_start as *mut core::ffi::c_void,
+            initrd_size,
+        });
     }
 
     BOOT_INFO_VADDR as u64
@@ -123,9 +131,9 @@ fn allocate_init_stack(init_ctx: &VirtualMemoryManagerContext) -> usize {
 pub fn spawn_init_process(scheduler: &Scheduler) {
     let init_ctx = unsafe { VirtualMemoryManagerContext::create() };
     let entrypoint_vaddr = load_init_into_memory(&init_ctx);
-    load_initrd_into_memory(&init_ctx);
+    let (initrd_vaddr, initrd_size) = load_initrd_into_memory(&init_ctx);
     let stack_top_vaddr = allocate_init_stack(&init_ctx);
-    let arg = load_boot_info_into_memory(&init_ctx, 42);
+    let arg = load_boot_info_into_memory(&init_ctx, initrd_vaddr, initrd_size);
 
     scheduler.spawn(TaskSpec::User {
         virtual_memory_manager_context: Arc::new(init_ctx),
