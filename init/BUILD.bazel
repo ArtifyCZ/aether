@@ -25,6 +25,6 @@ cc_binary(
     }),
     deps = [
         "@freestnd-c-hdrs//:freestnd-c-hdrs",
-        "//include:syscalls",
+        "//kernel/api/syscalls:syscalls",
     ],
 )

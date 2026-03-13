@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../../include/syscall_user.h"
+#include "kernel/api/syscalls/syscall_user.h"
 #include <stdint.h>
 #include <stddef.h>
 
