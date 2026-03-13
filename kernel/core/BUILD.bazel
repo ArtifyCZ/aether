@@ -106,6 +106,7 @@ rust_static_library(
     deps = [
         ":kernel_bindings_gen",
         ":syscalls_rust",
+        "//kernel/api/init:init_contract_rust",
         "@crates//:bitflags",
         "@crates//:thiserror-no-std",
     ],

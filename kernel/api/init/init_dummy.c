@@ -2,6 +2,6 @@
 // This file exists only to make the cc_library produce a static archive
 // so that rust_bindgen_library can work properly.
 
-void __syscalls_dummy(void) {
+void __init_dummy(void) {
     // This function intentionally does nothing
 }

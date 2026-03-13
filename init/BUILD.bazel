@@ -25,6 +25,7 @@ cc_binary(
     }),
     deps = [
         "//libs/libsyscall",
+        "//kernel/api/init:init_contract",
         "@freestnd-c-hdrs//:freestnd-c-hdrs",
     ],
 )
