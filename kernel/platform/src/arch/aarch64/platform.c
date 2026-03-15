@@ -11,12 +11,6 @@
 void platform_init(const struct platform_config *config) {
     (void) config;
 
-    const uintptr_t serial_device_base = 0x9000000;
-    early_console_init(serial_device_base);
-    early_console_println("Early console initialized!");
-    early_console_println("");
-    early_console_println("Booting...");
-
     modules_init(config->modules);
 
     const struct limine_file *font = module_find("kernel-font.psf");

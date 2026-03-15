@@ -53,6 +53,7 @@ use crate::task_registry::{TaskRegistry, TaskSpec};
 use scheduler::Scheduler;
 use ticker::Ticker;
 use crate::elf::Elf;
+use crate::platform::early_console::EarlyConsole;
 use crate::platform::virtual_address_allocator::VirtualAddressAllocator;
 use crate::platform::virtual_memory_manager::VirtualMemoryManager;
 
@@ -101,7 +102,15 @@ fn main(
         VirtualAddressAllocator::init();
         PhysicalMemoryManager::init(memmap);
         VirtualMemoryManager::init(hhdm_offset);
+        #[cfg(target_arch = "x86_64")]
+        const SERIAL_BASE: usize = 0x3f8;
+        #[cfg(target_arch = "aarch64")]
+        const SERIAL_BASE: usize = 0x9000000;
+        EarlyConsole::init(SERIAL_BASE);
+        println!("\nEarly console initialized!\n");
+        println!("Booting...");
         Platform::init(framebuffer, modules, rsdp_address);
+        logging::enable_terminal();
         Interrupts::init();
 
         println!("Hello from Rust!");

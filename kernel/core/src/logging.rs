@@ -13,12 +13,17 @@ macro_rules! println {
 
 static USE_EARLY_CONSOLE: AtomicBool = AtomicBool::new(true);
 static USE_EMERGENCY_CONSOLE: AtomicBool = AtomicBool::new(false);
+static USE_TERMINAL: AtomicBool = AtomicBool::new(false);
 
 pub struct Logger;
 
 impl core::fmt::Write for Logger {
     fn write_str(&mut self, s: &str) -> core::fmt::Result {
         unsafe {
+            if USE_TERMINAL.load(Ordering::Acquire) {
+                Terminal::print(s);
+            }
+
             if USE_EMERGENCY_CONSOLE.load(Ordering::Acquire) {
                 EmergencyConsole::write_str(s);
                 return Ok(());
@@ -27,8 +32,6 @@ impl core::fmt::Write for Logger {
             if USE_EARLY_CONSOLE.load(Ordering::Acquire) {
                 EarlyConsole::write_str(s);
             }
-
-            Terminal::print(s);
         }
         Ok(())
     }
@@ -46,4 +49,8 @@ pub unsafe fn disable_early_console() {
     unsafe {
         EarlyConsole::disable();
     }
+}
+
+pub unsafe fn enable_terminal() {
+    USE_TERMINAL.store(true, Ordering::SeqCst);
 }

@@ -5,6 +5,12 @@ mod bindings {
 pub struct EarlyConsole;
 
 impl EarlyConsole {
+    pub unsafe fn init(serial_base: usize) {
+        unsafe {
+            kernel_bindings_gen::early_console_init(serial_base);
+        }
+    }
+
     pub unsafe fn disable() {
         unsafe {
             bindings::early_console_disable();
