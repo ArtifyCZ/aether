@@ -15,6 +15,7 @@ mod syscall_handler;
 mod task_id;
 mod task_registry;
 mod ticker;
+mod elf;
 
 use crate::init_process::spawn_init_process;
 use crate::platform::platform::Platform;
@@ -41,7 +42,6 @@ unsafe extern "C" {
     fn hcf() -> !;
 }
 
-use crate::platform::elf::Elf;
 use crate::platform::interrupts::Interrupts;
 use crate::platform::memory_layout::PAGE_FRAME_SIZE;
 use crate::platform::physical_memory_manager::PhysicalMemoryManager;
@@ -52,6 +52,7 @@ use crate::syscall_handler::SyscallHandler;
 use crate::task_registry::{TaskRegistry, TaskSpec};
 use scheduler::Scheduler;
 use ticker::Ticker;
+use crate::elf::Elf;
 use crate::platform::virtual_address_allocator::VirtualAddressAllocator;
 use crate::platform::virtual_memory_manager::VirtualMemoryManager;
 
@@ -114,13 +115,13 @@ fn main(
             Interrupts::mask_irq(irq);
             scheduler.signal_irq(irq, frame).unwrap_or(frame)
         });
-        Elf::init(hhdm_offset);
         Timer::init(100);
 
         Ticker::init(scheduler);
 
         spawn_thread(scheduler, thread_heartbeat);
-        spawn_init_process(scheduler);
+        let elf = Elf::init(hhdm_offset);
+        spawn_init_process(&elf, scheduler);
 
         logging::disable_early_console();
 

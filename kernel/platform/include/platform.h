@@ -1,7 +1,6 @@
 #pragma once
 
 #include "limine.h"
-#include <stdint.h>
 
 struct platform_config {
     struct limine_framebuffer *framebuffer;

@@ -6,7 +6,6 @@ macro_rules! include_bindings {
 }
 
 pub mod early_console;
-pub mod elf;
 pub mod emergency_console;
 pub mod interrupts;
 pub mod memory_layout;

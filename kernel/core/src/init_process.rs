@@ -1,22 +1,22 @@
 use core::str::FromStr;
 
 use alloc::{ffi::CString, sync::Arc};
-
+use crate::elf::Elf;
 use crate::platform::memory_layout::PAGE_FRAME_SIZE;
 use crate::platform::physical_memory_manager::PhysicalMemoryManager;
 use crate::platform::virtual_address_allocator::VirtualAddressAllocator;
 use crate::platform::virtual_memory_manager_context::VirtualMemoryMappingFlags;
 use crate::platform::virtual_page_address::VirtualPageAddress;
 use crate::platform::{
-    elf::Elf, modules::Modules, virtual_memory_manager_context::VirtualMemoryManagerContext,
+    modules::Modules, virtual_memory_manager_context::VirtualMemoryManagerContext,
 };
 use crate::scheduler::Scheduler;
 use crate::task_registry::TaskSpec;
 
-fn load_init_into_memory(init_ctx: &VirtualMemoryManagerContext) -> usize {
+fn load_init_into_memory(elf: &Elf, init_ctx: &VirtualMemoryManagerContext) -> usize {
     let init_elf_string = CString::from_str("init.elf").expect("Failed to create CString");
     let init_elf = unsafe { Modules::find(init_elf_string.as_c_str()) }.unwrap();
-    let entrypoint_vaddr = unsafe { Elf::load(init_ctx, init_elf) }.unwrap();
+    let entrypoint_vaddr = unsafe { elf.load(init_ctx, init_elf.as_ptr()) }.unwrap();
     entrypoint_vaddr
 }
 
@@ -128,9 +128,9 @@ fn allocate_init_stack(init_ctx: &VirtualMemoryManagerContext) -> usize {
     INIT_STACK_TOP_VADDR
 }
 
-pub fn spawn_init_process(scheduler: &Scheduler) {
+pub fn spawn_init_process(elf: &Elf, scheduler: &Scheduler) {
     let init_ctx = unsafe { VirtualMemoryManagerContext::create() };
-    let entrypoint_vaddr = load_init_into_memory(&init_ctx);
+    let entrypoint_vaddr = load_init_into_memory(elf, &init_ctx);
     let (initrd_vaddr, initrd_size) = load_initrd_into_memory(&init_ctx);
     let stack_top_vaddr = allocate_init_stack(&init_ctx);
     let arg = load_boot_info_into_memory(&init_ctx, initrd_vaddr, initrd_size);

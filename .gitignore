@@ -2,6 +2,7 @@
 /bazel-*
 build/
 dependencies/
+/external
 local.mk
 /qemu.log
 rust-project.json
@@ -10,4 +11,3 @@ rust-project.json
 /.cache/
 /aquery_out.json
 /compile_commands.json
-/external
