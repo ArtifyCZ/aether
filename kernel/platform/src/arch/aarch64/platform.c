@@ -8,12 +8,9 @@
 #include "modules.h"
 #include "psf.h"
 #include "virtual_memory_manager.h"
-#include "virtual_address_allocator.h"
 
 void platform_init(const struct platform_config *config) {
     (void) config;
-
-    vaa_init();
 
     vmm_init(config->hhdm_offset);
 

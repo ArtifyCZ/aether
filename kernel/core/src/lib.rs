@@ -52,6 +52,7 @@ use crate::syscall_handler::SyscallHandler;
 use crate::task_registry::{TaskRegistry, TaskSpec};
 use scheduler::Scheduler;
 use ticker::Ticker;
+use crate::platform::virtual_address_allocator::VirtualAddressAllocator;
 
 fn thread_heartbeat() {
     let mut i = 0;
@@ -95,6 +96,7 @@ fn main(
     rsdp_address: u64,
 ) -> ! {
     unsafe {
+        VirtualAddressAllocator::init();
         PhysicalMemoryManager::init(memmap);
         Platform::init(hhdm_offset, framebuffer, modules, rsdp_address);
         Interrupts::init();

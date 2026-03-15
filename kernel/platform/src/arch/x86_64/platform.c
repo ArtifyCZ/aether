@@ -10,12 +10,9 @@
 #include "msr.h"
 #include "psf.h"
 #include "terminal.h"
-#include "virtual_address_allocator.h"
 #include "virtual_memory_manager.h"
 
 void platform_init(const struct platform_config *config) {
-    vaa_init();
-
     vmm_init(config->hhdm_offset);
 
     const uintptr_t serial_device_base = 0x3f8;
