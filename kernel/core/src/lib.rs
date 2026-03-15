@@ -44,7 +44,8 @@ unsafe extern "C" {
 use crate::platform::elf::Elf;
 use crate::platform::interrupts::Interrupts;
 use crate::platform::memory_layout::PAGE_FRAME_SIZE;
-use crate::platform::syscalls::{sys_exit, Syscalls};
+use crate::platform::physical_memory_manager::PhysicalMemoryManager;
+use crate::platform::syscalls::{Syscalls, sys_exit};
 use crate::platform::terminal::Terminal;
 use crate::platform::timer::Timer;
 use crate::syscall_handler::SyscallHandler;
@@ -86,10 +87,17 @@ where
     });
 }
 
-fn main(hhdm_offset: u64, rsdp_address: u64) {
+fn main(
+    hhdm_offset: u64,
+    memmap: *mut kernel_bindings_gen::limine_memmap_response,
+    framebuffer: *mut kernel_bindings_gen::limine_framebuffer,
+    modules: *mut kernel_bindings_gen::limine_module_response,
+    rsdp_address: u64,
+) -> ! {
     unsafe {
+        PhysicalMemoryManager::init(memmap);
+        Platform::init(hhdm_offset, framebuffer, modules, rsdp_address);
         Interrupts::init();
-        Platform::init(rsdp_address);
 
         println!("Hello from Rust!");
         let registry = TaskRegistry::new();

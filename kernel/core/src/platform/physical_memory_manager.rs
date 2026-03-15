@@ -113,6 +113,12 @@ unsafe extern "C" fn pmm_free_frame(frame: usize) -> bool {
 }
 
 impl PhysicalMemoryManager {
+    pub unsafe fn init(memmap: *mut limine_memmap_response) {
+        unsafe {
+            pmm_init(memmap);
+        }
+    }
+    
     pub unsafe fn alloc_frame() -> Result<PhysicalPageFrame, PhysicalMemoryManagerAllocFrameError> {
         let page_frame = unsafe { pmm_alloc_frame() };
         if page_frame == 0 {

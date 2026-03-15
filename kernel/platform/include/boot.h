@@ -1,6 +1,7 @@
 #pragma once
 
 #include <stdint.h>
+#include "limine.h"
 
 // Halt and catch fire function.
 _Noreturn void hcf(void);
@@ -10,4 +11,11 @@ _Noreturn void hcf(void);
 // linker script accordingly.
 __attribute__((used)) void boot(void);
 
-extern void kernel_main(uint64_t hhdm_offset, uintptr_t rsdp_address);
+__attribute__((noreturn))
+extern void kernel_main(
+    uint64_t hhdm_offset,
+    struct limine_memmap_response *memmap,
+    struct limine_framebuffer *framebuffer,
+    struct limine_module_response *modules,
+    uintptr_t rsdp_address
+);
