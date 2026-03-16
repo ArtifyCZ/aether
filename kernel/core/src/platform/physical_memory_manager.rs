@@ -118,7 +118,7 @@ impl PhysicalMemoryManager {
             pmm_init(memmap);
         }
     }
-    
+
     pub unsafe fn alloc_frame() -> Result<PhysicalPageFrame, PhysicalMemoryManagerAllocFrameError> {
         let page_frame = unsafe { pmm_alloc_frame() };
         if page_frame == 0 {

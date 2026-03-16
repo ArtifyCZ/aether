@@ -1,108 +1,115 @@
-use crate::platform::memory_layout::PAGE_FRAME_SIZE;
+use crate::platform::memory_layout::{KERNEL_HEAP_BASE, PAGE_FRAME_SIZE};
 use crate::platform::physical_memory_manager::PhysicalMemoryManager;
-use crate::platform::virtual_address::VirtualAddress;
-use crate::platform::virtual_address_allocator::VirtualAddressAllocator;
 use crate::platform::virtual_memory_manager_context::{
     VirtualMemoryManagerContext, VirtualMemoryMappingFlags,
 };
 use crate::platform::virtual_page_address::VirtualPageAddress;
-use crate::spin_lock::SpinLock;
+use crate::interrupt_safe_spin_lock::InterruptSafeSpinLock;
 use core::alloc::{GlobalAlloc, Layout};
-use core::ops::Add;
 
-static mut NEXT_AVAILABLE_VIRTUAL_ADDRESS: Option<VirtualAddress> = None;
-static mut LAST_MAPPED_VIRTUAL_PAGE: Option<VirtualPageAddress> = None;
-static mut VMM_CONTEXT: Option<VirtualMemoryManagerContext> = None;
-static HEAP_LOCK: SpinLock = SpinLock::new();
-
-pub struct Allocator;
-
-#[global_allocator]
-pub static GLOBAL_ALLOCATOR: Allocator = Allocator;
-
-impl Add<usize> for VirtualAddress {
-    type Output = VirtualAddress;
-    fn add(self, rhs: usize) -> Self::Output {
-        VirtualAddress::new(self.inner() + rhs).unwrap()
-    }
+fn align_up(v: usize, a: usize) -> usize {
+    if a == 0 { return v; }
+    let mask = a - 1;
+    (v + mask) & !mask
 }
 
-#[allow(static_mut_refs)]
+const EARLY_HEAP_SIZE: usize = 0x4_0000;
+static mut EARLY_HEAP_MEMORY: [u8; EARLY_HEAP_SIZE] = [0; EARLY_HEAP_SIZE];
+
+pub struct Allocator(InterruptSafeSpinLock<AllocatorInner>);
+
+struct AllocatorInner {
+    early_heap_next_available_idx: usize,
+    next_available_virt_addr: usize,
+    /// The highest virtual address currently backed by physical frames
+    current_heap_limit: usize,
+}
+
+#[global_allocator]
+pub static GLOBAL_ALLOCATOR: Allocator = Allocator(InterruptSafeSpinLock::new(AllocatorInner {
+    early_heap_next_available_idx: 0,
+    next_available_virt_addr: KERNEL_HEAP_BASE,
+    current_heap_limit: KERNEL_HEAP_BASE,
+}));
+
 unsafe impl GlobalAlloc for Allocator {
     unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
-        // pad_to_align ensures the size is a multiple of the alignment,
-        // but we still need to ensure the START address is aligned.
         let layout = layout.pad_to_align();
-        let _lock = HEAP_LOCK.lock();
+        let size = layout.size();
+        let align = layout.align();
 
-        let vmm_context = if let Some(ref vmm_context) = VMM_CONTEXT {
-            vmm_context
-        } else {
-            let vmm_context = VirtualMemoryManagerContext::get_kernel_context();
-            VMM_CONTEXT = Some(vmm_context);
-            VMM_CONTEXT.as_ref().unwrap()
-        };
+        // Initial lock to check status
+        {
+            let mut inner = self.0.lock();
 
-        loop {
-            if let Some(mut next_addr) = NEXT_AVAILABLE_VIRTUAL_ADDRESS {
-                // --- ALIGNMENT LOGIC ---
-                // Calculate the padding needed to satisfy layout.align()
-                let addr_val = next_addr.inner();
-                let align = layout.align();
-                let aligned_addr = (addr_val + align - 1) & !(align - 1);
-
-                // Temporarily update next_addr to the aligned position for the bounds check
-                next_addr = VirtualAddress::new(aligned_addr).unwrap();
-
-                if let Some(last_page) = LAST_MAPPED_VIRTUAL_PAGE {
-                    if next_addr.inner() + layout.size() <= last_page.end().inner() {
-                        // Success! Update global state and return
-                        let ptr = next_addr.inner() as *mut u8;
-                        NEXT_AVAILABLE_VIRTUAL_ADDRESS = Some(next_addr + layout.size());
-                        return ptr;
-                    }
-                }
+            // Try Early Heap First
+            let early_start = align_up(inner.early_heap_next_available_idx, align);
+            if early_start + size <= EARLY_HEAP_SIZE {
+                inner.early_heap_next_available_idx = early_start + size;
+                #[allow(static_mut_refs)]
+                return (EARLY_HEAP_MEMORY.as_mut_ptr() as usize + early_start) as *mut u8;
             }
 
-            // If we reach here, we either have no NEXT_AVAILABLE or no space left.
-            // Map a new page.
-            let new_frame = match PhysicalMemoryManager::alloc_frame() {
-                Ok(frame) => frame,
-                Err(_err) => {
-                    panic!("OOM: Physical frame allocation failed\n");
-                }
-            };
+            // Paged Heap check
+            let vaddr_start = align_up(inner.next_available_virt_addr, align);
+            let required_limit = vaddr_start + size;
 
-            let next_virt_page_addr = if let Some(last_page) = LAST_MAPPED_VIRTUAL_PAGE {
-                last_page.next_page()
-            } else {
-                // Initial heap setup: allocate a large virtual range
-                VirtualAddressAllocator::alloc_range(PAGE_FRAME_SIZE * 1024 * 1024)
-            };
-
-            // Ensure not already mapped
-            if vmm_context.translate(next_virt_page_addr).unwrap().is_some() {
-                panic!("Allocator Error: Virtual page already mapped\n");
+            // If we have enough mapped memory, just bump and return
+            if required_limit <= inner.current_heap_limit {
+                inner.next_available_virt_addr = required_limit;
+                return vaddr_start as *mut u8;
             }
-
-            if vmm_context.map_page(
-                next_virt_page_addr,
-                new_frame,
-                VirtualMemoryMappingFlags::PRESENT | VirtualMemoryMappingFlags::WRITE,
-            ).is_err() {
-                panic!("Allocator Error: Failed to map page\n");
-            }
-
-            LAST_MAPPED_VIRTUAL_PAGE = Some(next_virt_page_addr);
-            if NEXT_AVAILABLE_VIRTUAL_ADDRESS.is_none() {
-                NEXT_AVAILABLE_VIRTUAL_ADDRESS = Some(next_virt_page_addr.start());
-            }
-
-            // Loop repeats to re-check the space with the newly mapped page
         }
+
+        // If we reach here, we need to map more pages.
+        // We do NOT hold the lock here. Interrupts are ENABLED.
+        self.expand_and_alloc(layout)
     }
 
     unsafe fn dealloc(&self, _ptr: *mut u8, _layout: Layout) {
-        // Bump allocator: deallocation is a no-op until we implement a proper heap.
+        // Bump allocator: deallocation is a no-op.
+    }
+}
+
+impl Allocator {
+    /// Handles mapping more physical memory. Called without the lock held.
+    unsafe fn expand_and_alloc(&self, layout: Layout) -> *mut u8 {
+        let size = layout.size();
+        let align = layout.align();
+
+        // Calculate how many pages we need to add to satisfy this request plus a buffer
+        let pages_to_alloc = (align_up(size, PAGE_FRAME_SIZE) / PAGE_FRAME_SIZE) + 8;
+
+        // We must re-lock briefly to see where the current limit is
+        let mapping_start_vaddr = self.0.lock().current_heap_limit;
+        let vmm = VirtualMemoryManagerContext::get_kernel_context();
+
+        for i in 0..pages_to_alloc {
+            let phys = PhysicalMemoryManager::alloc_frame()
+                .expect("OOM: Failed to allocate physical frame for kernel heap");
+
+            let vaddr = mapping_start_vaddr + (i * PAGE_FRAME_SIZE);
+            let vpage = VirtualPageAddress::new(vaddr).unwrap();
+
+            vmm.map_page(
+                vpage,
+                phys,
+                VirtualMemoryMappingFlags::PRESENT | VirtualMemoryMappingFlags::WRITE,
+            ).expect("Failed to map kernel heap page");
+        }
+
+        // Re-acquire lock to update the limit and perform the actual bump
+        let mut inner = self.0.lock();
+
+        // Update the limit since we successfully mapped pages
+        let new_limit = mapping_start_vaddr + (pages_to_alloc * PAGE_FRAME_SIZE);
+        if new_limit > inner.current_heap_limit {
+            inner.current_heap_limit = new_limit;
+        }
+
+        let vaddr_start = align_up(inner.next_available_virt_addr, align);
+        inner.next_available_virt_addr = vaddr_start + size;
+
+        vaddr_start as *mut u8
     }
 }

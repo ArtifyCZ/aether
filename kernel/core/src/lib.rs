@@ -20,7 +20,6 @@ mod elf;
 use crate::init_process::spawn_init_process;
 use crate::platform::platform::Platform;
 use alloc::boxed::Box;
-use alloc::string::ToString;
 use core::ffi::c_void;
 use core::ptr::NonNull;
 
@@ -137,6 +136,7 @@ fn main(
         let elf = Elf::init(hhdm_offset);
         spawn_init_process(&elf, scheduler);
 
+        println!("Disabling early console...");
         logging::disable_early_console();
 
         scheduler.start();

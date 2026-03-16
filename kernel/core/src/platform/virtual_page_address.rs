@@ -1,3 +1,4 @@
+use core::ops::Add;
 use crate::platform::memory_layout::PAGE_FRAME_SIZE;
 use crate::platform::virtual_address::{VirtualAddress, VirtualAddressParseError};
 use thiserror_no_std::Error;
@@ -11,6 +12,13 @@ pub enum VirtualPageAddressParseError {
     InvalidAddress(#[from] VirtualAddressParseError),
     #[error("Virtual page address is not aligned to the page size")]
     NotAligned,
+}
+
+impl Add<usize> for VirtualAddress {
+    type Output = VirtualAddress;
+    fn add(self, rhs: usize) -> Self::Output {
+        VirtualAddress::new(self.inner() + rhs).unwrap()
+    }
 }
 
 impl VirtualPageAddress {
