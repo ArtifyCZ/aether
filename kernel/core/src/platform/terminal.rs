@@ -4,8 +4,9 @@ use core::ffi::{CStr, c_char};
 use core::ptr::NonNull;
 use eclipse_framebuffer::ScrollingTextRenderer;
 use kernel_bindings_gen::limine_framebuffer;
+use crate::spin_lock::SpinLock;
 
-static TERMINAL: InterruptSafeSpinLock<Option<Terminal>> = InterruptSafeSpinLock::new(None);
+static TERMINAL: SpinLock<Option<Terminal>> = SpinLock::new(None);
 
 pub struct Terminal {
     renderer: &'static mut ScrollingTextRenderer,

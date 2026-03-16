@@ -3,5 +3,6 @@ members = [
     "api/init",
     "api/syscalls",
     "core",
+    "entry",
     "platform",
 ]

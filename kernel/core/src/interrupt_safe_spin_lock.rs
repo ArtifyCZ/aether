@@ -1,18 +1,19 @@
 use crate::platform::interrupts::Interrupts;
 use core::cell::UnsafeCell;
 use core::ops::{Deref, DerefMut};
-use core::sync::atomic::{AtomicBool, Ordering};
+use core::sync::atomic::{AtomicBool, AtomicU64, Ordering};
+use crate::task_id::TaskId;
 
 #[derive(Debug)]
 pub struct InterruptSafeSpinLock<T> {
-    locked: AtomicBool,
+    locked: AtomicU64,
     data: UnsafeCell<T>,
 }
 
 impl<T> InterruptSafeSpinLock<T> {
     pub const fn new(data: T) -> Self {
         Self {
-            locked: AtomicBool::new(false),
+            locked: AtomicU64::new(u64::MAX),
             data: UnsafeCell::new(data),
         }
     }
@@ -40,9 +41,15 @@ impl<'a, T> InterruptSafeSpinLockGuard<'a, T> {
             Interrupts::disable();
         }
 
+        let task_id = TaskId::get_current().map(|id| id.get()).unwrap_or(0);
+
+        if lock.locked.load(Ordering::Acquire) == task_id {
+            panic!("Attempted to lock on the same thread where this is already locked!");
+        }
+
         while lock
             .locked
-            .compare_exchange(false, true, Ordering::Acquire, Ordering::Relaxed)
+            .compare_exchange(u64::MAX, task_id, Ordering::Acquire, Ordering::Relaxed)
             .is_err()
         {
             core::hint::spin_loop();
@@ -68,7 +75,7 @@ impl<'a, T> DerefMut for InterruptSafeSpinLockGuard<'a, T> {
 
 impl<'a, T> Drop for InterruptSafeSpinLockGuard<'a, T> {
     fn drop(&mut self) {
-        self.0.locked.store(false, Ordering::Release);
+        self.0.locked.store(u64::MAX, Ordering::Release);
         unsafe {
             Interrupts::enable();
         }

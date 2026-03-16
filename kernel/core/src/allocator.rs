@@ -6,6 +6,7 @@ use crate::platform::virtual_memory_manager_context::{
 use crate::platform::virtual_page_address::VirtualPageAddress;
 use crate::interrupt_safe_spin_lock::InterruptSafeSpinLock;
 use core::alloc::{GlobalAlloc, Layout};
+use crate::spin_lock::SpinLock;
 
 fn align_up(v: usize, a: usize) -> usize {
     if a == 0 { return v; }
@@ -16,7 +17,7 @@ fn align_up(v: usize, a: usize) -> usize {
 const EARLY_HEAP_SIZE: usize = 0x4_0000;
 static mut EARLY_HEAP_MEMORY: [u8; EARLY_HEAP_SIZE] = [0; EARLY_HEAP_SIZE];
 
-pub struct Allocator(InterruptSafeSpinLock<AllocatorInner>);
+pub struct Allocator(SpinLock<AllocatorInner>);
 
 struct AllocatorInner {
     early_heap_next_available_idx: usize,
@@ -26,7 +27,7 @@ struct AllocatorInner {
 }
 
 #[global_allocator]
-pub static GLOBAL_ALLOCATOR: Allocator = Allocator(InterruptSafeSpinLock::new(AllocatorInner {
+pub static GLOBAL_ALLOCATOR: Allocator = Allocator(SpinLock::new(AllocatorInner {
     early_heap_next_available_idx: 0,
     next_available_virt_addr: KERNEL_HEAP_BASE,
     current_heap_limit: KERNEL_HEAP_BASE,

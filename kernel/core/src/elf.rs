@@ -96,7 +96,8 @@ impl Elf {
                     let mut flags = VirtualMemoryMappingFlags::PRESENT | VirtualMemoryMappingFlags::USER;
                     if p_flags & ELF_PF_W != 0 {
                         flags.insert(VirtualMemoryMappingFlags::WRITE);
-                    } else if p_flags & ELF_PF_X != 0 {
+                    }
+                    if p_flags & ELF_PF_X != 0 {
                         flags.insert(VirtualMemoryMappingFlags::EXEC);
                     }
                     flags

@@ -92,8 +92,9 @@ exception_vector_table:
     ldr x3, [sp, #272] /* elr */
     msr sp_el0, x0 /* Restore the user stack pointer */
     msr ttbr0_el1, x1 /* Switch page tables */
-    tlbi vmalle1is  /* Flush all EL1 TLB entries */
-    dsb sy /* Data Synchronization Barrier */
+    dsb ish           /* Ensure write to TTBR0 is visible */
+    tlbi vmalle1is    /* Flush all EL1 TLB entries for safety during dev */
+    dsb ish /* Data Synchronization Barrier */
     isb /* Instruction Barrier to ensure MMU is ready */
     msr spsr_el1, x2
     msr elr_el1, x3

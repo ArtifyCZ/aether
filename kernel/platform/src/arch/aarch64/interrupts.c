@@ -8,6 +8,7 @@
 #include <stdint.h>
 
 #include "boot.h"
+#include "cpu_local.h"
 #include "syscalls_priv.h"
 
 extern void *exception_vector_table;
@@ -65,13 +66,13 @@ void interrupts_init(void) {
 void interrupts_enable(void) {
     g_interrupt_disable_nesting--;
     if (g_interrupt_disable_nesting > 0) return;
-    __asm__ volatile("msr daifclr, #2" ::: "memory");
+    __asm__ volatile("msr daifclr, #3" ::: "memory");
 }
 
 void interrupts_disable(void) {
     g_interrupt_disable_nesting++;
     if (g_interrupt_disable_nesting > 1) return;
-    __asm__ volatile("msr daifset, #2" ::: "memory");
+    __asm__ volatile("msr daifset, #3" ::: "memory");
 }
 
 void interrupts_set_irq_handler(irq_handler_new_t handler, void *priv) {
@@ -146,6 +147,10 @@ uintptr_t handle_sync_exception(struct interrupt_frame *frame) {
 
     emergency_console_println("------------------------------------------");
     emergency_console_println("!!! KERNEL PANIC: Synchronous Abort !!!");
+
+    emergency_console_print("Task id: ");
+    emergency_console_print_hex_u64(cpu_local_get()->task_id);
+    emergency_console_println("");
 
     emergency_console_print("ESR_EL1: ");
     emergency_console_print_hex_u64(frame->esr);

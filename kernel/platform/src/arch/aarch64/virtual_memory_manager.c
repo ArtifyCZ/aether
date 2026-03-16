@@ -10,8 +10,14 @@ static inline uint64_t* get_vaddr(uintptr_t paddr) {
     return (uint64_t*)(paddr + g_hhdm);
 }
 
-static uint64_t flags_to_desc(vmm_flags_t flags) {
+static uint64_t flags_to_desc(uintptr_t virt, vmm_flags_t flags) {
     uint64_t desc = DESC_VALID | DESC_AF | DESC_SH_INNER;
+
+    if (virt >= 0xffffffff80000000ULL) {
+        // Ensure bit 11 is NOT set
+    } else {
+        desc |= (1ULL << 11); // Set nG for User space
+    }
 
     if (!(flags & VMM_FLAG_WRITE)) desc |= DESC_RO;
 
@@ -25,8 +31,11 @@ static uint64_t flags_to_desc(vmm_flags_t flags) {
     }
 
     // Memory Attributes (MAIR)
-    desc |= ((flags & (VMM_FLAG_DEVICE | VMM_FLAG_NOCACHE)) ?
-            (ATTR_DEVICE_IDX << 2) : (ATTR_NORMAL_IDX << 2));
+    uint8_t attr_idx = ATTR_NORMAL_IDX;
+    if (flags & (VMM_FLAG_DEVICE | VMM_FLAG_NOCACHE)) {
+        attr_idx = ATTR_DEVICE_IDX;
+    }
+    desc |= (attr_idx << 2);
 
     return desc;
 }
@@ -96,10 +105,17 @@ bool vmm_map_page(const struct vmm_context *context, uintptr_t virt, uintptr_t p
     }
 
     int l3_idx = (virt >> L3_SHIFT) & IDX_MASK;
-    table[l3_idx] = (phys & 0x0000FFFFFFFFF000ULL) | DESC_PAGE | flags_to_desc(flags);
+    table[l3_idx] = (phys & 0x0000FFFFFFFFF000ULL) | DESC_PAGE | flags_to_desc(virt, flags);
 
     // Invalidate TLB for the correct ASID/Address
-    __asm__ volatile("tlbi vaae1is, %0; dsb sy; isb" : : "r"(virt >> 12));
+    __asm__ volatile(
+        "tlbi vaae1is, %0\n"
+        "dsb sy\n"
+        "ic ivau, %0\n" // Invalidate instruction cache by VA to Point of Unification
+        "dsb sy\n"
+        "isb\n"         // Instruction Synchronization Barrier
+        : : "r"(virt >> 12) : "memory"
+    );
 
     return true;
 }

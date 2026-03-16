@@ -4,7 +4,7 @@
 extern crate alloc;
 
 mod allocator;
-mod entrypoint;
+pub mod entrypoint;
 mod init_process;
 mod interrupt_safe_spin_lock;
 mod logging;
@@ -114,7 +114,6 @@ fn main(
         println!("Terminal initialized!");
         println!("Booting...");
         Platform::init(rsdp_address);
-        logging::enable_terminal();
         Interrupts::init();
 
         println!("Hello from Rust!");
@@ -129,6 +128,7 @@ fn main(
             scheduler.signal_irq(irq, frame).unwrap_or(frame)
         });
         Timer::init(100);
+        Interrupts::enable();
 
         Ticker::init(scheduler);
 

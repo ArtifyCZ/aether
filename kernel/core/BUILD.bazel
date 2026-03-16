@@ -1,5 +1,5 @@
 load("@rules_cc//cc:cc_library.bzl", "cc_library")
-load("@rules_rust//rust:defs.bzl", "rust_static_library")
+load("@rules_rust//rust:defs.bzl", "rust_library")
 load("@rules_rust_bindgen//:defs.bzl", "rust_bindgen_library")
 
 cc_library(
@@ -84,9 +84,10 @@ rust_bindgen_library(
     ],
     edition = "2024",
     header = "platform_wrapper.h",
+    visibility = ["//kernel:__subpackages__"]
 )
 
-rust_static_library(
+rust_library(
     name = "kernel_core",
     srcs = glob([
         "src/**/*.rs",
