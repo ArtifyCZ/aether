@@ -113,7 +113,7 @@ fn main(
         Terminal::init(NonNull::new(framebuffer).unwrap());
         println!("Terminal initialized!");
         println!("Booting...");
-        Platform::init(framebuffer, rsdp_address);
+        Platform::init(rsdp_address);
         logging::enable_terminal();
         Interrupts::init();
 
