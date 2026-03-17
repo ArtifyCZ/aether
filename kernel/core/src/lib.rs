@@ -118,8 +118,10 @@ fn main(
 
         println!("Hello from Rust!");
         let registry = TaskRegistry::new();
+        println!("Foo1");
 
         let scheduler = Scheduler::init(registry);
+        println!("Bar1");
 
         let syscall_handler = SyscallHandler::init(scheduler, registry);
         Syscalls::init(|ctx| syscall_handler.handle(ctx));
@@ -127,12 +129,15 @@ fn main(
             Interrupts::mask_irq(irq);
             scheduler.signal_irq(irq, frame).unwrap_or(frame)
         });
+        println!("Baz1");
         Timer::init(100);
         Interrupts::enable();
+        println!("Qaz1");
 
         Ticker::init(scheduler);
 
         spawn_thread(scheduler, thread_heartbeat);
+        println!("Gez1");
         let elf = Elf::init(hhdm_offset);
         spawn_init_process(&elf, scheduler);
 
