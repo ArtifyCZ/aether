@@ -1,10 +1,9 @@
-use crate::interrupt_safe_spin_lock::InterruptSafeSpinLock;
 use crate::platform::modules::Modules;
-use core::ffi::{CStr, c_char};
+use crate::spin_lock::SpinLock;
+use core::ffi::{c_char, CStr};
 use core::ptr::NonNull;
 use eclipse_framebuffer::ScrollingTextRenderer;
 use kernel_bindings_gen::limine_framebuffer;
-use crate::spin_lock::SpinLock;
 
 static TERMINAL: SpinLock<Option<Terminal>> = SpinLock::new(None);
 

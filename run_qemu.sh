@@ -5,6 +5,7 @@ BIOS=$3
 DEBUG=$4
 QEMU="qemu-system-$ARCH"
 QEMUFLAGS=""
+QEMUFLAGS="$QEMUFLAGS -no-reboot"
 
 if [ "$DEBUG" = "DEBUG" ]; then
     QEMUFLAGS="$QEMUFLAGS -s -S"
