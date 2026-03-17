@@ -37,8 +37,6 @@ void emergency_console_init(uintptr_t serial_base) {
     // (not-loopback with IRQs enabled and OUT#1 and OUT#2 bits enabled)
     outb(PORT + 4, 0x0F);
 
-    interrupts_disable();
-
     emergency_console_println("=========================");
     emergency_console_println("    Emergency Console    ");
     emergency_console_println("=========================");

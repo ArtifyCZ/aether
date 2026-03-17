@@ -1,8 +1,8 @@
 use crate::platform::interrupts::Interrupts;
+use crate::task_id::TaskId;
 use core::cell::UnsafeCell;
 use core::ops::{Deref, DerefMut};
 use core::sync::atomic::{AtomicBool, AtomicU64, Ordering};
-use crate::task_id::TaskId;
 
 #[derive(Debug)]
 pub struct InterruptSafeSpinLock<T> {
@@ -23,7 +23,10 @@ impl<T> InterruptSafeSpinLock<T> {
     }
 }
 
-impl<T> Default for InterruptSafeSpinLock<T> where T: Default {
+impl<T> Default for InterruptSafeSpinLock<T>
+where
+    T: Default,
+{
     fn default() -> Self {
         Self::new(T::default())
     }
@@ -33,12 +36,18 @@ unsafe impl<T: Send> Send for InterruptSafeSpinLock<T> {}
 
 unsafe impl<T: Send> Sync for InterruptSafeSpinLock<T> {}
 
-pub struct InterruptSafeSpinLockGuard<'a, T>(&'a InterruptSafeSpinLock<T>);
+pub struct InterruptSafeSpinLockGuard<'a, T> {
+    were_interrupts_enabled: bool,
+    lock: &'a InterruptSafeSpinLock<T>,
+}
 
 impl<'a, T> InterruptSafeSpinLockGuard<'a, T> {
     fn acquire(lock: &'a InterruptSafeSpinLock<T>) -> Self {
-        unsafe {
-            Interrupts::disable();
+        let were_interrupts_enabled = unsafe { Interrupts::are_enabled() };
+        if were_interrupts_enabled {
+            unsafe {
+                Interrupts::disable();
+            }
         }
 
         let task_id = TaskId::get_current().map(|id| id.get()).unwrap_or(0);
@@ -55,7 +64,10 @@ impl<'a, T> InterruptSafeSpinLockGuard<'a, T> {
             core::hint::spin_loop();
         }
 
-        InterruptSafeSpinLockGuard(lock)
+        InterruptSafeSpinLockGuard {
+            were_interrupts_enabled,
+            lock,
+        }
     }
 }
 
@@ -63,21 +75,23 @@ impl<'a, T> Deref for InterruptSafeSpinLockGuard<'a, T> {
     type Target = T;
 
     fn deref(&self) -> &Self::Target {
-        unsafe { &*self.0.data.get() }
+        unsafe { &*self.lock.data.get() }
     }
 }
 
 impl<'a, T> DerefMut for InterruptSafeSpinLockGuard<'a, T> {
     fn deref_mut(&mut self) -> &mut Self::Target {
-        unsafe { &mut *self.0.data.get() }
+        unsafe { &mut *self.lock.data.get() }
     }
 }
 
 impl<'a, T> Drop for InterruptSafeSpinLockGuard<'a, T> {
     fn drop(&mut self) {
-        self.0.locked.store(u64::MAX, Ordering::Release);
+        self.lock.locked.store(u64::MAX, Ordering::Release);
         unsafe {
-            Interrupts::enable();
+            if self.were_interrupts_enabled {
+                Interrupts::enable();
+            }
         }
     }
 }

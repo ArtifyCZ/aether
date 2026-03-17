@@ -27,10 +27,6 @@ typedef enum {
 // Initialize the architecture-specific interrupt controller (GIC or APIC)
 void interrupts_init(void);
 
-// Enable/Disable interrupts globally on the current CPU
-void interrupts_enable(void);
-void interrupts_disable(void);
-
 void interrupts_set_irq_handler(irq_handler_new_t handler, void *priv);
 
 void interrupts_mask_irq(uint8_t irq);

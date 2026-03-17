@@ -5,6 +5,8 @@ use core::arch::naked_asm;
 #[cfg(target_arch = "x86_64")]
 pub unsafe extern "C" fn _start() -> ! {
     naked_asm!(
+        "cli",
+
         "call {main_func}",
 
         "3:",

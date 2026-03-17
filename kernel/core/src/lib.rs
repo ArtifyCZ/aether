@@ -110,10 +110,10 @@ fn main(
         EarlyConsole::init(SERIAL_BASE);
         println!("\nEarly console initialized!\n");
         Modules::init(modules);
+        Platform::init(rsdp_address);
         Terminal::init(NonNull::new(framebuffer).unwrap());
         println!("Terminal initialized!");
         println!("Booting...");
-        Platform::init(rsdp_address);
         Interrupts::init();
 
         println!("Hello from Rust!");

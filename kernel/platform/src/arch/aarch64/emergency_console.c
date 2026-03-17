@@ -61,8 +61,6 @@ void emergency_console_init(const uintptr_t serial_base) {
     // Enable UART, TX, and RX (Polling mode is now active)
     uart_base[UART_CR] = (1 << 0) | (1 << 8) | (1 << 9);
 
-    interrupts_disable();
-
     emergency_console_println("=========================");
     emergency_console_println("    Emergency Console    ");
     emergency_console_println("=========================");

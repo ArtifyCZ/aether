@@ -73,18 +73,6 @@ void interrupts_init(void) {
     g_interrupt_disable_nesting = 1;
 }
 
-void interrupts_enable(void) {
-    g_interrupt_disable_nesting--;
-    if (g_interrupt_disable_nesting > 0) return;
-    __asm__ volatile("sti");
-}
-
-void interrupts_disable(void) {
-    g_interrupt_disable_nesting++;
-    if (g_interrupt_disable_nesting > 1) return;
-    __asm__ volatile("cli");
-}
-
 void interrupts_set_irq_handler(irq_handler_new_t handler, void *priv) {
     g_irq_handler = handler;
     g_irq_handler_priv = priv;
