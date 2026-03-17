@@ -49,7 +49,10 @@ rust_bindgen_library(
     ],
     edition = "2024",
     header = "boot_info.h",
-    target_compatible_with = ["@//platforms:kernel_mode"] + select({
+    target_compatible_with = select({
+        "//platforms:kernel_mode": ["@//platforms:kernel_mode"],
+        "//platforms:user_mode": ["@//platforms:user_mode"],
+    }) + select({
         "@platforms//cpu:aarch64": [
             "@platforms//cpu:aarch64",
             "@platforms//os:uefi",
@@ -59,5 +62,8 @@ rust_bindgen_library(
             "@platforms//os:none",
         ],
     }),
-    visibility = ["//kernel/core:__subpackages__"],
+    visibility = [
+        "//kernel/core:__subpackages__",
+        "//init:__subpackages__",
+    ],
 )
