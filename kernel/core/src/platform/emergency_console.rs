@@ -1,4 +1,4 @@
-use kernel_bindings_gen::{emergency_console_init, emergency_console_write};
+use kernel_hal::emergency_console;
 
 pub struct EmergencyConsole;
 
@@ -17,21 +17,13 @@ impl EmergencyConsole {
         }
 
         unsafe {
-            emergency_console_init(serial_base);
-        }
-    }
-
-    pub unsafe fn write(byte: u8) {
-        unsafe {
-            emergency_console_write(byte);
+            emergency_console::init(serial_base);
         }
     }
 
     pub unsafe fn write_str(s: &str) {
         unsafe {
-            for byte in s.bytes() {
-                Self::write(byte);
-            }
+            emergency_console::print(s);
         }
     }
 }

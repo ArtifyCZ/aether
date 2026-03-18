@@ -13,7 +13,11 @@ pub mod cpu {
 }
 
 pub mod early_console {
-    pub use super::implementation::early_console::{init, disable, write};
+    pub use super::implementation::early_console::{disable, init, write};
+}
+
+pub mod emergency_console {
+    pub use super::implementation::emergency_console::{init, write};
 }
 
 pub mod mmu {

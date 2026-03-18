@@ -123,6 +123,8 @@ fn main(
         let scheduler = Scheduler::init(registry);
         println!("Bar1");
 
+        panic!("Test 123");
+
         let syscall_handler = SyscallHandler::init(scheduler, registry);
         Syscalls::init(|ctx| syscall_handler.handle(ctx));
         Interrupts::set_irq_handler(|frame, irq| {
