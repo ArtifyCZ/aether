@@ -2,6 +2,7 @@
 extern crate bitflags;
 extern crate kernel_bindings_gen;
 
-pub mod cpu;
-pub mod mmu;
 mod arch;
+pub mod cpu;
+pub mod early_console;
+pub mod mmu;

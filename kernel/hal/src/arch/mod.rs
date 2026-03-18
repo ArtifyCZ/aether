@@ -8,6 +8,14 @@ mod x86_64;
 #[cfg(target_arch = "x86_64")]
 use self::x86_64 as implementation;
 
+pub mod cpu {
+    pub use super::implementation::cpu::hcf;
+}
+
+pub mod early_console {
+    pub use super::implementation::early_console::{init, disable, write};
+}
+
 pub mod mmu {
     pub use super::implementation::mmu::{
         create_context, get_kernel_context, init, map_page, translate, unmap_page,

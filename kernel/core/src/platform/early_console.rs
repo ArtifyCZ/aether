@@ -1,31 +1,23 @@
-use kernel_bindings_gen::{early_console_disable, early_console_init, early_console_write};
+use kernel_hal::early_console;
 
 pub struct EarlyConsole;
 
 impl EarlyConsole {
     pub unsafe fn init(serial_base: usize) {
         unsafe {
-            early_console_init(serial_base);
+            early_console::init(serial_base as u64);
         }
     }
 
     pub unsafe fn disable() {
         unsafe {
-            early_console_disable();
-        }
-    }
-
-    pub unsafe fn write(byte: u8) {
-        unsafe {
-            early_console_write(byte);
+            early_console::disable();
         }
     }
 
     pub unsafe fn write_str(str: &str) {
-        for byte in str.bytes() {
-            unsafe {
-                EarlyConsole::write(byte);
-            }
+        unsafe {
+            early_console::print(str);
         }
     }
 }

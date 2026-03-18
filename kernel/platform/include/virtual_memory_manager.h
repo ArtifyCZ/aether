@@ -1,3 +1,5 @@
+// NOTE THAT THE IMPLEMENTATION HAS BEEN MOVED TO RUST!
+
 #pragma once
 
 #include <stdint.h>
