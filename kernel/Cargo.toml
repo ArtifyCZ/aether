@@ -4,5 +4,6 @@ members = [
     "api/syscalls",
     "core",
     "entry",
+    "hal",
     "platform",
 ]

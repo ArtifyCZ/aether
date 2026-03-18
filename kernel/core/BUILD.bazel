@@ -108,6 +108,7 @@ rust_library(
         ":kernel_bindings_gen",
         ":syscalls_rust",
         "//kernel/api/init:init_contract_rust",
+        "//kernel/hal:kernel_hal",
         "@crates//:bitflags",
         "@crates//:eclipse_framebuffer",
         "@crates//:thiserror-no-std",

@@ -1,0 +1,7 @@
+[package]
+name = "kernel_hal"
+
+[lib]
+path = "src/lib.rs"
+
+[dependencies]

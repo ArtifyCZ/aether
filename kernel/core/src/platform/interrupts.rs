@@ -1,10 +1,10 @@
 use crate::platform::tasks::TaskFrame;
 use alloc::boxed::Box;
-use core::arch::asm;
 use kernel_bindings_gen::{
     interrupt_frame, interrupts_init, interrupts_mask_irq, interrupts_set_irq_handler,
     interrupts_unmask_irq,
 };
+use kernel_hal::cpu::interrupts;
 
 pub struct Interrupts;
 
@@ -59,40 +59,19 @@ impl Interrupts {
 
     pub unsafe fn are_enabled() -> bool {
         unsafe {
-            let res: u64;
-            #[cfg(target_arch = "x86_64")]
-            {
-                asm!("pushfq", "pop {}", out(reg) res);
-                (res & (1 << 9)) != 0
-            }
-            #[cfg(target_arch = "aarch64")]
-            {
-                asm!("mrs {}, daif", out(reg) res);
-                // Bit 7 is the I (IRQ) mask bit.
-                // If it is 0, interrupts are NOT masked (enabled).
-                (res & (1 << 7)) == 0
-            }
+            interrupts::are_enabled()
         }
     }
 
     pub unsafe fn enable() {
         unsafe {
-            #[cfg(target_arch = "x86_64")]
-            asm!("sti");
-            #[cfg(target_arch = "aarch64")]
-            asm!("msr daifclr, #3");
+            interrupts::enable()
         }
     }
 
     pub unsafe fn disable() {
         unsafe {
-            #[cfg(target_arch = "x86_64")]
-            asm!("cli");
-            #[cfg(target_arch = "aarch64")]
-            asm!(
-                "msr daifset, #3",
-                "dmb sy",
-            );
+            interrupts::disable()
         }
     }
 }
