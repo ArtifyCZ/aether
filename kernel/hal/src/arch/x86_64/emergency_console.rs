@@ -1,29 +1,6 @@
 use core::arch::asm;
+use crate::arch::x86_64::io_wrapper::{inb, outb};
 use crate::arch::cpu::hcf;
-
-unsafe fn inb(port: u16) -> u8 {
-    unsafe {
-        let ret: u8;
-        asm!(
-        "inb %dx, %al",
-        out("al") ret,
-        in("dx") port,
-        options(att_syntax),
-        );
-        ret
-    }
-}
-
-unsafe fn outb(port: u16, value: u8) {
-    unsafe {
-        asm!(
-        "outb %al, %dx",
-        in("al") value,
-        in("dx") port,
-        options(att_syntax),
-        );
-    }
-}
 
 pub unsafe fn init(serial_base: u64) -> u64 {
     unsafe {

@@ -25,12 +25,16 @@ typedef enum {
  */
 
 // Initialize the architecture-specific interrupt controller (GIC or APIC)
+// UNUSED OUTSIDE RUST
 void interrupts_init(void);
 
+// UNUSED OUTSIDE RUST
 void interrupts_set_irq_handler(irq_handler_new_t handler, void *priv);
 
+// UNUSED OUTSIDE RUST
 void interrupts_mask_irq(uint8_t irq);
 
+// UNUSED OUTSIDE RUST
 void interrupts_unmask_irq(uint8_t irq);
 
 /**
@@ -41,10 +45,13 @@ void interrupts_unmask_irq(uint8_t irq);
 // irq: The hardware IRQ number
 // handler: The function to call
 // priv: Private data passed back to the handler
+// USED TO REGISTER LAPIC HANDLER
 bool interrupts_register_handler(uint32_t irq, irq_handler_t handler, void *priv);
 
 // Unregister a handler
+// UNUSED
 bool interrupts_unregister_handler(uint32_t irq);
 
 // Configure an IRQ (trigger type, priority, etc.)
+// UNUSED
 void interrupts_configure_irq(uint32_t irq, irq_type_t type, uint8_t priority);
