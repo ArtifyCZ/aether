@@ -5,3 +5,6 @@ name = "kernel_hal"
 path = "src/lib.rs"
 
 [dependencies]
+kernel_bindings_gen = { path = "../platform" }
+
+bitflags = "2.11.0"

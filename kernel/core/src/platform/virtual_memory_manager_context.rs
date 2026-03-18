@@ -10,17 +10,7 @@ use kernel_bindings_gen::{
 
 pub(super) const VMM_PAGE_SIZE: usize = kernel_bindings_gen::VMM_PAGE_SIZE as usize;
 
-bitflags! {
-    #[derive(Debug, Copy, Clone)]
-    pub struct VirtualMemoryMappingFlags: u32 {
-        const PRESENT = vmm_flags_t_VMM_FLAG_PRESENT;
-        const WRITE = vmm_flags_t_VMM_FLAG_WRITE;
-        const USER = vmm_flags_t_VMM_FLAG_USER;
-        const EXEC = vmm_flags_t_VMM_FLAG_EXEC;
-        const DEVICE = vmm_flags_t_VMM_FLAG_DEVICE;
-        const NO_CACHE = vmm_flags_t_VMM_FLAG_NOCACHE;
-    }
-}
+pub use kernel_hal::mmu::VirtualMemoryMappingFlags;
 
 #[derive(Debug)]
 pub struct VirtualMemoryManagerContext {
