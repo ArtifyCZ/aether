@@ -23,11 +23,9 @@ pub unsafe fn init(hhdm_offset: usize) {
     }
 }
 
-// struct vmm_context vmm_context_create(void)
-#[unsafe(no_mangle)]
-unsafe extern "C" fn vmm_context_create() -> kernel_bindings_gen::vmm_context {
-    kernel_bindings_gen::vmm_context {
-        root: create_context(),
+pub unsafe fn get_kernel_context() -> usize {
+    unsafe {
+        arch::mmu::get_kernel_context()
     }
 }
 
@@ -62,26 +60,8 @@ pub unsafe fn map_page(
     unsafe { arch::mmu::map_page(table, virt, phys, flags) }
 }
 
-// bool vmm_unmap_page(const struct vmm_context *context, uintptr_t virt)
-#[unsafe(no_mangle)]
-unsafe extern "C" fn vmm_unmap_page(
-    context: *const kernel_bindings_gen::vmm_context,
-    virt: usize,
-) -> bool {
-    unsafe { unmap_page(context.read().root, virt) }
-}
-
 pub unsafe fn unmap_page(table: usize, virt: usize) -> bool {
     unsafe { arch::mmu::unmap_page(table, virt) }
-}
-
-// uintptr_t vmm_translate(const struct vmm_context *context, uintptr_t virt)
-#[unsafe(no_mangle)]
-unsafe extern "C" fn vmm_translate(
-    context: *const kernel_bindings_gen::vmm_context,
-    virt: usize,
-) -> usize {
-    unsafe { translate(context.read().root, virt) }
 }
 
 pub unsafe fn translate(table: usize, virt: usize) -> usize {

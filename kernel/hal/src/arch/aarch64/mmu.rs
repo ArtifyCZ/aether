@@ -124,6 +124,12 @@ pub unsafe fn init(hhdm_offset: usize) {
     }
 }
 
+pub unsafe fn get_kernel_context() -> usize {
+    unsafe {
+        KERNEL_CONTEXT
+    }
+}
+
 pub unsafe fn create_context() -> usize {
     unsafe {
         // Allocate a physical frame for the new PML0 (Level 0 Table - root table)

@@ -1,4 +1,5 @@
-use crate::platform::virtual_memory_manager_context::{VirtualMemoryManagerContext, VirtualMemoryMappingFlags};
+use kernel_hal::mmu::VirtualMemoryMappingFlags;
+use crate::platform::virtual_memory_manager_context::VirtualMemoryManagerContext;
 use crate::platform::memory_layout::PAGE_FRAME_SIZE;
 use crate::platform::physical_memory_manager::PhysicalMemoryManager;
 use crate::platform::virtual_page_address::VirtualPageAddress;

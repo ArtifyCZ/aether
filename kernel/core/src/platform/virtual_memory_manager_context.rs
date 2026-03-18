@@ -1,27 +1,20 @@
 use crate::platform::physical_page_frame::{PhysicalPageFrame, PhysicalPageFrameParseError};
 use crate::platform::virtual_page_address::VirtualPageAddress;
-use bitflags::bitflags;
-use kernel_bindings_gen::{
-    g_kernel_context, vmm_context, vmm_context_create, vmm_flags_t_VMM_FLAG_DEVICE,
-    vmm_flags_t_VMM_FLAG_EXEC, vmm_flags_t_VMM_FLAG_NOCACHE, vmm_flags_t_VMM_FLAG_PRESENT,
-    vmm_flags_t_VMM_FLAG_USER, vmm_flags_t_VMM_FLAG_WRITE, vmm_map_page, vmm_translate,
-    vmm_unmap_page,
-};
+use kernel_hal::mmu;
+use kernel_hal::mmu::VirtualMemoryMappingFlags;
 
 pub(super) const VMM_PAGE_SIZE: usize = kernel_bindings_gen::VMM_PAGE_SIZE as usize;
 
-pub use kernel_hal::mmu::VirtualMemoryMappingFlags;
-
 #[derive(Debug)]
 pub struct VirtualMemoryManagerContext {
-    context: vmm_context,
+    context: usize,
 }
 
 impl VirtualMemoryManagerContext {
     pub unsafe fn get_kernel_context() -> VirtualMemoryManagerContext {
         unsafe {
             VirtualMemoryManagerContext {
-                context: g_kernel_context,
+                context: mmu::get_kernel_context(),
             }
         }
     }
@@ -29,17 +22,13 @@ impl VirtualMemoryManagerContext {
     pub unsafe fn create() -> VirtualMemoryManagerContext {
         unsafe {
             VirtualMemoryManagerContext {
-                context: vmm_context_create(),
+                context: mmu::create_context(),
             }
         }
     }
 
-    pub(super) unsafe fn inner(&self) -> &vmm_context {
-        &self.context
-    }
-
-    pub(super) unsafe fn inner_mut(&mut self) -> &mut vmm_context {
-        &mut self.context
+    pub(super) unsafe fn inner(&self) -> usize {
+        self.context
     }
 
     /// @TODO: add better errors
@@ -50,11 +39,11 @@ impl VirtualMemoryManagerContext {
         flags: VirtualMemoryMappingFlags,
     ) -> Result<(), ()> {
         if unsafe {
-            vmm_map_page(
-                &self.context,
+            mmu::map_page(
+                self.context,
                 virtual_page_address.inner(),
                 physical_address.inner(),
-                flags.bits(),
+                flags,
             )
         } {
             Ok(())
@@ -64,7 +53,7 @@ impl VirtualMemoryManagerContext {
     }
 
     pub unsafe fn unmap_page(&self, virtual_page_address: VirtualPageAddress) -> Result<(), ()> {
-        if unsafe { vmm_unmap_page(&self.context, virtual_page_address.inner()) } {
+        if unsafe { mmu::unmap_page(self.context, virtual_page_address.inner()) } {
             Ok(())
         } else {
             Err(())
@@ -76,7 +65,7 @@ impl VirtualMemoryManagerContext {
         virtual_page_address: VirtualPageAddress,
     ) -> Result<Option<PhysicalPageFrame>, PhysicalPageFrameParseError> {
         let physical_page_frame =
-            unsafe { vmm_translate(&self.context, virtual_page_address.inner()) };
+            unsafe { mmu::translate(self.context, virtual_page_address.inner()) };
         if physical_page_frame == 0 {
             return Ok(None);
         }

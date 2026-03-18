@@ -1,11 +1,11 @@
 use core::str::FromStr;
 
 use alloc::{ffi::CString, sync::Arc};
+use kernel_hal::mmu::VirtualMemoryMappingFlags;
 use crate::elf::Elf;
 use crate::platform::memory_layout::PAGE_FRAME_SIZE;
 use crate::platform::physical_memory_manager::PhysicalMemoryManager;
 use crate::platform::virtual_address_allocator::VirtualAddressAllocator;
-use crate::platform::virtual_memory_manager_context::VirtualMemoryMappingFlags;
 use crate::platform::virtual_page_address::VirtualPageAddress;
 use crate::platform::{
     modules::Modules, virtual_memory_manager_context::VirtualMemoryManagerContext,
@@ -46,7 +46,7 @@ fn load_initrd_into_memory(init_ctx: &VirtualMemoryManagerContext) -> (usize, us
                 kernel_vaddr,
                 page_phys,
                 VirtualMemoryMappingFlags::PRESENT | VirtualMemoryMappingFlags::WRITE,
-            );
+            ).unwrap();
             // Copy the data from the initrd module to the mapped page
             let src_ptr = initrd.as_ptr().add(i * PAGE_FRAME_SIZE);
             let dst_ptr = kernel_vaddr.start().inner() as *mut u8;

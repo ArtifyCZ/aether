@@ -1,7 +1,5 @@
 use crate::platform::memory_layout::PAGE_FRAME_SIZE;
-use crate::platform::physical_memory_manager::PhysicalMemoryManager;
 use crate::platform::syscalls::{SyscallContext, SyscallError, SyscallIntent};
-use crate::platform::virtual_memory_manager_context::VirtualMemoryMappingFlags;
 use crate::platform::virtual_page_address::VirtualPageAddress;
 use crate::syscall_handler::user_ptr::UserPtr;
 use crate::syscall_handler::user_slice::UserSlice;

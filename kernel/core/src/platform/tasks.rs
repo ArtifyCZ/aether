@@ -46,10 +46,12 @@ impl TaskContext {
         };
 
         let state = unsafe {
-            let user_ctx_ptr: *const vmm_context = core::mem::transmute(user_ctx.inner());
+            let user_ctx = vmm_context {
+                root: user_ctx.inner(),
+            };
             let kernel_stack_top = kernel_stack.as_ptr_range().end as usize;
             TaskFrame(task_setup_user(
-                user_ctx_ptr,
+                &user_ctx,
                 entrypoint_vaddr,
                 user_stack_vaddr,
                 kernel_stack_top,

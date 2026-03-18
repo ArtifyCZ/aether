@@ -1,14 +1,15 @@
 use crate::interrupt_safe_spin_lock::InterruptSafeSpinLock;
 use crate::platform::memory_layout::{KERNEL_HEAP_BASE, PAGE_FRAME_SIZE};
 use crate::platform::physical_memory_manager::PhysicalMemoryManager;
-use crate::platform::virtual_memory_manager_context::{
-    VirtualMemoryManagerContext, VirtualMemoryMappingFlags,
-};
+use crate::platform::virtual_memory_manager_context::VirtualMemoryManagerContext;
 use crate::platform::virtual_page_address::VirtualPageAddress;
 use core::alloc::{GlobalAlloc, Layout};
+use kernel_hal::mmu::VirtualMemoryMappingFlags;
 
 fn align_up(v: usize, a: usize) -> usize {
-    if a == 0 { return v; }
+    if a == 0 {
+        return v;
+    }
     let mask = a - 1;
     (v + mask) & !mask
 }
@@ -95,7 +96,8 @@ impl Allocator {
                 vpage,
                 phys,
                 VirtualMemoryMappingFlags::PRESENT | VirtualMemoryMappingFlags::WRITE,
-            ).expect("Failed to map kernel heap page");
+            )
+            .expect("Failed to map kernel heap page");
         }
 
         // Re-acquire lock to update the limit and perform the actual bump

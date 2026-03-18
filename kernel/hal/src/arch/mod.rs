@@ -9,5 +9,7 @@ mod x86_64;
 use self::x86_64 as implementation;
 
 pub mod mmu {
-    pub use super::implementation::mmu::{create_context, init, map_page, translate, unmap_page};
+    pub use super::implementation::mmu::{
+        create_context, get_kernel_context, init, map_page, translate, unmap_page,
+    };
 }

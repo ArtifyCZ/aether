@@ -21,12 +21,4 @@ struct vmm_context {
 
 extern struct vmm_context g_kernel_context;
 
-void vmm_init(uint64_t hhdm_offset);
-
-struct vmm_context vmm_context_create(void);
-
 bool vmm_map_page(const struct vmm_context *context, uintptr_t virt, uintptr_t phys, vmm_flags_t flags);
-
-bool vmm_unmap_page(const struct vmm_context *context, uintptr_t virt);
-
-uintptr_t vmm_translate(const struct vmm_context *context, uintptr_t virt);
