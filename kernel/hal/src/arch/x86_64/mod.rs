@@ -11,3 +11,4 @@ mod syscalls;
 mod platform;
 mod gdt;
 mod msr;
+mod acpi;
