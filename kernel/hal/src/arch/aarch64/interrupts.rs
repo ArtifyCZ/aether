@@ -1,5 +1,5 @@
 use alloc::string::ToString;
-use super::gic;
+use super::{gic, syscalls};
 use crate::arch::aarch64::timer;
 use crate::{early_console, emergency_console};
 use core::arch::asm;
@@ -28,12 +28,12 @@ const IRQ_INTID_OFFSET: u32 = 0x20;
 
 #[repr(C, align(16))]
 pub struct InterruptFrame {
-    x: [u64; 31],
-    sp_el0: u64,
-    ttbr0: u64,
-    spsr: u64,
-    elr: u64,
-    esr: u64,
+    pub(crate) x: [u64; 31],
+    pub(crate) sp_el0: u64,
+    pub(crate) ttbr0: u64,
+    pub(crate) spsr: u64,
+    pub(crate) elr: u64,
+    pub(crate) esr: u64,
 }
 
 unsafe extern "C" {
@@ -94,10 +94,6 @@ unsafe extern "C" fn interrupts_unmask_irq(irq: u8) {
     }
 }
 
-unsafe extern "C" {
-    fn syscalls_interrupt_handler(frame: *mut *mut InterruptFrame) -> bool;
-}
-
 #[unsafe(no_mangle)]
 unsafe extern "C" fn handle_sync_exception(frame: *mut InterruptFrame) -> usize {
     unsafe {
@@ -105,7 +101,7 @@ unsafe extern "C" fn handle_sync_exception(frame: *mut InterruptFrame) -> usize 
 
         if (ec == EC_SYSCALL as u64) {
             let mut return_frame = frame;
-            syscalls_interrupt_handler(&raw mut return_frame);
+            syscalls::interrupt_handler(&raw mut return_frame);
             return return_frame as usize;
         }
 

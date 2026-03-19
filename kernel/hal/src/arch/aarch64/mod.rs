@@ -5,3 +5,4 @@ pub mod mmu;
 mod interrupts;
 mod gic;
 mod timer;
+mod syscalls;
