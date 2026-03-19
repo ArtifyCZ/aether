@@ -1,5 +1,6 @@
 use core::ffi::c_void;
 use core::ptr::NonNull;
+use crate::arch::x86_64::gdt;
 use crate::early_console;
 
 #[unsafe(no_mangle)]
@@ -18,7 +19,7 @@ unsafe extern "C" {
 pub unsafe fn init(rsdp_address: Option<NonNull<c_void>>) {
     unsafe {
         early_console::print("Setting up GDT...");
-        gdt_init();
+        gdt::init();
         early_console::print("GDT initialized!");
 
         early_console::print("Setting up MSR...");
