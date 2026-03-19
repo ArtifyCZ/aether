@@ -10,3 +10,4 @@ mod io_wrapper;
 mod syscalls;
 mod platform;
 mod gdt;
+mod msr;
