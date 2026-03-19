@@ -8,3 +8,4 @@ mod timer;
 mod lapic;
 mod io_wrapper;
 mod syscalls;
+mod platform;

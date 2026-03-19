@@ -6,3 +6,4 @@ mod interrupts;
 mod gic;
 mod timer;
 mod syscalls;
+mod platform;
