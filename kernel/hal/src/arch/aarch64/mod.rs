@@ -8,3 +8,4 @@ mod timer;
 mod syscalls;
 mod platform;
 mod cpu_local;
+mod tasks;

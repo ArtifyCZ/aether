@@ -11,8 +11,6 @@ cc_library(
             "src/arch/x86_64/*.S",
         ]),
         "@platforms//cpu:aarch64": glob([
-            "src/arch/aarch64/*.c",
-            "src/arch/aarch64/*.h",
             "src/arch/aarch64/*.S",
         ]),
     }),
