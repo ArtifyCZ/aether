@@ -65,36 +65,15 @@ pub unsafe fn init() {
     }
 }
 
-#[unsafe(no_mangle)]
-unsafe extern "C" fn msr_set_kernel_stack(stack: u64) {
-    unsafe {
-        set_kernel_stack(stack as usize);
-    }
-}
-
 pub unsafe fn set_kernel_stack(stack: usize) {
     unsafe {
         CPU_LOCAL_STORAGE.kernel_stack = stack as u64;
     }
 }
 
-#[unsafe(no_mangle)]
-unsafe extern "C" fn msr_get_task_id() -> u64 {
-    unsafe {
-        get_task_id()
-    }
-}
-
 pub unsafe fn get_task_id() -> u64 {
     unsafe {
         CPU_LOCAL_STORAGE.task_id
-    }
-}
-
-#[unsafe(no_mangle)]
-unsafe extern "C" fn msr_set_task_id(task_id: u64) {
-    unsafe {
-        set_task_id(task_id);
     }
 }
 

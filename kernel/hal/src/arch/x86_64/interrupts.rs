@@ -8,12 +8,12 @@ use kernel_bindings_gen::irq_handler_new_t;
 
 #[repr(C, packed)]
 pub struct InterruptFrame {
-    cr3: u64, // Pushed LAST in ASM (the lowest address)
+    pub(crate) cr3: u64, // Pushed LAST in ASM (the lowest address)
     r15: u64,
     r14: u64,
     r13: u64,
     r12: u64,
-    r11: u64,
+    pub(crate) r11: u64,
     pub(crate) r10: u64,
     r9: u64,
     pub(crate) r8: u64,
@@ -21,17 +21,17 @@ pub struct InterruptFrame {
     pub(crate) rsi: u64,
     pub(crate) rdi: u64,
     pub(crate) rdx: u64,
-    rcx: u64,
+    pub(crate) rcx: u64,
     rbx: u64,
     pub(crate) rax: u64,
     // ^ rax was pushed FIRST among these, so it is at the highest address here
     interrupt_vector: u64,
     error_code: u64,
-    rip: u64,
-    cs: u64,
-    rflags: u64,
-    rsp: u64,
-    ss: u64,
+    pub(crate) rip: u64,
+    pub(crate) cs: u64,
+    pub(crate) rflags: u64,
+    pub(crate) rsp: u64,
+    pub(crate) ss: u64,
 }
 
 const IRQ_INTERRUPT_VECTOR_OFFSET: u64 = 0x30;

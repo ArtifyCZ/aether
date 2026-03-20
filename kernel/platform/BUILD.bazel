@@ -8,8 +8,6 @@ cc_library(
         "src/*.c",
     ]) + select({
         "@platforms//cpu:x86_64": glob([
-            "src/arch/x86_64/*.c",
-            "src/arch/x86_64/*.h",
             "src/arch/x86_64/*.S",
         ]),
         "@platforms//cpu:aarch64": glob([

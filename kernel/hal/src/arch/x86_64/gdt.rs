@@ -144,13 +144,6 @@ pub unsafe fn init() {
     }
 }
 
-#[unsafe(no_mangle)]
-unsafe extern "C" fn gdt_set_kernel_stack(stack: usize) {
-    unsafe {
-        set_kernel_stack(stack);
-    }
-}
-
 pub unsafe fn set_kernel_stack(stack: usize) {
     unsafe {
         TSS.rsp0 = stack as u64;

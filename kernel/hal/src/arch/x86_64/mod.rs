@@ -12,3 +12,4 @@ mod platform;
 mod gdt;
 mod msr;
 mod acpi;
+mod tasks;
