@@ -36,7 +36,9 @@ pub mod syscalls {
 }
 
 pub mod tasks {
-    pub use super::implementation::tasks::{prepare_switch, setup_kernel, setup_user, get_current_id};
+    pub use super::implementation::tasks::{
+        get_current_id, prepare_switch, setup_kernel, setup_user, switch_to,
+    };
 }
 
 pub mod timer {

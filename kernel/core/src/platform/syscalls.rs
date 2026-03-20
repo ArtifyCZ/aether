@@ -1,56 +1,11 @@
 use crate::println;
 use alloc::boxed::Box;
-pub use kernel_bindings_gen::syscall_args;
-use kernel_bindings_gen::syscalls_raw;
 use kernel_hal::syscalls;
 use kernel_hal::tasks::TaskFrame;
 pub use syscalls_rust::syscall_err as SyscallError;
 pub use syscalls_rust::syscall_num;
 
 pub struct Syscalls;
-
-macro_rules! zeroed_array {
-    ($size:expr) => {
-        [0; $size]
-    };
-    (@accum $array:ident, 0, $item:expr) => {
-        {
-            $array[0] = $item;
-        }
-    };
-    (@accum $array:ident, $size:expr, $idx:expr) => {
-        {
-        }
-    };
-    (@accum $array:ident, $size:expr, $idx:expr, $cur_item:expr $(, $item:expr)*) => {
-        {
-            $array[$idx] = $cur_item;
-            zeroed_array!(@accum $array, $size, ($idx + 1) $(, $item)*);
-        }
-    };
-    ($size:expr $(, $item:expr)*) => {
-        {
-            let mut array = zeroed_array!($size);
-            zeroed_array!(@accum array, $size, 0 $(, $item)*);
-            array
-        }
-    }
-}
-
-macro_rules! wrap_syscall {
-    ($name:ident, $num:expr $(, $param_name:ident: $param_type:ty)* $(,)?) => {
-        pub unsafe fn $name($($param_name: $param_type,)*) -> u64 {
-            let args = syscall_args {
-                num: $num,
-                a: zeroed_array!(5 $(, ($param_name as u64))*),
-            };
-            unsafe { Syscalls::invoke(args) }
-        }
-    };
-}
-
-wrap_syscall!(sys_exit, syscall_num::SYS_EXIT);
-wrap_syscall!(sys_write, syscall_num::SYS_WRITE, fd: i32, user_buf: u64, count: usize);
 
 pub struct SyscallContext {
     pub task_frame: Box<TaskFrame>,
@@ -133,9 +88,5 @@ impl Syscalls {
             });
         }
         println!("Syscalls initialized!");
-    }
-
-    unsafe fn invoke(args: syscall_args) -> u64 {
-        unsafe { syscalls_raw(args) }
     }
 }

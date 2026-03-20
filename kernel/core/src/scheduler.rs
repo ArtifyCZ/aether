@@ -75,9 +75,11 @@ impl Scheduler {
         scheduler
     }
 
-    pub fn start(&self) {
+    pub fn start(&self) -> Box<TaskFrame> {
         let mut inner = self.0.lock();
         inner.started = true;
+        let mut first_task = inner.pick_next_task().unwrap();
+        first_task.activate()
     }
 
     pub fn spawn(&self, task: TaskSpec) -> TaskId {

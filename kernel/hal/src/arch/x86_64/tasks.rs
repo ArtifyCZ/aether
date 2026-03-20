@@ -3,6 +3,7 @@ use crate::arch::x86_64::{gdt, msr};
 use crate::mmu;
 use crate::tasks::TaskFrame;
 use alloc::boxed::Box;
+use core::arch::asm;
 use core::ffi::c_void;
 
 pub unsafe fn setup_user(
@@ -79,14 +80,40 @@ pub unsafe fn get_current_id() -> u64 {
     unsafe { msr::get_task_id() }
 }
 
-pub unsafe fn set_syscall_return_value(frame: *mut InterruptFrame, value: Result<u64, u64>) {
+pub unsafe fn switch_to(task_frame: Box<TaskFrame>) -> ! {
     unsafe {
-        let (value, error_code) = match value {
-            Ok(value) => (value, 0),
-            Err(error_code) => (0, error_code),
-        };
-        let frame = frame.as_mut().unwrap();
-        frame.rax = value;
-        frame.rdx = error_code;
-    }
+        let rsp = task_frame.hw_frame;
+        asm!(
+            // Switch stack to the provided one
+            "mov rsp, rax",
+
+            // Switch the page table address
+            "pop rax",
+            "mov cr3, rax",
+
+            // Restore registers
+            "pop r15",
+            "pop r14",
+            "pop r13",
+            "pop r12",
+            "pop r11",
+            "pop r10",
+            "pop r9",
+            "pop r8",
+            "pop rbp",
+            "pop rsi",
+            "pop rdi",
+            "pop rdx",
+            "pop rcx",
+            "pop rbx",
+            "pop rax",
+
+            // Clean up interrupt vector and error code
+            "add rsp, 16",
+
+            "iretq",
+
+            in("rax") rsp,
+            options(noreturn),
+        ) }
 }

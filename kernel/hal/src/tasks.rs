@@ -69,3 +69,9 @@ pub unsafe fn get_current_id() -> u64 {
         tasks::get_current_id()
     }
 }
+
+pub unsafe fn switch_to(task_frame: Box<TaskFrame>) -> ! {
+    unsafe {
+        tasks::switch_to(task_frame)
+    }
+}

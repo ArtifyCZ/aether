@@ -19,8 +19,6 @@ mod ticker;
 
 use crate::init_process::spawn_init_process;
 use crate::platform::platform::Platform;
-use alloc::boxed::Box;
-use core::ffi::c_void;
 use core::ptr::NonNull;
 
 #[panic_handler]
@@ -45,52 +43,16 @@ unsafe extern "C" {
 use crate::elf::Elf;
 use crate::platform::early_console::EarlyConsole;
 use crate::platform::interrupts::Interrupts;
-use crate::platform::memory_layout::PAGE_FRAME_SIZE;
 use crate::platform::modules::Modules;
 use crate::platform::physical_memory_manager::PhysicalMemoryManager;
-use crate::platform::syscalls::{Syscalls, sys_exit};
+use crate::platform::syscalls::Syscalls;
 use crate::platform::terminal::Terminal;
 use crate::platform::virtual_address_allocator::VirtualAddressAllocator;
 use crate::platform::virtual_memory_manager::VirtualMemoryManager;
 use crate::syscall_handler::SyscallHandler;
-use crate::task_registry::{TaskRegistry, TaskSpec};
+use crate::task_registry::TaskRegistry;
 use scheduler::Scheduler;
 use ticker::Ticker;
-
-fn thread_heartbeat() {
-    let mut i = 0;
-    loop {
-        if i == 20000000 {
-            unsafe {
-                Terminal::print_char('.');
-            }
-            i = 0;
-        }
-        i += 1;
-    }
-}
-
-fn spawn_thread<F>(scheduler: &Scheduler, f: F)
-where
-    F: FnOnce() + 'static,
-{
-    unsafe extern "C" fn trampoline<F>(args: *mut c_void) -> !
-    where
-        F: FnOnce() + 'static,
-    {
-        let f: Box<F> = unsafe { Box::from_raw(args.cast()) };
-        f();
-        unsafe { sys_exit() };
-        loop {}
-    }
-
-    let arg = Box::into_raw(Box::new(f)).cast();
-    scheduler.spawn(TaskSpec::Kernel {
-        function: trampoline::<F>,
-        arg,
-        kernel_stack_size: 4 * PAGE_FRAME_SIZE,
-    });
-}
 
 fn main(
     hhdm_offset: u64,
@@ -134,7 +96,6 @@ fn main(
         Interrupts::enable();
         println!("Qaz1");
 
-        spawn_thread(scheduler, thread_heartbeat);
         println!("Gez1");
         let elf = Elf::init(hhdm_offset);
         spawn_init_process(&elf, scheduler);
@@ -142,11 +103,6 @@ fn main(
         println!("Disabling early console...");
         logging::disable_early_console();
 
-        scheduler.start();
-
-        loop {
-            sys_exit();
-            hcf()
-        }
+        kernel_hal::tasks::switch_to(scheduler.start())
     }
 }
