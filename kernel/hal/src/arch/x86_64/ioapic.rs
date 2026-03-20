@@ -4,13 +4,6 @@ use kernel_bindings_gen::VMM_PAGE_SIZE;
 
 static mut IOAPIC_PTR: *mut u32 = null_mut();
 
-#[unsafe(no_mangle)]
-unsafe extern "C" fn ioapic_init(phys_addr: usize) {
-    unsafe {
-        init(phys_addr);
-    }
-}
-
 pub unsafe fn init(phys_addr: usize) {
     unsafe {
         let virt = kernel_bindings_gen::vaa_alloc_range(VMM_PAGE_SIZE as usize);
@@ -29,24 +22,10 @@ pub unsafe fn init(phys_addr: usize) {
     }
 }
 
-#[unsafe(no_mangle)]
-unsafe extern "C" fn ioapic_read(reg: u8) -> u32 {
-    unsafe {
-        read(reg)
-    }
-}
-
 pub unsafe fn read(reg: u8) -> u32 {
     unsafe {
         IOAPIC_PTR.add(0).write_volatile(reg as u32);
         IOAPIC_PTR.add(4).read_volatile()
-    }
-}
-
-#[unsafe(no_mangle)]
-unsafe extern "C" fn ioapic_write(reg: u8, value: u32) {
-    unsafe {
-        write(reg, value);
     }
 }
 

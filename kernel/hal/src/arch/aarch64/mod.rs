@@ -7,3 +7,4 @@ mod gic;
 mod timer;
 mod syscalls;
 mod platform;
+mod cpu_local;
