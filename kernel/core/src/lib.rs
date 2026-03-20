@@ -4,6 +4,7 @@
 extern crate alloc;
 
 mod allocator;
+mod elf;
 pub mod entrypoint;
 mod init_process;
 mod interrupt_safe_spin_lock;
@@ -15,7 +16,6 @@ mod syscall_handler;
 mod task_id;
 mod task_registry;
 mod ticker;
-mod elf;
 
 use crate::init_process::spawn_init_process;
 use crate::platform::platform::Platform;
@@ -42,20 +42,20 @@ unsafe extern "C" {
     fn hcf() -> !;
 }
 
+use crate::elf::Elf;
+use crate::platform::early_console::EarlyConsole;
 use crate::platform::interrupts::Interrupts;
 use crate::platform::memory_layout::PAGE_FRAME_SIZE;
+use crate::platform::modules::Modules;
 use crate::platform::physical_memory_manager::PhysicalMemoryManager;
 use crate::platform::syscalls::{Syscalls, sys_exit};
 use crate::platform::terminal::Terminal;
+use crate::platform::virtual_address_allocator::VirtualAddressAllocator;
+use crate::platform::virtual_memory_manager::VirtualMemoryManager;
 use crate::syscall_handler::SyscallHandler;
 use crate::task_registry::{TaskRegistry, TaskSpec};
 use scheduler::Scheduler;
 use ticker::Ticker;
-use crate::elf::Elf;
-use crate::platform::early_console::EarlyConsole;
-use crate::platform::modules::Modules;
-use crate::platform::virtual_address_allocator::VirtualAddressAllocator;
-use crate::platform::virtual_memory_manager::VirtualMemoryManager;
 
 fn thread_heartbeat() {
     let mut i = 0;
@@ -74,13 +74,14 @@ fn spawn_thread<F>(scheduler: &Scheduler, f: F)
 where
     F: FnOnce() + 'static,
 {
-    unsafe extern "C" fn trampoline<F>(args: *mut c_void)
+    unsafe extern "C" fn trampoline<F>(args: *mut c_void) -> !
     where
         F: FnOnce() + 'static,
     {
         let f: Box<F> = unsafe { Box::from_raw(args.cast()) };
         f();
         unsafe { sys_exit() };
+        loop {}
     }
 
     let arg = Box::into_raw(Box::new(f)).cast();

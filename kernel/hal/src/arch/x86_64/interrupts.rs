@@ -7,7 +7,7 @@ use core::ptr::null_mut;
 use kernel_bindings_gen::irq_handler_new_t;
 
 #[derive(Debug)]
-#[repr(C, packed)]
+#[repr(C, align(16))]
 pub(crate) struct InterruptFrame {
     pub(crate) cr3: u64, // Pushed LAST in ASM (the lowest address)
     r15: u64,

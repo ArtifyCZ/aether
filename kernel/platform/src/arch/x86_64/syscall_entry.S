@@ -16,6 +16,11 @@ syscalls_raw_handler:
     movq %rsp, %gs:8     /* Save user RSP to absolute GS offset 8 */
     movq %gs:0, %rsp     /* Load kernel stack from absolute GS offset 0 */
 
+    /* Force 16-byte alignment of the BASE */
+    andq $-16, %rsp
+
+    pushq $0 /* PADDING: Make the total pushes even (24) */
+
     /* Construct the interrupt_frame */
     pushq $USER_SS
     pushq %gs:8          /* RSP (User stack) */

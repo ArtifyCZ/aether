@@ -17,9 +17,11 @@ where
 
 #[unsafe(no_mangle)]
 unsafe extern "C" fn syscalls_inner_handler(interrupt_frame: *mut InterruptFrame) -> usize {
+    assert!(interrupt_frame.is_aligned(), "Interrupt frame {:p} not aligned!", interrupt_frame);
     let syscall_frame = Box::new(SyscallFrame(TaskFrame {
         hw_frame: interrupt_frame,
     }));
+    assert!((&raw const *syscall_frame).is_aligned(), "Syscall frame {:p} is not aligned!", syscall_frame);
 
     let return_frame = unsafe {
         #[allow(static_mut_refs)]
@@ -62,6 +64,7 @@ pub unsafe fn raw(num: u64, args: [u64; 5]) -> Result<u64, u64> {
 impl SyscallFrame {
     pub fn number(&self) -> u64 {
         unsafe {
+            assert!(self.0.hw_frame.is_aligned(), "Hw frame {:p} is not aligned!", self.0.hw_frame);
             let frame = self.0.hw_frame.as_ref().unwrap();
             frame.rax
         }

@@ -1,27 +1,9 @@
 use crate::arch::aarch64::cpu_local;
 use crate::arch::aarch64::interrupts::InterruptFrame;
 use crate::mmu;
+use crate::tasks::TaskFrame;
+use alloc::boxed::Box;
 use core::ffi::c_void;
-
-#[unsafe(no_mangle)]
-unsafe extern "C" fn task_setup_user(
-    user_ctx: *const kernel_bindings_gen::vmm_context,
-    entrypoint_vaddr: usize,
-    user_stack_top: usize,
-    kernel_stack_top: usize,
-    arg: u64,
-) -> *mut kernel_bindings_gen::interrupt_frame {
-    unsafe {
-        setup_user(
-            user_ctx.read().root,
-            entrypoint_vaddr,
-            user_stack_top,
-            kernel_stack_top,
-            arg,
-        )
-        .cast()
-    }
-}
 
 pub unsafe fn setup_user(
     context: usize,
@@ -29,7 +11,7 @@ pub unsafe fn setup_user(
     user_stack_top: usize,
     kernel_stack_top: usize,
     arg: u64,
-) -> *mut InterruptFrame {
+) -> Box<TaskFrame> {
     unsafe {
         let sp = kernel_stack_top & !0xF;
         let sp = sp - size_of::<InterruptFrame>();
@@ -48,24 +30,17 @@ pub unsafe fn setup_user(
         frame.sp_el0 = (user_stack_top & (!0xF)) as u64;
         frame.x[0] = arg;
 
-        frame_ptr
+        Box::new(TaskFrame {
+            hw_frame: frame_ptr,
+        })
     }
-}
-
-#[unsafe(no_mangle)]
-unsafe extern "C" fn task_setup_kernel(
-    stack_top: usize,
-    f: kernel_bindings_gen::kernel_task_fn_t,
-    arg: *mut c_void,
-) -> *mut kernel_bindings_gen::interrupt_frame {
-    unsafe { setup_kernel(stack_top, f, arg).cast() }
 }
 
 pub unsafe fn setup_kernel(
     stack_top: usize,
-    f: kernel_bindings_gen::kernel_task_fn_t,
+    f: unsafe extern "C" fn(arg: *mut c_void) -> !,
     arg: *mut c_void,
-) -> *mut InterruptFrame {
+) -> Box<TaskFrame> {
     unsafe {
         let sp = stack_top & !0xF;
         let sp = sp - size_of::<InterruptFrame>();
@@ -81,13 +56,10 @@ pub unsafe fn setup_kernel(
 
         frame.x[0] = arg as u64;
 
-        frame_ptr
+        Box::new(TaskFrame {
+            hw_frame: frame_ptr,
+        })
     }
-}
-
-#[unsafe(no_mangle)]
-unsafe extern "C" fn task_prepare_switch(kernel_stack_top: usize, task_id: u64) {
-    unsafe { prepare_switch(kernel_stack_top, task_id) }
 }
 
 pub unsafe fn prepare_switch(kernel_stack_top: usize, task_id: u64) {
@@ -99,32 +71,11 @@ pub unsafe fn prepare_switch(kernel_stack_top: usize, task_id: u64) {
     }
 }
 
-#[unsafe(no_mangle)]
-unsafe extern "C" fn task_get_current_id() -> u64 {
-    unsafe { get_current_id() }
-}
-
 pub unsafe fn get_current_id() -> u64 {
     unsafe {
         let cpu_local = cpu_local::get().unwrap();
         let cpu_local = cpu_local.as_ref();
         cpu_local.task_id
-    }
-}
-
-#[unsafe(no_mangle)]
-unsafe extern "C" fn task_set_syscall_return_value(
-    frame: *mut kernel_bindings_gen::interrupt_frame,
-    error_code: u64,
-    value: u64,
-) {
-    unsafe {
-        let value = if error_code == 0 {
-            Ok(value)
-        } else {
-            Err(error_code)
-        };
-        set_syscall_return_value(frame.cast(), value);
     }
 }
 

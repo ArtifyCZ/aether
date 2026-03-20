@@ -2,7 +2,7 @@ use crate::arch::syscalls;
 use crate::tasks::TaskFrame;
 use alloc::boxed::Box;
 
-#[repr(transparent)]
+#[repr(C, align(16))]
 pub struct SyscallFrame(pub(crate) TaskFrame);
 
 impl SyscallFrame {

@@ -1,8 +1,10 @@
 use crate::arch::interrupts::InterruptFrame;
+use crate::arch::tasks;
 use alloc::boxed::Box;
+use core::ffi::c_void;
 
 #[derive(Debug)]
-#[repr(C)]
+#[repr(C, align(16))]
 pub struct TaskFrame {
     pub(crate) hw_frame: *mut InterruptFrame, // Registers, PC, PSTATE
 }
@@ -30,6 +32,40 @@ impl TaskFrame {
     }
 }
 
+pub unsafe fn setup_user(
+    context: usize,
+    entrypoint_vaddr: usize,
+    user_stack_top: usize,
+    kernel_stack_top: usize,
+    arg: u64,
+) -> Box<TaskFrame> {
+    unsafe {
+        tasks::setup_user(
+            context,
+            entrypoint_vaddr,
+            user_stack_top,
+            kernel_stack_top,
+            arg,
+        )
+    }
+}
+
+pub unsafe fn setup_kernel(
+    stack_top: usize,
+    f: unsafe extern "C" fn(*mut c_void) -> !,
+    arg: *mut c_void,
+) -> Box<TaskFrame> {
+    unsafe { tasks::setup_kernel(stack_top, f, arg) }
+}
+
 pub unsafe fn prepare_switch(kernel_stack_top: usize, task_id: u64) {
-    crate::arch::tasks::prepare_switch(kernel_stack_top, task_id);
+    unsafe {
+        tasks::prepare_switch(kernel_stack_top, task_id);
+    }
+}
+
+pub unsafe fn get_current_id() -> u64 {
+    unsafe {
+        tasks::get_current_id()
+    }
 }

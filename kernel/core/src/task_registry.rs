@@ -24,7 +24,7 @@ pub enum TaskSpec {
         arg: u64,
     },
     Kernel {
-        function: unsafe extern "C" fn(arg: *mut core::ffi::c_void),
+        function: unsafe extern "C" fn(arg: *mut core::ffi::c_void) -> !,
         arg: *mut core::ffi::c_void,
         kernel_stack_size: usize,
     },

@@ -7,10 +7,7 @@ use alloc::collections::BTreeMap;
 use alloc::sync::Arc;
 use core::ffi::c_void;
 use core::pin::Pin;
-use kernel_bindings_gen::{
-    task_get_current_id, task_setup_kernel,
-    task_setup_user, vmm_context,
-};
+use kernel_hal::tasks;
 use kernel_hal::tasks::TaskFrame;
 
 pub const TASK_KERNEL_STACK_SIZE: usize = 8 * PAGE_FRAME_SIZE;
@@ -40,19 +37,13 @@ impl TaskContext {
         };
 
         let state = unsafe {
-            let user_ctx = vmm_context {
-                root: user_ctx.inner(),
-            };
             let kernel_stack_top = kernel_stack.as_ptr_range().end as usize;
-            TaskFrame::from_ptr_legacy(
-                task_setup_user(
-                    &user_ctx,
-                    entrypoint_vaddr,
-                    user_stack_vaddr,
-                    kernel_stack_top,
-                    arg,
-                )
-                .cast(),
+            tasks::setup_user(
+                user_ctx.inner(),
+                entrypoint_vaddr,
+                user_stack_vaddr,
+                kernel_stack_top,
+                arg,
             )
         };
 
@@ -69,7 +60,7 @@ impl TaskContext {
 
     pub fn new_kernel(
         task_id: TaskId,
-        function: unsafe extern "C" fn(arg: *mut c_void),
+        function: unsafe extern "C" fn(arg: *mut c_void) -> !,
         arg: *mut c_void,
         kernel_stack_size: usize,
     ) -> Self {
@@ -79,9 +70,7 @@ impl TaskContext {
 
         let state = unsafe {
             let kernel_stack_top = kernel_stack.as_ptr_range().end as usize;
-            TaskFrame::from_ptr_legacy(
-                task_setup_kernel(kernel_stack_top, Some(function), arg).cast(),
-            )
+            tasks::setup_kernel(kernel_stack_top, function, arg)
         };
 
         Self {
@@ -111,7 +100,7 @@ impl TaskContext {
         let mut frame = self.state.take().unwrap();
         let kernel_stack_top = self.kernel_stack.as_ptr_range().end as usize;
         unsafe {
-            kernel_hal::tasks::prepare_switch(kernel_stack_top, self.task_id.get());
+            tasks::prepare_switch(kernel_stack_top, self.task_id.get());
         }
         if let Some(value) = self.pending_syscall_return_value.take() {
             unsafe {
@@ -139,7 +128,7 @@ impl TaskContext {
 impl TaskId {
     /// Returns the current task id of the current CPU (the CPU core this function is invoked on).
     pub fn get_current() -> Option<Self> {
-        let task_id = unsafe { task_get_current_id() };
+        let task_id = unsafe { tasks::get_current_id() };
         if task_id == 0 {
             None
         } else {

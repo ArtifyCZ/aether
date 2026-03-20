@@ -6,10 +6,6 @@
 - Don't allocate a kernel stack for every single task, but just for the kernel
 threads, use ist for interrupts, and store for every task its current context
 (registers). Could also use a single stack for interrupts and syscalls per CPU.
-- Move the storing of the current task's id from the scheduler to GS base. By that is meant
-to move it to the CPU-local storage and have some interface for scheduler to retrieve the current
-task's id and to set it. The scheduler also could get the current task's id provided as a parameter.
-The current task's id stored in GS base could be set as a part of the task_prepare_switch function.
 - Use two registers for syscall return values, one for the error code, the other for the result.
 - Update the physical memory manager so that it can be used to allocate contiguous memory chunks.
 - Add some structure for each address space to know what addresses are used and what are available.

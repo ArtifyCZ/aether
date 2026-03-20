@@ -75,13 +75,13 @@ impl<'a, T> Deref for InterruptSafeSpinLockGuard<'a, T> {
     type Target = T;
 
     fn deref(&self) -> &Self::Target {
-        unsafe { &*self.lock.data.get() }
+        unsafe { self.lock.data.get().as_ref().unwrap() }
     }
 }
 
 impl<'a, T> DerefMut for InterruptSafeSpinLockGuard<'a, T> {
     fn deref_mut(&mut self) -> &mut Self::Target {
-        unsafe { &mut *self.lock.data.get() }
+        unsafe { self.lock.data.get().as_mut().unwrap() }
     }
 }
 

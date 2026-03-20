@@ -39,7 +39,7 @@ impl SchedulerInner {
     }
 }
 
-unsafe extern "C" fn null_thread(_arg: *mut c_void) {
+unsafe extern "C" fn null_thread(_arg: *mut c_void) -> ! {
     loop {
         unsafe {
             #[cfg(target_arch = "x86_64")]

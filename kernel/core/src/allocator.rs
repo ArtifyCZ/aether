@@ -14,8 +14,11 @@ fn align_up(v: usize, a: usize) -> usize {
     (v + mask) & !mask
 }
 
+#[repr(align(16))]
+struct EarlyHeap([u8; EARLY_HEAP_SIZE]);
+
 const EARLY_HEAP_SIZE: usize = 0x4_0000;
-static mut EARLY_HEAP_MEMORY: [u8; EARLY_HEAP_SIZE] = [0; EARLY_HEAP_SIZE];
+static mut EARLY_HEAP_MEMORY: EarlyHeap = EarlyHeap([0; EARLY_HEAP_SIZE]);
 
 pub struct Allocator(InterruptSafeSpinLock<AllocatorInner>);
 
@@ -35,7 +38,6 @@ pub static GLOBAL_ALLOCATOR: Allocator = Allocator(InterruptSafeSpinLock::new(Al
 
 unsafe impl GlobalAlloc for Allocator {
     unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
-        let layout = layout.pad_to_align();
         let size = layout.size();
         let align = layout.align();
 
@@ -47,8 +49,9 @@ unsafe impl GlobalAlloc for Allocator {
             let early_start = align_up(inner.early_heap_next_available_idx, align);
             if early_start + size <= EARLY_HEAP_SIZE {
                 inner.early_heap_next_available_idx = early_start + size;
-                #[allow(static_mut_refs)]
-                return (EARLY_HEAP_MEMORY.as_mut_ptr() as usize + early_start) as *mut u8;
+                let ptr = (unsafe { &raw mut EARLY_HEAP_MEMORY.0 as usize } + early_start) as *mut u8;
+                assert_eq!(ptr.addr() % align, 0, "Early heap pointer {:p} is not aligned to {}!", ptr, align);
+                return ptr;
             }
 
             // Paged Heap check
@@ -58,7 +61,9 @@ unsafe impl GlobalAlloc for Allocator {
             // If we have enough mapped memory, just bump and return
             if required_limit <= inner.current_heap_limit {
                 inner.next_available_virt_addr = required_limit;
-                return vaddr_start as *mut u8;
+                let ptr = vaddr_start as *mut u8;
+                assert_eq!(ptr.addr() % align, 0, "Paged heap pointer {:p} is not aligned to {}!", ptr, align);
+                return ptr;
             }
         }
 
@@ -112,6 +117,9 @@ impl Allocator {
         let vaddr_start = align_up(inner.next_available_virt_addr, align);
         inner.next_available_virt_addr = vaddr_start + size;
 
-        vaddr_start as *mut u8
+        let ptr = vaddr_start as *mut u8;
+        assert_eq!(ptr.addr() % align, 0, "Paged heap pointer {:p} is not aligned to {}!", ptr, align);
+
+        ptr
     }
 }
