@@ -1,4 +1,3 @@
-use kernel_hal::mmu::VirtualMemoryMappingFlags;
 use crate::platform::memory_layout::PAGE_FRAME_SIZE;
 use crate::platform::physical_page_frame::PhysicalPageFrame;
 use crate::platform::syscalls::{SyscallContext, SyscallError, SyscallIntent};
@@ -7,8 +6,12 @@ use crate::syscall_handler::user_ptr::UserPtr;
 use crate::syscall_handler::user_slice::UserSlice;
 use crate::syscall_handler::{SyscallCommand, SyscallCommandHandler, SyscallHandler};
 use crate::task_id::TaskId;
+use alloc::boxed::Box;
+use kernel_hal::mmu::VirtualMemoryMappingFlags;
+use kernel_hal::tasks::TaskFrame;
 
 pub struct SysMmapDevCommand {
+    task_frame: Box<TaskFrame>,
     chunk: UserSlice<*const [u8]>,
     phys: usize,
     // @TODO: implement protection flags
@@ -22,20 +25,25 @@ pub struct SysMmapDevCommand {
 impl SyscallCommand for SysMmapDevCommand {
     type Error = SyscallError;
 
-    fn parse<'a>(ctx: &SyscallContext<'a>) -> Result<Self, Self::Error>
-    where
-        Self: 'a,
-    {
+    fn parse(ctx: SyscallContext) -> Result<Self, (Box<TaskFrame>, Self::Error)> {
+        let task_frame = ctx.task_frame;
         let addr = ctx.args[0] as usize;
         let length = ctx.args[1] as usize;
         let phys = ctx.args[2] as usize;
         let prot = ctx.args[3] as u32;
         let flags = ctx.args[4] as u32;
 
-        let chunk_start = UserPtr::try_from(addr)?;
-        let chunk = UserSlice::try_from((chunk_start, length))?;
+        let chunk_start = match UserPtr::try_from(addr) {
+            Ok(chunk_start) => chunk_start,
+            Err(err) => return Err((task_frame, err)),
+        };
+        let chunk = match UserSlice::try_from((chunk_start, length)) {
+            Ok(chunk) => chunk,
+            Err(err) => return Err((task_frame, err)),
+        };
 
         Ok(Self {
+            task_frame,
             chunk,
             phys,
             prot,
@@ -48,7 +56,10 @@ impl SyscallCommandHandler<SysMmapDevCommand> for SyscallHandler {
     type Ok = UserPtr<usize>;
     type Err = SyscallError;
 
-    fn handle_command(&self, command: SysMmapDevCommand) -> Result<SyscallIntent<Self::Ok>, Self::Err> {
+    fn handle_command(
+        &self,
+        command: SysMmapDevCommand,
+    ) -> Result<SyscallIntent<Self::Ok>, (Box<TaskFrame>, Self::Err)> {
         // @TODO: add checks for the physical address
         // @TODO: add authorization checks (is the task authorized to map this device?)
         let task_id = TaskId::get_current().expect("Scheduler is not started yet!");
@@ -58,12 +69,18 @@ impl SyscallCommandHandler<SysMmapDevCommand> for SyscallHandler {
             .expect("Current task should exist!");
         let vmm = task.get_virtual_memory_manager();
         const PAGE_MASK: usize = !(PAGE_FRAME_SIZE - 1);
-        let addr = UserPtr::try_from(command.chunk.addr() & PAGE_MASK)?;
+        let addr = match UserPtr::try_from(command.chunk.addr() & PAGE_MASK) {
+            Ok(addr) => addr,
+            Err(err) => return Err((command.task_frame, err)),
+        };
         let phys = command.phys & PAGE_MASK;
         let pages_count = (command.chunk.len() + PAGE_FRAME_SIZE - 1) / PAGE_FRAME_SIZE;
 
         for page_idx in 0..pages_count {
-            let page_vaddr = UserPtr::try_from(*addr + page_idx * PAGE_FRAME_SIZE)?;
+            let page_vaddr = match UserPtr::try_from(*addr + page_idx * PAGE_FRAME_SIZE) {
+                Ok(page_vaddr) => page_vaddr,
+                Err(err) => return Err((command.task_frame, err)),
+            };
             let page_vaddr = VirtualPageAddress::new(*page_vaddr).unwrap();
             let phys = PhysicalPageFrame::new(phys + page_idx * PAGE_FRAME_SIZE).unwrap();
             unsafe {
@@ -75,10 +92,10 @@ impl SyscallCommandHandler<SysMmapDevCommand> for SyscallHandler {
                         | VirtualMemoryMappingFlags::WRITE
                         | VirtualMemoryMappingFlags::DEVICE,
                 )
-                    .expect("Mapping failed!");
+                .expect("Mapping failed!");
             }
         }
 
-        Ok(SyscallIntent::Return(addr))
+        Ok(SyscallIntent::Return(command.task_frame, addr))
     }
 }

@@ -26,6 +26,7 @@ use crate::syscall_handler::sys_proc_munmap::SysProcMunmapCommand;
 use crate::syscall_handler::sys_write::SysWriteCommand;
 use crate::task_registry::TaskRegistry;
 use alloc::boxed::Box;
+use kernel_hal::tasks::TaskFrame;
 use crate::syscall_handler::sys_proc_spawn::SysProcSpawnCommand;
 
 macro_rules! define_syscall_request {
@@ -43,7 +44,7 @@ macro_rules! define_syscall_request {
         impl SyscallCommand for $name {
             type Error = SyscallError;
 
-            fn parse<'a>(ctx: &SyscallContext<'a>) -> Result<Self, Self::Error> where Self: 'a {
+            fn parse(ctx: SyscallContext) -> Result<Self, (Box<TaskFrame>, Self::Error)> {
                 match ctx.num {
                     $(
                         num if num == $syscall_num => {
@@ -51,13 +52,13 @@ macro_rules! define_syscall_request {
                             Ok($name::$syscall_name(command))
                         },
                     )*
-                    _ => Err(SyscallError::SYS_ENOSYS),
+                    _ => Err((ctx.task_frame, SyscallError::SYS_ENOSYS)),
                 }
             }
         }
 
         impl SyscallHandler {
-            fn handle_command(&self, command: $name) -> Result<SyscallIntent<SyscallReturnValue>, SyscallError> {
+            fn handle_command(&self, command: $name) -> Result<SyscallIntent<SyscallReturnValue>, (Box<TaskFrame>, SyscallError)> {
                 let result = match command {
                     $(
                         $name::$syscall_name(command) => SyscallCommandHandler::< $syscall_command >::handle_command(self, command)?.into(),
@@ -88,9 +89,7 @@ define_syscall_request!(
 pub trait SyscallCommand: Sized {
     type Error: Into<SyscallError>;
 
-    fn parse<'a>(ctx: &SyscallContext<'a>) -> Result<Self, Self::Error>
-    where
-        Self: 'a;
+    fn parse(ctx: SyscallContext) -> Result<Self, (Box<TaskFrame>, Self::Error)>;
 }
 
 pub trait SyscallCommandHandler<TSyscallCommand> {
@@ -100,7 +99,7 @@ pub trait SyscallCommandHandler<TSyscallCommand> {
     fn handle_command(
         &self,
         command: TSyscallCommand,
-    ) -> Result<SyscallIntent<Self::Ok>, Self::Err>;
+    ) -> Result<SyscallIntent<Self::Ok>, (Box<TaskFrame>, Self::Err)>;
 }
 
 pub struct SyscallHandler {
@@ -122,8 +121,8 @@ impl SyscallHandler {
 
     pub fn handle(
         &self,
-        ctx: &SyscallContext<'_>,
-    ) -> Result<SyscallIntent<SyscallReturnValue>, SyscallError> {
+        ctx: SyscallContext,
+    ) -> Result<SyscallIntent<SyscallReturnValue>, (Box<TaskFrame>, SyscallError)> {
         let request = SyscallRequest::parse(ctx)?;
         self.handle_command(request)
     }

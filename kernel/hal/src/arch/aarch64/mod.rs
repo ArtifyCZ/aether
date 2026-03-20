@@ -1,11 +1,11 @@
 pub mod cpu;
+mod cpu_local;
 pub mod early_console;
 pub mod emergency_console;
-pub mod mmu;
-mod interrupts;
 mod gic;
-mod timer;
-mod syscalls;
+pub mod interrupts;
+pub mod mmu;
 mod platform;
-mod cpu_local;
-mod tasks;
+pub mod syscalls;
+pub mod tasks;
+pub mod timer;

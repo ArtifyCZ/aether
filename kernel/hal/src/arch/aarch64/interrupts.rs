@@ -1,7 +1,7 @@
-use alloc::string::ToString;
 use super::{gic, syscalls};
 use crate::arch::aarch64::timer;
 use crate::{early_console, emergency_console};
+use alloc::string::ToString;
 use core::arch::asm;
 use core::ffi::c_void;
 use core::ptr::null_mut;
@@ -34,6 +34,18 @@ pub struct InterruptFrame {
     pub(crate) spsr: u64,
     pub(crate) elr: u64,
     pub(crate) esr: u64,
+}
+
+impl InterruptFrame {
+    pub(crate) unsafe fn set_syscall_return_value(&mut self, value: Result<u64, u64>) {
+        let (value, error_code) = match value {
+            Ok(value) => (value, 0),
+            Err(error_code) => (0, error_code),
+        };
+
+        self.x[0] = value;
+        self.x[1] = error_code;
+    }
 }
 
 unsafe extern "C" {
@@ -100,9 +112,7 @@ unsafe extern "C" fn handle_sync_exception(frame: *mut InterruptFrame) -> usize 
         let ec = (frame.read().esr >> 26) & 0x3F;
 
         if (ec == EC_SYSCALL as u64) {
-            let mut return_frame = frame;
-            syscalls::interrupt_handler(&raw mut return_frame);
-            return return_frame as usize;
+            return syscalls::interrupt_handler(frame) as usize;
         }
 
         // @TODO: print task id, ESR_EL1, ELR_EL1 (PC), FAR_EL1 (Addr), SP_EL0 (Addr) and reason
@@ -121,7 +131,9 @@ unsafe extern "C" fn handle_irq_exception(frame: *mut InterruptFrame) -> usize {
         let mut return_frame: *mut InterruptFrame = frame;
 
         match intid {
-            INTID_TIMER => timer::interrupt_handler(&mut return_frame as *mut *mut InterruptFrame),
+            INTID_TIMER => {
+                return_frame = timer::interrupt_handler(return_frame);
+            }
             IRQ_INTID_OFFSET..=0xFF => {
                 if let Some(irq_handler) = IRQ_HANDLER {
                     let irq = intid - IRQ_INTID_OFFSET;

@@ -6,8 +6,9 @@ use core::mem::zeroed;
 use core::ptr::null_mut;
 use kernel_bindings_gen::irq_handler_new_t;
 
+#[derive(Debug)]
 #[repr(C, packed)]
-pub struct InterruptFrame {
+pub(crate) struct InterruptFrame {
     pub(crate) cr3: u64, // Pushed LAST in ASM (the lowest address)
     r15: u64,
     r14: u64,
@@ -32,6 +33,18 @@ pub struct InterruptFrame {
     pub(crate) rflags: u64,
     pub(crate) rsp: u64,
     pub(crate) ss: u64,
+}
+
+impl InterruptFrame {
+    pub(crate) unsafe fn set_syscall_return_value(&mut self, value: Result<u64, u64>) {
+        let (value, error_code) = match value {
+            Ok(value) => (value, 0),
+            Err(error_code) => (0, error_code),
+        };
+
+        self.rax = value;
+        self.rdx = error_code;
+    }
 }
 
 const IRQ_INTERRUPT_VECTOR_OFFSET: u64 = 0x30;
@@ -134,9 +147,7 @@ unsafe extern "C" fn interrupts_unmask_irq(irq: u8) {
 }
 
 #[unsafe(no_mangle)]
-unsafe extern "C" fn x86_64_interrupt_dispatcher(
-    frame: *mut InterruptFrame,
-) -> usize {
+unsafe extern "C" fn x86_64_interrupt_dispatcher(frame: *mut InterruptFrame) -> usize {
     let f = unsafe { &*frame };
     let error_code = f.error_code;
     let interrupt_vector = f.interrupt_vector;
@@ -155,10 +166,16 @@ unsafe extern "C" fn x86_64_interrupt_dispatcher(
 
     let irq = interrupt_vector - IRQ_INTERRUPT_VECTOR_OFFSET;
     match irq {
-        LAPIC_TIMER_IRQ => timer::interrupt_handler(&raw mut return_frame),
+        LAPIC_TIMER_IRQ => {
+            return_frame = timer::interrupt_handler(frame);
+        }
         _ => {
             if let Some(irq_handler) = IRQ_HANDLER {
-                irq_handler((&mut return_frame as *mut *mut InterruptFrame).cast(), irq as u8, IRQ_HANDLER_ARG);
+                irq_handler(
+                    (&mut return_frame as *mut *mut InterruptFrame).cast(),
+                    irq as u8,
+                    IRQ_HANDLER_ARG,
+                );
             }
         }
     };

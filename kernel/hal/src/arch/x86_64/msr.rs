@@ -65,6 +65,12 @@ pub unsafe fn init() {
     }
 }
 
+pub unsafe fn get_kernel_stack() -> usize {
+    unsafe {
+        CPU_LOCAL_STORAGE.kernel_stack as usize
+    }
+}
+
 pub unsafe fn set_kernel_stack(stack: usize) {
     unsafe {
         CPU_LOCAL_STORAGE.kernel_stack = stack as u64;

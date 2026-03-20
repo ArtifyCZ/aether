@@ -3,8 +3,11 @@ use crate::syscall_handler::user_ptr::UserPtr;
 use crate::syscall_handler::{SyscallCommand, SyscallCommandHandler, SyscallHandler};
 use crate::task_id::TaskId;
 use crate::task_registry::TaskSpec;
+use alloc::boxed::Box;
+use kernel_hal::tasks::TaskFrame;
 
 pub struct SysProcSpawnCommand {
+    task_frame: Box<TaskFrame>,
     proc_handle: u64,
     // @TODO: implement flags
     #[allow(unused)]
@@ -17,17 +20,22 @@ pub struct SysProcSpawnCommand {
 impl SyscallCommand for SysProcSpawnCommand {
     type Error = SyscallError;
 
-    fn parse<'a>(ctx: &SyscallContext<'a>) -> Result<Self, Self::Error>
-    where
-        Self: 'a,
-    {
+    fn parse(ctx: SyscallContext) -> Result<Self, (Box<TaskFrame>, Self::Error)> {
+        let task_frame = ctx.task_frame;
         let proc_handle = ctx.args[0];
         let flags = ctx.args[1];
-        let stack_pointer = UserPtr::try_from(ctx.args[2])?;
-        let entrypoint = UserPtr::try_from(ctx.args[3])?;
+        let stack_pointer = match UserPtr::try_from(ctx.args[2]) {
+            Ok(stack_pointer) => stack_pointer,
+            Err(err) => return Err((task_frame, err)),
+        };
+        let entrypoint = match UserPtr::try_from(ctx.args[3]) {
+            Ok(entrypoint) => entrypoint,
+            Err(err) => return Err((task_frame, err)),
+        };
         let arg = ctx.args[4];
 
         Ok(Self {
+            task_frame,
             proc_handle,
             flags,
             stack_pointer,
@@ -44,7 +52,7 @@ impl SyscallCommandHandler<SysProcSpawnCommand> for SyscallHandler {
     fn handle_command(
         &self,
         command: SysProcSpawnCommand,
-    ) -> Result<SyscallIntent<Self::Ok>, Self::Err> {
+    ) -> Result<SyscallIntent<Self::Ok>, (Box<TaskFrame>, Self::Err)> {
         let current_task_id = TaskId::get_current().expect("Scheduler is not started yet!");
         let vmm = {
             let task = self
@@ -66,6 +74,6 @@ impl SyscallCommandHandler<SysProcSpawnCommand> for SyscallHandler {
             entrypoint_vaddr: *command.entrypoint,
             arg: command.arg,
         });
-        Ok(SyscallIntent::Return(pid))
+        Ok(SyscallIntent::Return(command.task_frame, pid))
     }
 }

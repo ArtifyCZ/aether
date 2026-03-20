@@ -47,7 +47,6 @@ use crate::platform::memory_layout::PAGE_FRAME_SIZE;
 use crate::platform::physical_memory_manager::PhysicalMemoryManager;
 use crate::platform::syscalls::{Syscalls, sys_exit};
 use crate::platform::terminal::Terminal;
-use crate::platform::timer::Timer;
 use crate::syscall_handler::SyscallHandler;
 use crate::task_registry::{TaskRegistry, TaskSpec};
 use scheduler::Scheduler;
@@ -127,14 +126,12 @@ fn main(
         Syscalls::init(|ctx| syscall_handler.handle(ctx));
         Interrupts::set_irq_handler(|frame, irq| {
             Interrupts::mask_irq(irq);
-            scheduler.signal_irq(irq, frame).unwrap_or(frame)
+            scheduler.signal_irq(irq, frame)
         });
         println!("Baz1");
-        Timer::init(100);
+        Ticker::init(100, scheduler);
         Interrupts::enable();
         println!("Qaz1");
-
-        Ticker::init(scheduler);
 
         spawn_thread(scheduler, thread_heartbeat);
         println!("Gez1");

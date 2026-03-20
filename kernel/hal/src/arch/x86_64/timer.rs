@@ -1,10 +1,12 @@
 use crate::arch::x86_64::interrupts::InterruptFrame;
 use crate::arch::x86_64::io_wrapper::{inb, outb};
 use crate::arch::x86_64::{interrupts, lapic};
+use crate::early_console;
+use crate::tasks::TaskFrame;
+use alloc::boxed::Box;
 use core::ffi::c_void;
 use core::ptr::null_mut;
 use core::sync::atomic::{AtomicU64, Ordering};
-use crate::early_console;
 
 const TARGET_MS: u32 = 10;
 
@@ -18,6 +20,8 @@ const PIT_CH0_DATA: u16 = 0x40;
 static mut TICKS_PER_MS: u32 = 0;
 
 static TICKS: AtomicU64 = AtomicU64::new(0);
+
+static mut HANDLER: Option<Box<dyn FnMut(Box<TaskFrame>) -> Box<TaskFrame>>> = None;
 
 static mut TICK_HANDLER: kernel_bindings_gen::timer_tick_handler_t = None;
 static mut TICK_HANDLER_ARG: *mut c_void = null_mut();
@@ -59,67 +63,58 @@ unsafe fn calibrate_timer() {
     TICKS_PER_MS = ticks_in_10ms / TARGET_MS;
 }
 
-#[unsafe(no_mangle)]
-unsafe extern "C" fn timer_init(freq_hz: u32) {
+pub unsafe fn init<F>(freq_hz: u32, handler: F)
+where
+    F: FnMut(Box<TaskFrame>) -> Box<TaskFrame> + 'static,
+{
     unsafe {
-        init(freq_hz);
+        let freq_hz = if freq_hz == 0 { 100 } else { freq_hz };
+
+        // Initialize LAPIC abstraction (Maps MMIO if not already done)
+        lapic::init(0xFEE00000);
+
+        // Mask legacy PIC
+        outb(0x21, 0xFF);
+        outb(0xA1, 0xFF);
+
+        calibrate_timer();
+
+        // Calculate reload value based on calibrated frequency
+        let initial_count = (TICKS_PER_MS * 1000) / freq_hz;
+
+        lapic::write(
+            lapic::REG_LVT_TMR,
+            (interrupts::LAPIC_TIMER_VECTOR as u32) | (1 << 17),
+        );
+        lapic::write(lapic::REG_TDCR, TIMER_DIVISOR);
+        lapic::write(lapic::REG_TICRET, initial_count);
+
+        early_console::print("LAPIC Timer initialized!");
+        // @TODO: print also the frequency
+
+        HANDLER = Some(Box::new(handler));
     }
 }
 
-pub unsafe fn init(freq_hz: u32) {
-    let freq_hz = if freq_hz == 0 { 100 } else { freq_hz };
-
-    // Initialize LAPIC abstraction (Maps MMIO if not already done)
-    lapic::init(0xFEE00000);
-
-    // Mask legacy PIC
-    outb(0x21, 0xFF);
-    outb(0xA1, 0xFF);
-
-    calibrate_timer();
-
-    // Calculate reload value based on calibrated frequency
-    let initial_count = (TICKS_PER_MS * 1000) / freq_hz;
-
-    lapic::write(
-        lapic::REG_LVT_TMR,
-        (interrupts::LAPIC_TIMER_VECTOR as u32) | (1 << 17),
-    );
-    lapic::write(lapic::REG_TDCR, TIMER_DIVISOR);
-    lapic::write(lapic::REG_TICRET, initial_count);
-
-    early_console::print("LAPIC Timer initialized!");
-    // @TODO: print also the frequency
-}
-
-pub unsafe fn interrupt_handler(frame: *mut *mut InterruptFrame) {
+pub unsafe fn interrupt_handler(frame: *mut InterruptFrame) -> *mut InterruptFrame {
     TICKS.fetch_add(1, Ordering::SeqCst);
 
-    unsafe {
-        if let Some(tick_handler) = TICK_HANDLER {
-            tick_handler(frame.cast(), TICK_HANDLER_ARG);
+    let task_frame = unsafe {
+        Box::new(TaskFrame {
+            hw_frame: frame,
+        })
+    };
+
+    let return_frame = unsafe {
+        #[allow(static_mut_refs)]
+        if let Some(tick_handler) = HANDLER.as_mut() {
+            tick_handler(task_frame)
+        } else {
+            task_frame
         }
-    }
-}
+    };
 
-#[unsafe(no_mangle)]
-unsafe extern "C" fn timer_set_tick_handler(
-    handler: kernel_bindings_gen::timer_tick_handler_t,
-    arg: *mut c_void,
-) {
-    unsafe {
-        set_tick_handler(handler, arg);
-    }
-}
-
-pub unsafe fn set_tick_handler(
-    handler: kernel_bindings_gen::timer_tick_handler_t,
-    arg: *mut c_void,
-) {
-    unsafe {
-        TICK_HANDLER = handler;
-        TICK_HANDLER_ARG = arg;
-    }
+    return_frame.hw_frame
 }
 
 #[unsafe(no_mangle)]

@@ -1,32 +1,28 @@
+use crate::arch::aarch64::gic;
+use crate::arch::aarch64::interrupts;
+use crate::arch::aarch64::interrupts::InterruptFrame;
 use crate::early_console;
+use crate::tasks::TaskFrame;
+use alloc::boxed::Box;
 use core::arch::asm;
 use core::ffi::c_void;
 use core::ptr::null_mut;
 use core::sync::atomic::{AtomicU64, Ordering};
-use crate::arch::aarch64::gic;
-use crate::arch::aarch64::interrupts;
-use crate::arch::aarch64::interrupts::InterruptFrame;
 
 static TICKS: AtomicU64 = AtomicU64::new(0);
 
 static mut FREQ_HZ: u32 = 0;
-static mut TICK_HANDLER: kernel_bindings_gen::timer_tick_handler_t = None;
-static mut TICK_HANDLER_ARG: *mut c_void = null_mut();
+static mut HANDLER: Option<Box<dyn FnMut(Box<TaskFrame>) -> Box<TaskFrame>>> = None;
 
-#[unsafe(no_mangle)]
-unsafe extern "C" fn timer_init(freq_hz: u32) {
-    unsafe {
-        init(freq_hz);
-    }
-}
-
-pub unsafe fn init(freq_hz: u32) {
+pub unsafe fn init<F>(freq_hz: u32, handler: F)
+where
+    F: FnMut(Box<TaskFrame>) -> Box<TaskFrame> + 'static,
+{
     unsafe {
         let freq_hz = if freq_hz == 0 { 100 } else { freq_hz };
 
         FREQ_HZ = freq_hz;
-        TICK_HANDLER = None;
-        TICK_HANDLER_ARG = null_mut();
+        HANDLER = Some(Box::new(handler));
         TICKS.store(0, Ordering::Release);
 
         // Get the system counter's frequency (usually 62.5MHz on QEMU)
@@ -50,7 +46,7 @@ pub unsafe fn init(freq_hz: u32) {
     }
 }
 
-pub unsafe fn interrupt_handler(frame: *mut *mut InterruptFrame) {
+pub unsafe fn interrupt_handler(frame: *mut InterruptFrame) -> *mut InterruptFrame {
     unsafe {
         // Reset the timer for the next tick! (Crucial: ARM timers aren't periodic by default)
         let freq: u64;
@@ -60,29 +56,16 @@ pub unsafe fn interrupt_handler(frame: *mut *mut InterruptFrame) {
 
         TICKS.fetch_add(1, Ordering::SeqCst);
 
-        if let Some(tick_handler) = TICK_HANDLER {
-            tick_handler(frame.cast(), TICK_HANDLER_ARG);
-        }
-    }
-}
+        let task_frame = Box::new(TaskFrame { hw_frame: frame });
 
-#[unsafe(no_mangle)]
-unsafe extern "C" fn timer_set_tick_handler(
-    handler: kernel_bindings_gen::timer_tick_handler_t,
-    arg: *mut c_void,
-) {
-    unsafe {
-        set_tick_handler(handler, arg);
-    }
-}
+        #[allow(static_mut_refs)]
+        let return_frame = if let Some(handler) = HANDLER.as_mut() {
+            handler(task_frame)
+        } else {
+            task_frame
+        };
 
-pub unsafe fn set_tick_handler(
-    handler: kernel_bindings_gen::timer_tick_handler_t,
-    arg: *mut c_void,
-) {
-    unsafe {
-        TICK_HANDLER = handler;
-        TICK_HANDLER_ARG = arg;
+        return_frame.hw_frame
     }
 }
 

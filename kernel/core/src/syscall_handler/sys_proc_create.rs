@@ -2,9 +2,12 @@ use crate::platform::syscalls::{SyscallContext, SyscallError, SyscallIntent};
 use crate::platform::virtual_memory_manager_context::VirtualMemoryManagerContext;
 use crate::syscall_handler::{SyscallCommand, SyscallCommandHandler, SyscallHandler};
 use crate::task_id::TaskId;
+use alloc::boxed::Box;
 use alloc::sync::Arc;
+use kernel_hal::tasks::TaskFrame;
 
 pub struct SysProcCreateCommand {
+    task_frame: Box<TaskFrame>,
     #[allow(unused)]
     flags: u64,
 }
@@ -12,13 +15,11 @@ pub struct SysProcCreateCommand {
 impl SyscallCommand for SysProcCreateCommand {
     type Error = SyscallError;
 
-    fn parse<'a>(ctx: &SyscallContext<'a>) -> Result<Self, Self::Error>
-    where
-        Self: 'a,
-    {
+    fn parse(ctx: SyscallContext) -> Result<Self, (Box<TaskFrame>, Self::Error)> {
+        let task_frame = ctx.task_frame;
         let flags = ctx.args[0];
 
-        Ok(Self { flags })
+        Ok(Self { task_frame, flags })
     }
 }
 
@@ -28,9 +29,8 @@ impl SyscallCommandHandler<SysProcCreateCommand> for SyscallHandler {
 
     fn handle_command(
         &self,
-        #[allow(unused)]
         command: SysProcCreateCommand,
-    ) -> Result<SyscallIntent<Self::Ok>, Self::Err> {
+    ) -> Result<SyscallIntent<Self::Ok>, (Box<TaskFrame>, Self::Err)> {
         let task_id = TaskId::get_current().expect("Scheduler is not started yet!");
         let mut task = self
             .task_registry
@@ -38,6 +38,6 @@ impl SyscallCommandHandler<SysProcCreateCommand> for SyscallHandler {
             .expect("Current task should exist!");
         let vmm = Arc::new(unsafe { VirtualMemoryManagerContext::create() });
         let handle = task.add_proc_handle(vmm);
-        Ok(SyscallIntent::Return(handle))
+        Ok(SyscallIntent::Return(command.task_frame, handle))
     }
 }

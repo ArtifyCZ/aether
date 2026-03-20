@@ -8,18 +8,12 @@ use alloc::sync::Arc;
 use core::ffi::c_void;
 use core::pin::Pin;
 use kernel_bindings_gen::{
-    interrupt_frame, task_get_current_id, task_prepare_switch, task_set_syscall_return_value,
-    task_setup_kernel, task_setup_user, vmm_context,
+    task_get_current_id, task_setup_kernel,
+    task_setup_user, vmm_context,
 };
+use kernel_hal::tasks::TaskFrame;
 
 pub const TASK_KERNEL_STACK_SIZE: usize = 8 * PAGE_FRAME_SIZE;
-
-#[derive(Debug, Copy, Clone, PartialEq)]
-#[repr(transparent)]
-#[must_use]
-pub struct TaskFrame(pub(super) *mut interrupt_frame);
-
-unsafe impl Send for TaskFrame {}
 
 #[derive(Debug)]
 pub struct TaskContext {
@@ -27,7 +21,7 @@ pub struct TaskContext {
     #[allow(unused)]
     user_ctx: Option<Arc<VirtualMemoryManagerContext>>,
     kernel_stack: Pin<Box<[u8]>>,
-    state: TaskFrame,
+    state: Option<Box<TaskFrame>>,
     proc_handles: BTreeMap<u64, Arc<VirtualMemoryManagerContext>>,
     next_handle: u64,
     pending_syscall_return_value: Option<Result<SyscallReturnValue, SyscallError>>,
@@ -50,20 +44,23 @@ impl TaskContext {
                 root: user_ctx.inner(),
             };
             let kernel_stack_top = kernel_stack.as_ptr_range().end as usize;
-            TaskFrame(task_setup_user(
-                &user_ctx,
-                entrypoint_vaddr,
-                user_stack_vaddr,
-                kernel_stack_top,
-                arg,
-            ))
+            TaskFrame::from_ptr_legacy(
+                task_setup_user(
+                    &user_ctx,
+                    entrypoint_vaddr,
+                    user_stack_vaddr,
+                    kernel_stack_top,
+                    arg,
+                )
+                .cast(),
+            )
         };
 
         Self {
             task_id,
             user_ctx: Some(user_ctx),
             kernel_stack,
-            state,
+            state: Some(state),
             proc_handles: BTreeMap::new(),
             next_handle: 1,
             pending_syscall_return_value: None,
@@ -82,14 +79,16 @@ impl TaskContext {
 
         let state = unsafe {
             let kernel_stack_top = kernel_stack.as_ptr_range().end as usize;
-            TaskFrame(task_setup_kernel(kernel_stack_top, Some(function), arg))
+            TaskFrame::from_ptr_legacy(
+                task_setup_kernel(kernel_stack_top, Some(function), arg).cast(),
+            )
         };
 
         Self {
             task_id,
             user_ctx: None,
             kernel_stack,
-            state,
+            state: Some(state),
             proc_handles: BTreeMap::new(),
             next_handle: 1,
             pending_syscall_return_value: None,
@@ -100,23 +99,24 @@ impl TaskContext {
         self.user_ctx.as_ref().unwrap()
     }
 
-    pub fn set_frame(&mut self, state: TaskFrame) {
-        self.state = state;
+    pub fn set_frame(&mut self, state: Box<TaskFrame>) {
+        self.state = Some(state);
     }
 
     pub fn return_syscall_value(&mut self, value: Result<impl SyscallReturnable, SyscallError>) {
         self.pending_syscall_return_value = Some(value.map(|value| value.into_return_value()));
     }
 
-    pub fn activate(&mut self) -> TaskFrame {
+    pub fn activate(&mut self) -> Box<TaskFrame> {
+        let mut frame = self.state.take().unwrap();
         let kernel_stack_top = self.kernel_stack.as_ptr_range().end as usize;
         unsafe {
-            task_prepare_switch(kernel_stack_top, self.task_id.get());
+            kernel_hal::tasks::prepare_switch(kernel_stack_top, self.task_id.get());
         }
-        let mut frame = self.state;
         if let Some(value) = self.pending_syscall_return_value.take() {
             unsafe {
-                frame.set_syscall_return_value(value);
+                frame
+                    .set_syscall_return_value(value.map(|value| value.0).map_err(|err| err as u64));
             }
         }
         frame
@@ -144,21 +144,6 @@ impl TaskId {
             None
         } else {
             Some(unsafe { TaskId::from_u64(task_id) })
-        }
-    }
-}
-
-impl TaskFrame {
-    pub(super) unsafe fn set_syscall_return_value(
-        &mut self,
-        value: Result<SyscallReturnValue, SyscallError>,
-    ) {
-        unsafe {
-            let (error_code, value) = match value {
-                Ok(value) => (SyscallError::SYS_SUCCESS, value),
-                Err(error_code) => (error_code, ().into_return_value()),
-            };
-            task_set_syscall_return_value(self.0, error_code as u64, value.0);
         }
     }
 }

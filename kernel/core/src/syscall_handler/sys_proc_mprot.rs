@@ -1,4 +1,3 @@
-use kernel_hal::mmu::VirtualMemoryMappingFlags;
 use crate::platform::memory_layout::PAGE_FRAME_SIZE;
 use crate::platform::syscalls::{SyscallContext, SyscallError, SyscallIntent};
 use crate::platform::virtual_page_address::VirtualPageAddress;
@@ -6,8 +5,12 @@ use crate::syscall_handler::user_ptr::UserPtr;
 use crate::syscall_handler::user_slice::UserSlice;
 use crate::syscall_handler::{SyscallCommand, SyscallCommandHandler, SyscallHandler};
 use crate::task_id::TaskId;
+use alloc::boxed::Box;
+use kernel_hal::mmu::VirtualMemoryMappingFlags;
+use kernel_hal::tasks::TaskFrame;
 
 pub struct SysProcMprotCommand {
+    task_frame: Box<TaskFrame>,
     proc_handle: u64,
     chunk: UserSlice<*const [u8]>,
     prot: u32,
@@ -16,19 +19,24 @@ pub struct SysProcMprotCommand {
 impl SyscallCommand for SysProcMprotCommand {
     type Error = SyscallError;
 
-    fn parse<'a>(ctx: &SyscallContext<'a>) -> Result<Self, Self::Error>
-    where
-        Self: 'a,
-    {
+    fn parse(ctx: SyscallContext) -> Result<Self, (Box<TaskFrame>, Self::Error)> {
+        let task_frame = ctx.task_frame;
         let proc_handle = ctx.args[0] as u64;
         let addr = ctx.args[1] as usize;
         let length = ctx.args[2] as usize;
         let prot = ctx.args[3] as u32;
 
-        let chunk_start = UserPtr::try_from(addr)?;
-        let chunk = UserSlice::try_from((chunk_start, length))?;
+        let chunk_start = match UserPtr::try_from(addr) {
+            Ok(chunk_start) => chunk_start,
+            Err(err) => return Err((task_frame, err)),
+        };
+        let chunk = match UserSlice::try_from((chunk_start, length)) {
+            Ok(chunk) => chunk,
+            Err(err) => return Err((task_frame, err)),
+        };
 
         Ok(Self {
+            task_frame,
             proc_handle,
             chunk,
             prot,
@@ -43,7 +51,7 @@ impl SyscallCommandHandler<SysProcMprotCommand> for SyscallHandler {
     fn handle_command(
         &self,
         command: SysProcMprotCommand,
-    ) -> Result<SyscallIntent<Self::Ok>, Self::Err> {
+    ) -> Result<SyscallIntent<Self::Ok>, (Box<TaskFrame>, Self::Err)> {
         let task_id = TaskId::get_current().expect("Scheduler is not started yet!");
         let task = self
             .task_registry
@@ -56,11 +64,17 @@ impl SyscallCommandHandler<SysProcMprotCommand> for SyscallHandler {
                 .expect("Not assigned proc handle not handled")
         };
         const PAGE_MASK: usize = !(PAGE_FRAME_SIZE - 1);
-        let addr: UserPtr<usize> = UserPtr::try_from(command.chunk.addr() & PAGE_MASK)?;
+        let addr: UserPtr<usize> = match UserPtr::try_from(command.chunk.addr() & PAGE_MASK) {
+            Ok(addr) => addr,
+            Err(err) => return Err((command.task_frame, err)),
+        };
         let pages_count = (command.chunk.len() + PAGE_FRAME_SIZE - 1) / PAGE_FRAME_SIZE;
 
         for page_idx in 0..pages_count {
-            let page_vaddr = UserPtr::try_from(*addr + page_idx * PAGE_FRAME_SIZE)?;
+            let page_vaddr = match UserPtr::try_from(*addr + page_idx * PAGE_FRAME_SIZE) {
+                Ok(page_vaddr) => page_vaddr,
+                Err(err) => return Err((command.task_frame, err)),
+            };
             let page_vaddr = VirtualPageAddress::new(*page_vaddr).unwrap();
             let phys = unsafe { target_vmm.translate(page_vaddr) }
                 .expect("Failed to translate!")
@@ -83,6 +97,6 @@ impl SyscallCommandHandler<SysProcMprotCommand> for SyscallHandler {
             }
         }
 
-        Ok(SyscallIntent::Return(()))
+        Ok(SyscallIntent::Return(command.task_frame, ()))
     }
 }

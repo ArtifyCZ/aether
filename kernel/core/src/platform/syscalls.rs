@@ -1,10 +1,9 @@
-use crate::platform::tasks::TaskFrame;
-use alloc::boxed::Box;
-use core::ffi::c_void;
-
 use crate::println;
+use alloc::boxed::Box;
 pub use kernel_bindings_gen::syscall_args;
-use kernel_bindings_gen::{syscall_frame, syscalls_init, syscalls_raw};
+use kernel_bindings_gen::syscalls_raw;
+use kernel_hal::syscalls;
+use kernel_hal::tasks::TaskFrame;
 pub use syscalls_rust::syscall_err as SyscallError;
 pub use syscalls_rust::syscall_num;
 
@@ -53,23 +52,28 @@ macro_rules! wrap_syscall {
 wrap_syscall!(sys_exit, syscall_num::SYS_EXIT);
 wrap_syscall!(sys_write, syscall_num::SYS_WRITE, fd: i32, user_buf: u64, count: usize);
 
-pub struct SyscallContext<'a> {
-    pub task_frame: &'a TaskFrame,
+pub struct SyscallContext {
+    pub task_frame: Box<TaskFrame>,
     pub args: [u64; 5],
     pub num: u64,
 }
 
 pub enum SyscallIntent<TOut> {
     /// Returns to the caller
-    Return(TOut),
+    Return(Box<TaskFrame>, TOut),
     /// Switches to the specified task
-    SwitchTo(TaskFrame),
+    SwitchTo(Box<TaskFrame>),
 }
 
-impl<T> From<SyscallIntent<T>> for SyscallIntent<SyscallReturnValue> where T: SyscallReturnable {
+impl<T> From<SyscallIntent<T>> for SyscallIntent<SyscallReturnValue>
+where
+    T: SyscallReturnable,
+{
     fn from(value: SyscallIntent<T>) -> SyscallIntent<SyscallReturnValue> {
         match value {
-            SyscallIntent::Return(value) => SyscallIntent::Return(value.into_return_value()),
+            SyscallIntent::Return(task_frame, value) => {
+                SyscallIntent::Return(task_frame, value.into_return_value())
+            }
             SyscallIntent::SwitchTo(frame) => SyscallIntent::SwitchTo(frame),
         }
     }
@@ -96,46 +100,37 @@ impl SyscallReturnable for u64 {
 }
 
 impl Syscalls {
-    pub unsafe fn init<F>(f: F)
+    pub unsafe fn init<F>(mut f: F)
     where
-        F: (FnMut(&SyscallContext<'_>) -> Result<SyscallIntent<SyscallReturnValue>, SyscallError>) + 'static,
+        F: (FnMut(SyscallContext) -> Result<SyscallIntent<SyscallReturnValue>, (Box<TaskFrame>, SyscallError)>)
+            + 'static,
     {
-        unsafe extern "C" fn trampoline<F>(syscall_frame: *mut syscall_frame, arg: *mut c_void)
-        where
-            F: (FnMut(&SyscallContext<'_>) -> Result<SyscallIntent<SyscallReturnValue>, SyscallError>) + 'static,
-        {
-            let f: *mut F = arg.cast();
-            let f: &mut F = unsafe { &mut *f };
-            let syscall_frame: &mut syscall_frame = unsafe { syscall_frame.as_mut() }.unwrap();
-            let mut task_frame = TaskFrame(unsafe { syscall_frame.interrupt_frame.read() }.cast());
-            let context = SyscallContext {
-                task_frame: &task_frame,
-                args: syscall_frame.a,
-                num: syscall_frame.num,
-            };
-            let intent = match f(&context) {
-                Ok(intent) => match intent {
-                    SyscallIntent::Return(value) => SyscallIntent::Return(Ok(value)),
-                    SyscallIntent::SwitchTo(frame) => SyscallIntent::SwitchTo(frame),
-                },
-                Err(error) => SyscallIntent::Return(Err(error)),
-            };
-            match intent {
-                SyscallIntent::Return(value) => unsafe {
-                    task_frame.set_syscall_return_value(value);
-                },
-                SyscallIntent::SwitchTo(task_frame) => unsafe {
-                    syscall_frame.interrupt_frame.write(task_frame.0.cast());
-                },
-            }
-        }
-
         println!("Initializing syscalls...");
         unsafe {
-            syscalls_init(
-                Some(trampoline::<F>),
-                Box::into_raw(Box::new(f)) as *mut c_void,
-            );
+            syscalls::init(move |syscall_frame| {
+                let num = syscall_frame.number();
+                let args = syscall_frame.args();
+                let task_frame = syscall_frame.into_task_frame();
+                let context = SyscallContext {
+                    task_frame,
+                    args,
+                    num,
+                };
+                let intent = match f(context) {
+                    Ok(intent) => match intent {
+                        SyscallIntent::Return(task_frame, value) => SyscallIntent::Return(task_frame, Ok(value)),
+                        SyscallIntent::SwitchTo(frame) => SyscallIntent::SwitchTo(frame),
+                    },
+                    Err((task_frame, error)) => SyscallIntent::Return(task_frame, Err(error)),
+                };
+                match intent {
+                    SyscallIntent::Return(mut task_frame, value) => unsafe {
+                        task_frame.set_syscall_return_value(value.map(|value| value.0).map_err(|err_code| err_code as u64));
+                        task_frame
+                    },
+                    SyscallIntent::SwitchTo(task_frame) => task_frame,
+                }
+            });
         }
         println!("Syscalls initialized!");
     }
