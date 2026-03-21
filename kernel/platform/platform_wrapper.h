@@ -8,7 +8,6 @@
 #include "physical_memory_manager.h"
 #include "platform.h"
 #include "string.h"
-#include "syscalls.h"
 #include "timer.h"
 #include "virtual_address_allocator.h"
 #include "virtual_memory_manager.h"
