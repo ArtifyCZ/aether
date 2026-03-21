@@ -2,8 +2,6 @@
 #![no_main]
 extern crate alloc;
 
-use alloc::string::ToString;
-use kernel_core::entrypoint::kernel_main;
 use limine::BaseRevision;
 use limine::request::{
     ExecutableAddressRequest, FramebufferRequest, HhdmRequest, MemoryMapRequest, ModuleRequest,
@@ -66,19 +64,15 @@ unsafe fn main() -> ! {
             .cast();
     let framebuffer = unsafe { framebuffer_response.read().framebuffers.read() };
 
-    unsafe {
-        kernel_main(
-            HHDM_REQUEST.get_response().unwrap().offset(),
-            (MEMMAP_REQUEST.get_response().unwrap() as *const _
-                as *mut limine::response::MemoryMapResponse)
-                .cast(),
-            framebuffer,
-            (MODULE_REQUEST.get_response().unwrap() as *const _
-                as *mut limine::response::ModuleResponse)
-                .cast(),
-            RSDP_REQUEST.get_response().unwrap().address() as u64,
-        );
-    }
-
-    loop {}
+    kernel_core::main(
+        HHDM_REQUEST.get_response().unwrap().offset(),
+        (MEMMAP_REQUEST.get_response().unwrap() as *const _
+            as *mut limine::response::MemoryMapResponse)
+            .cast(),
+        framebuffer,
+        (MODULE_REQUEST.get_response().unwrap() as *const _
+            as *mut limine::response::ModuleResponse)
+            .cast(),
+        RSDP_REQUEST.get_response().unwrap().address() as u64,
+    )
 }

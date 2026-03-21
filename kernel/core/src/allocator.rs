@@ -1,3 +1,4 @@
+use alloc::boxed::Box;
 use crate::interrupt_safe_spin_lock::InterruptSafeSpinLock;
 use crate::platform::memory_layout::{KERNEL_HEAP_BASE, PAGE_FRAME_SIZE};
 use crate::platform::physical_memory_manager::PhysicalMemoryManager;
@@ -29,11 +30,15 @@ struct AllocatorInner {
     current_heap_limit: usize,
 }
 
-pub static GLOBAL_ALLOCATOR: Allocator = Allocator(InterruptSafeSpinLock::new(AllocatorInner {
-    early_heap_next_available_idx: 0,
-    next_available_virt_addr: KERNEL_HEAP_BASE,
-    current_heap_limit: KERNEL_HEAP_BASE,
-}));
+impl Allocator {
+    pub unsafe fn init() -> &'static Self {
+        Box::leak(Box::new(Allocator(InterruptSafeSpinLock::new(AllocatorInner {
+            early_heap_next_available_idx: 0,
+            next_available_virt_addr: KERNEL_HEAP_BASE,
+            current_heap_limit: KERNEL_HEAP_BASE,
+        }))))
+    }
+}
 
 unsafe impl GlobalAlloc for Allocator {
     unsafe fn alloc(&self, layout: Layout) -> *mut u8 {

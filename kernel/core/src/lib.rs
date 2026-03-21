@@ -5,7 +5,6 @@ extern crate alloc;
 
 mod allocator;
 mod elf;
-pub mod entrypoint;
 mod init_process;
 mod interrupt_safe_spin_lock;
 mod logging;
@@ -54,7 +53,7 @@ use crate::task_registry::TaskRegistry;
 use scheduler::Scheduler;
 use ticker::Ticker;
 
-fn main(
+pub fn main(
     hhdm_offset: u64,
     memmap: *mut kernel_bindings_gen::limine_memmap_response,
     framebuffer: *mut kernel_bindings_gen::limine_framebuffer,
