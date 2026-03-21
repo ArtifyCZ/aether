@@ -23,9 +23,6 @@ static TICKS: AtomicU64 = AtomicU64::new(0);
 
 static mut HANDLER: Option<Box<dyn FnMut(Box<TaskFrame>) -> Box<TaskFrame>>> = None;
 
-static mut TICK_HANDLER: kernel_bindings_gen::timer_tick_handler_t = None;
-static mut TICK_HANDLER_ARG: *mut c_void = null_mut();
-
 unsafe fn calibrate_timer() {
     // Software-enable LAPIC via Spurious Vector Register
     let svr = lapic::read(lapic::REG_SVR);
@@ -115,11 +112,6 @@ pub unsafe fn interrupt_handler(frame: *mut InterruptFrame) -> *mut InterruptFra
     };
 
     return_frame.hw_frame
-}
-
-#[unsafe(no_mangle)]
-unsafe extern "C" fn timer_get_ticks() -> u64 {
-    unsafe { get_ticks() }
 }
 
 pub unsafe fn get_ticks() -> u64 {

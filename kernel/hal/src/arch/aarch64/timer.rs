@@ -69,11 +69,6 @@ pub unsafe fn interrupt_handler(frame: *mut InterruptFrame) -> *mut InterruptFra
     }
 }
 
-#[unsafe(no_mangle)]
-unsafe extern "C" fn timer_get_ticks() -> u64 {
-    unsafe { get_ticks() }
-}
-
 pub unsafe fn get_ticks() -> u64 {
     TICKS.load(Ordering::Relaxed)
 }
