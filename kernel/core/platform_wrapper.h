@@ -1,5 +1,4 @@
 #include "boot.h"
-#include "early_console.h"
 #include "emergency_console.h"
 #include "interrupts.h"
 #include "physical_memory_manager.h"
