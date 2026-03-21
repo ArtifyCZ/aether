@@ -1,7 +1,8 @@
 #![no_std]
 #![no_main]
+extern crate alloc;
 
-use core::ptr::null_mut;
+use alloc::string::ToString;
 use kernel_core::entrypoint::kernel_main;
 use limine::BaseRevision;
 use limine::request::{
@@ -9,6 +10,8 @@ use limine::request::{
     RequestsEndMarker, RequestsStartMarker, RsdpRequest, StackSizeRequest,
 };
 
+mod early_heap;
+mod global_allocator;
 mod start;
 
 #[used]
@@ -53,6 +56,12 @@ static _REQUESTS_END_MARKER: RequestsEndMarker = RequestsEndMarker::new();
 
 unsafe fn main() -> ! {
     assert!(BASE_REVISION.is_supported());
+
+    let early_heap = unsafe { early_heap::init() };
+    unsafe { global_allocator::switch_to_early_heap(early_heap) };
+
+    let foo = "Hello alloc world!".to_string();
+    let _ = core::hint::black_box(foo);
 
     let framebuffer_response: *mut kernel_bindings_gen::limine_framebuffer_response =
         (FRAMEBUFFER_REQUEST.get_response().unwrap() as *const _

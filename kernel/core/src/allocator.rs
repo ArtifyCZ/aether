@@ -29,7 +29,6 @@ struct AllocatorInner {
     current_heap_limit: usize,
 }
 
-#[global_allocator]
 pub static GLOBAL_ALLOCATOR: Allocator = Allocator(InterruptSafeSpinLock::new(AllocatorInner {
     early_heap_next_available_idx: 0,
     next_available_virt_addr: KERNEL_HEAP_BASE,
