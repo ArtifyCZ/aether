@@ -32,7 +32,7 @@ pub mod mmu {
 }
 
 pub mod syscalls {
-    pub use super::implementation::syscalls::{init, raw};
+    pub use super::implementation::syscalls::init;
 }
 
 pub mod tasks {
