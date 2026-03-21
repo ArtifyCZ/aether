@@ -1,7 +1,6 @@
 #pragma once
 
 #include "boot.h"
-#include "emergency_console.h"
 #include "interrupts.h"
 #include "physical_memory_manager.h"
 #include "platform.h"

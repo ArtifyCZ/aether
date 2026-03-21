@@ -14,43 +14,6 @@ pub unsafe fn init(serial_base: u64) {
     }
 }
 
-#[unsafe(no_mangle)]
-unsafe extern "C" fn emergency_console_print(message: *const c_char) {
-    unsafe {
-        let message = CStr::from_ptr(message);
-        let message = message.to_bytes();
-        for byte in message {
-            arch::emergency_console::write(SERIAL_BASE, *byte);
-        }
-    }
-}
-
-#[unsafe(no_mangle)]
-unsafe extern "C" fn emergency_console_println(message: *const c_char) {
-    unsafe {
-        let message = CStr::from_ptr(message);
-        let message = message.to_bytes();
-        for byte in message {
-            arch::emergency_console::write(SERIAL_BASE, *byte);
-        }
-        arch::emergency_console::write(SERIAL_BASE, '\n' as u8);
-    }
-}
-
-#[unsafe(no_mangle)]
-unsafe extern "C" fn emergency_console_print_hex_u64(value: u64) {
-    unsafe {
-        static HEX: [char; 16] = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'];
-        print("0x");
-        let mut i = 60;
-        while i >= 0 {
-            let nib = ((value >> i) & 0xF) as u8;
-            arch::emergency_console::write(SERIAL_BASE, HEX[nib as usize] as u8);
-            i -= 4;
-        }
-    }
-}
-
 pub unsafe fn print(message: &str) {
     unsafe {
         if SERIAL_BASE == 0 {
