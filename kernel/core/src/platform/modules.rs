@@ -25,8 +25,7 @@ unsafe fn modules_init(modules: *mut limine_module_response) {
     }
 }
 
-#[unsafe(no_mangle)]
-unsafe extern "C" fn module_find(string: *const c_char) -> *const limine_file {
+unsafe  fn module_find(string: *const c_char) -> *const limine_file {
     unsafe {
         let modules = MODULES
             .expect("Cannot find module when modules are uninitialized!")

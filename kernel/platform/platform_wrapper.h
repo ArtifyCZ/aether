@@ -4,7 +4,6 @@
 #include "early_console.h"
 #include "emergency_console.h"
 #include "interrupts.h"
-#include "modules.h"
 #include "physical_memory_manager.h"
 #include "platform.h"
 #include "string.h"
