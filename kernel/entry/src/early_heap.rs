@@ -3,7 +3,7 @@ use core::mem::zeroed;
 use core::ptr::null_mut;
 use core::sync::atomic::{AtomicUsize, Ordering};
 
-const EARLY_HEAP_SIZE: usize = 0x1000;
+const EARLY_HEAP_SIZE: usize = 0x1_0000; // 64 kiB
 #[repr(align(16))]
 struct EarlyHeapMemory([u8; EARLY_HEAP_SIZE]);
 
