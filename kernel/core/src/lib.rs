@@ -3,7 +3,7 @@
 
 extern crate alloc;
 
-mod allocator;
+pub mod allocator;
 mod elf;
 mod init_process;
 mod interrupt_safe_spin_lock;
@@ -52,6 +52,7 @@ use crate::syscall_handler::SyscallHandler;
 use crate::task_registry::TaskRegistry;
 use scheduler::Scheduler;
 use ticker::Ticker;
+use crate::allocator::Allocator;
 
 pub fn main(
     hhdm_offset: u64,
@@ -59,6 +60,7 @@ pub fn main(
     framebuffer: *mut kernel_bindings_gen::limine_framebuffer,
     modules: *mut kernel_bindings_gen::limine_module_response,
     rsdp_address: u64,
+    switch_to_paged_alloc_fn: impl FnOnce(&'static allocator::Allocator),
 ) -> ! {
     unsafe {
         VirtualAddressAllocator::init();
@@ -75,6 +77,7 @@ pub fn main(
         Terminal::init(NonNull::new(framebuffer).unwrap());
         println!("Terminal initialized!");
         println!("Booting...");
+        switch_to_paged_alloc_fn(Allocator::init());
         Interrupts::init();
 
         println!("Hello from Rust!");

@@ -74,5 +74,6 @@ unsafe fn main() -> ! {
             as *mut limine::response::ModuleResponse)
             .cast(),
         RSDP_REQUEST.get_response().unwrap().address() as u64,
+        |paged_allocator| unsafe { global_allocator::switch_to_paged_allocator(paged_allocator) },
     )
 }
