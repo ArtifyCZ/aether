@@ -1,15 +1,14 @@
+use crate::mmu::VirtualMemoryMappingFlags;
 use bitflags::bitflags;
 use core::arch::asm;
-use crate::mmu::VirtualMemoryMappingFlags;
 
 static mut KERNEL_CONTEXT: usize = 0;
 static mut HHDM_OFFSET: usize = 0;
 
 #[allow(non_upper_case_globals)]
 #[unsafe(no_mangle)]
-static mut g_kernel_context: kernel_bindings_gen::vmm_context = kernel_bindings_gen::vmm_context {
-    root: 0,
-};
+static mut g_kernel_context: kernel_bindings_gen::vmm_context =
+    kernel_bindings_gen::vmm_context { root: 0 };
 
 const X86_ADDR_MASK: usize = 0x000FFFFFFFFFF000;
 
@@ -21,6 +20,7 @@ bitflags! {
         const WRITE_THROUGH = 1 << 3;
         const CACHE_DISABLE = 1 << 4;
         const HUGE_PAGE = 1 << 7; // 1 GiB / 2 MiB
+        const GLOBAL = 1 << 8;
         const NO_EXEC = 1 << 63;
     }
 }
@@ -65,9 +65,7 @@ pub unsafe fn init(hhdm_offset: usize) {
 }
 
 pub unsafe fn get_kernel_context() -> usize {
-    unsafe {
-        KERNEL_CONTEXT
-    }
+    unsafe { KERNEL_CONTEXT }
 }
 
 pub unsafe fn create_context() -> usize {
@@ -116,30 +114,47 @@ pub unsafe fn map_page(
 
         let mut table = (table + HHDM_OFFSET) as *mut u64;
         let hw_flags = X86MappingFlags::from_vmm_flags(flags);
+        let hw_flags = if virt >= 0xFFFF800000000000 {
+            // Handle kernel's higher-half
+            hw_flags | X86MappingFlags::GLOBAL
+        } else {
+            hw_flags
+        };
 
         for i in 0..3 {
             let idx = (virt >> SHIFTS[i]) & 0x1FF;
             let entry_val = table.add(idx).read();
 
-            let (next_table_phys, mut current_flags) = if (entry_val & X86MappingFlags::PRESENT.bits()) == 0 {
-                let new_table_phys = kernel_bindings_gen::pmm_alloc_frame();
-                if new_table_phys == 0 {
-                    panic!("Could not allocate page frame for a page directory!");
-                }
-                let new_table_virt = (new_table_phys + HHDM_OFFSET) as *mut u64;
+            let (next_table_phys, mut current_flags) =
+                if (entry_val & X86MappingFlags::PRESENT.bits()) == 0 {
+                    let new_table_phys = kernel_bindings_gen::pmm_alloc_frame();
+                    if new_table_phys == 0 {
+                        panic!("Could not allocate page frame for a page directory!");
+                    }
+                    let new_table_virt = (new_table_phys + HHDM_OFFSET) as *mut u64;
 
-                core::ptr::write_bytes(new_table_virt, 0, 512);
+                    core::ptr::write_bytes(new_table_virt, 0, 512);
 
-                (new_table_phys, X86MappingFlags::PRESENT | X86MappingFlags::WRITE)
-            } else {
-                (entry_val as usize & X86_ADDR_MASK, X86MappingFlags::from_bits_retain(entry_val))
-            };
+                    (
+                        new_table_phys,
+                        X86MappingFlags::PRESENT | X86MappingFlags::WRITE,
+                    )
+                } else {
+                    (
+                        entry_val as usize & X86_ADDR_MASK,
+                        X86MappingFlags::from_bits_retain(entry_val),
+                    )
+                };
 
             if flags.contains(VirtualMemoryMappingFlags::USER) {
                 current_flags |= X86MappingFlags::USER;
             }
             if flags.contains(VirtualMemoryMappingFlags::WRITE) {
                 current_flags |= X86MappingFlags::WRITE;
+            }
+
+            if virt >= 0xFFFF800000000000 {
+                current_flags |= X86MappingFlags::GLOBAL;
             }
 
             let entry = ((next_table_phys & X86_ADDR_MASK) as u64) | current_flags.bits();

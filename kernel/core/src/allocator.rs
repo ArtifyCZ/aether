@@ -4,6 +4,8 @@ use crate::platform::virtual_memory_manager_context::VirtualMemoryManagerContext
 use crate::platform::virtual_page_address::VirtualPageAddress;
 use alloc::boxed::Box;
 use core::alloc::{GlobalAlloc, Layout};
+use core::mem::MaybeUninit;
+use core::ptr::null_mut;
 use core::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use kernel_hal::mmu::VirtualMemoryMappingFlags;
 use crate::interrupt_safe_spin_lock::InterruptSafeSpinLock;
@@ -18,18 +20,36 @@ fn align_up(v: usize, a: usize) -> usize {
 
 pub struct Allocator(InterruptSafeSpinLock<AllocatorInner>);
 
+pub static mut ALLOCATOR_STORAGE: MaybeUninit<Allocator> = MaybeUninit::uninit();
+
 #[repr(align(16))]
 struct AllocatorInner {
     next_available_alloc_vaddr: usize,
     mapped_memory_end_vaddr: usize,
 }
 
+const INITIAL_MAPPED_PAGES_COUNT: usize = 0x1000;
+
 impl Allocator {
     pub unsafe fn init() -> &'static Self {
-        Box::leak(Box::new(Allocator(InterruptSafeSpinLock::new(AllocatorInner {
-            next_available_alloc_vaddr: KERNEL_HEAP_BASE,
-            mapped_memory_end_vaddr: KERNEL_HEAP_BASE,
-        }))))
+        let mut mapped_memory_end_vaddr = VirtualPageAddress::new(KERNEL_HEAP_BASE).unwrap();
+        for _ in 0..INITIAL_MAPPED_PAGES_COUNT {
+            unsafe {
+                let context = VirtualMemoryManagerContext::get_kernel_context();
+                let phys = PhysicalMemoryManager::alloc_frame().unwrap();
+                context.map_page(mapped_memory_end_vaddr, phys, VirtualMemoryMappingFlags::PRESENT | VirtualMemoryMappingFlags::WRITE).unwrap();
+                mapped_memory_end_vaddr = mapped_memory_end_vaddr.next_page();
+            }
+        }
+        #[allow(static_mut_refs)]
+        unsafe {
+            let allocator = Allocator(InterruptSafeSpinLock::new(AllocatorInner {
+                next_available_alloc_vaddr: KERNEL_HEAP_BASE,
+                mapped_memory_end_vaddr: mapped_memory_end_vaddr.inner(),
+            }));
+            ALLOCATOR_STORAGE.write(allocator);
+            ALLOCATOR_STORAGE.assume_init_ref()
+        }
     }
 }
 
@@ -44,8 +64,7 @@ unsafe impl GlobalAlloc for Allocator {
         {
             let end = inner.mapped_memory_end_vaddr;
             if end <= next_available_vaddr {
-                let pages_count = align_up(size, PAGE_FRAME_SIZE) + 8;
-                inner.expand(pages_count);
+                return null_mut();
             }
         }
 
@@ -59,18 +78,5 @@ unsafe impl GlobalAlloc for Allocator {
 
     unsafe fn dealloc(&self, _ptr: *mut u8, _layout: Layout) {
         // Bump allocator: deallocation is a no-op.
-    }
-}
-
-impl AllocatorInner {
-    unsafe fn expand(&mut self, pages_count: usize) {
-        let base = self.mapped_memory_end_vaddr;
-        for i in 0..pages_count {
-            let page_vaddr = VirtualPageAddress::new(base + i * PAGE_FRAME_SIZE).unwrap();
-            let phys = unsafe { PhysicalMemoryManager::alloc_frame() }.unwrap();
-            let context = unsafe { VirtualMemoryManagerContext::get_kernel_context() };
-            unsafe { context.map_page(page_vaddr, phys, VirtualMemoryMappingFlags::PRESENT | VirtualMemoryMappingFlags::WRITE) }.unwrap();
-        }
-        self.mapped_memory_end_vaddr = base + pages_count * PAGE_FRAME_SIZE;
     }
 }

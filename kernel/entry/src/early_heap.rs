@@ -3,11 +3,12 @@ use core::mem::zeroed;
 use core::ptr::null_mut;
 use core::sync::atomic::{AtomicUsize, Ordering};
 
-const EARLY_HEAP_SIZE: usize = 0x1_0000; // 64 kiB
+const EARLY_HEAP_SIZE: usize = 0x10_0000; // 64 kiB
 #[repr(align(16))]
 struct EarlyHeapMemory([u8; EARLY_HEAP_SIZE]);
 
-static mut MEMORY: EarlyHeapMemory = EarlyHeapMemory(unsafe { zeroed() });
+#[unsafe(no_mangle)]
+pub static mut MEMORY: EarlyHeapMemory = EarlyHeapMemory(unsafe { zeroed() });
 
 const MEMORY_END: *mut u8 = unsafe { (&raw mut MEMORY.0 as *mut u8).add(EARLY_HEAP_SIZE) };
 
