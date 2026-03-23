@@ -6,10 +6,12 @@ use limine::request::{
     ExecutableAddressRequest, FramebufferRequest, HhdmRequest, MemoryMapRequest, ModuleRequest,
     RequestsEndMarker, RequestsStartMarker, RsdpRequest, StackSizeRequest,
 };
+use crate::early_allocator::EarlyAllocator;
 use crate::proxy_allocator::ProxyAllocator;
 
 mod proxy_allocator;
 mod start;
+mod early_allocator;
 
 #[used]
 #[unsafe(link_section = ".limine_requests")]
@@ -54,8 +56,10 @@ static _REQUESTS_END_MARKER: RequestsEndMarker = RequestsEndMarker::new();
 static PAGED_ALLOCATOR: kernel_core::allocator::Allocator =
     unsafe { kernel_core::allocator::Allocator::init() };
 
-#[global_allocator]
 static PROXY_ALLOCATOR: ProxyAllocator = unsafe { ProxyAllocator::init() };
+
+#[global_allocator]
+static EARLY_ALLOCATOR: EarlyAllocator = unsafe { EarlyAllocator::init() };
 
 unsafe fn main() -> ! {
     assert!(BASE_REVISION.is_supported());
@@ -67,7 +71,7 @@ unsafe fn main() -> ! {
     let framebuffer = unsafe { framebuffer_response.read().framebuffers.read() };
 
     unsafe {
-        PROXY_ALLOCATOR.switch_to_paged_allocator(&raw const PAGED_ALLOCATOR);
+        // PROXY_ALLOCATOR.switch_to_paged_allocator(&raw const PAGED_ALLOCATOR);
     }
 
     kernel_core::main(

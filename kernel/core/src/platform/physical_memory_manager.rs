@@ -3,6 +3,7 @@ use crate::platform::physical_page_frame::{PhysicalPageFrame, PhysicalPageFrameP
 use core::ptr::NonNull;
 use kernel_bindings_gen::{limine_memmap_entry, limine_memmap_response, LIMINE_MEMMAP_USABLE};
 use thiserror_no_std::Error;
+use crate::println;
 
 pub struct PhysicalMemoryManager;
 
@@ -87,6 +88,8 @@ unsafe extern "C" fn pmm_init(memmap: *mut limine_memmap_response) {
             }
         }
     }
+
+    println!("Physical memory manager initialized with {} physical page frames!", unsafe { PAGE_FRAMES_COUNT });
 }
 
 #[unsafe(no_mangle)]

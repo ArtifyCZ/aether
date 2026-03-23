@@ -6,6 +6,7 @@ DEBUG=$4
 QEMU="qemu-system-$ARCH"
 QEMUFLAGS=""
 QEMUFLAGS="$QEMUFLAGS -no-reboot"
+QEMUFLAGS="$QEMUFLAGS -m 2G"
 
 if [ "$DEBUG" = "DEBUG" ]; then
     QEMUFLAGS="$QEMUFLAGS -s -S"
@@ -15,7 +16,7 @@ if [ "$ARCH" = "x86_64" ]; then
     QEMUFLAGS="$QEMUFLAGS -serial stdio -cdrom $IMG_PATH"
 elif [ "$ARCH" = "aarch64" ]; then
     QEMUFLAGS="$QEMUFLAGS -M virt,highmem=on,gic-version=2"
-    QEMUFLAGS="$QEMUFLAGS -cpu cortex-a57 -m 2G"
+    QEMUFLAGS="$QEMUFLAGS -cpu cortex-a57"
     QEMUFLAGS="$QEMUFLAGS -bios $BIOS"
     QEMUFLAGS="$QEMUFLAGS -drive file=$IMG_PATH,if=none,format=raw,id=hd0,readonly=on"
     QEMUFLAGS="$QEMUFLAGS -device virtio-blk-device,drive=hd0"
