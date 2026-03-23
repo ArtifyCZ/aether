@@ -1,8 +1,6 @@
 #![no_std]
 #![no_main]
 
-use core::ptr::null_mut;
-use kernel_core::entrypoint::kernel_main;
 use limine::BaseRevision;
 use limine::request::{
     ExecutableAddressRequest, FramebufferRequest, HhdmRequest, MemoryMapRequest, ModuleRequest,
@@ -61,7 +59,7 @@ unsafe fn main() -> ! {
     let framebuffer = unsafe { framebuffer_response.read().framebuffers.read() };
 
     unsafe {
-        kernel_main(
+        kernel_core::main(
             HHDM_REQUEST.get_response().unwrap().offset(),
             (MEMMAP_REQUEST.get_response().unwrap() as *const _
                 as *mut limine::response::MemoryMapResponse)
