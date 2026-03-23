@@ -56,9 +56,9 @@ static _REQUESTS_END_MARKER: RequestsEndMarker = RequestsEndMarker::new();
 static PAGED_ALLOCATOR: kernel_core::allocator::Allocator =
     unsafe { kernel_core::allocator::Allocator::init() };
 
+#[global_allocator]
 static PROXY_ALLOCATOR: ProxyAllocator = unsafe { ProxyAllocator::init() };
 
-#[global_allocator]
 static EARLY_ALLOCATOR: EarlyAllocator = unsafe { EarlyAllocator::init() };
 
 unsafe fn main() -> ! {
@@ -71,6 +71,7 @@ unsafe fn main() -> ! {
     let framebuffer = unsafe { framebuffer_response.read().framebuffers.read() };
 
     unsafe {
+        PROXY_ALLOCATOR.switch_to_early_allocator(&raw const EARLY_ALLOCATOR);
         // PROXY_ALLOCATOR.switch_to_paged_allocator(&raw const PAGED_ALLOCATOR);
     }
 
