@@ -6,7 +6,9 @@ use limine::request::{
     ExecutableAddressRequest, FramebufferRequest, HhdmRequest, MemoryMapRequest, ModuleRequest,
     RequestsEndMarker, RequestsStartMarker, RsdpRequest, StackSizeRequest,
 };
+use crate::proxy_allocator::ProxyAllocator;
 
+mod proxy_allocator;
 mod start;
 
 #[used]
@@ -49,6 +51,12 @@ static _REQUESTS_START_MARKER: RequestsStartMarker = RequestsStartMarker::new();
 #[unsafe(link_section = ".limine_requests_end")]
 static _REQUESTS_END_MARKER: RequestsEndMarker = RequestsEndMarker::new();
 
+static PAGED_ALLOCATOR: kernel_core::allocator::Allocator =
+    unsafe { kernel_core::allocator::Allocator::init() };
+
+#[global_allocator]
+static PROXY_ALLOCATOR: ProxyAllocator = unsafe { ProxyAllocator::init() };
+
 unsafe fn main() -> ! {
     assert!(BASE_REVISION.is_supported());
 
@@ -59,18 +67,18 @@ unsafe fn main() -> ! {
     let framebuffer = unsafe { framebuffer_response.read().framebuffers.read() };
 
     unsafe {
-        kernel_core::main(
-            HHDM_REQUEST.get_response().unwrap().offset(),
-            (MEMMAP_REQUEST.get_response().unwrap() as *const _
-                as *mut limine::response::MemoryMapResponse)
-                .cast(),
-            framebuffer,
-            (MODULE_REQUEST.get_response().unwrap() as *const _
-                as *mut limine::response::ModuleResponse)
-                .cast(),
-            RSDP_REQUEST.get_response().unwrap().address() as u64,
-        );
+        PROXY_ALLOCATOR.switch_to_paged_allocator(&raw const PAGED_ALLOCATOR);
     }
 
-    loop {}
+    kernel_core::main(
+        HHDM_REQUEST.get_response().unwrap().offset(),
+        (MEMMAP_REQUEST.get_response().unwrap() as *const _
+            as *mut limine::response::MemoryMapResponse)
+            .cast(),
+        framebuffer,
+        (MODULE_REQUEST.get_response().unwrap() as *const _
+            as *mut limine::response::ModuleResponse)
+            .cast(),
+        RSDP_REQUEST.get_response().unwrap().address() as u64,
+    )
 }

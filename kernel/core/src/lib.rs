@@ -3,7 +3,7 @@
 
 extern crate alloc;
 
-mod allocator;
+pub mod allocator;
 mod elf;
 mod init_process;
 mod interrupt_safe_spin_lock;

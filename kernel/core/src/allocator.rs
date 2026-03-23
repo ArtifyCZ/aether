@@ -29,12 +29,15 @@ struct AllocatorInner {
     current_heap_limit: usize,
 }
 
-#[global_allocator]
-pub static GLOBAL_ALLOCATOR: Allocator = Allocator(InterruptSafeSpinLock::new(AllocatorInner {
-    early_heap_next_available_idx: 0,
-    next_available_virt_addr: KERNEL_HEAP_BASE,
-    current_heap_limit: KERNEL_HEAP_BASE,
-}));
+impl Allocator {
+    pub const unsafe fn init() -> Self {
+        Allocator(InterruptSafeSpinLock::new(AllocatorInner {
+            early_heap_next_available_idx: 0,
+            next_available_virt_addr: KERNEL_HEAP_BASE,
+            current_heap_limit: KERNEL_HEAP_BASE,
+        }))
+    }
+}
 
 unsafe impl GlobalAlloc for Allocator {
     unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
