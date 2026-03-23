@@ -88,8 +88,6 @@ unsafe extern "C" fn pmm_init(memmap: *mut limine_memmap_response) {
             }
         }
     }
-
-    println!("Physical memory manager initialized with {} physical page frames!", unsafe { PAGE_FRAMES_COUNT });
 }
 
 #[unsafe(no_mangle)]
