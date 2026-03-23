@@ -56,11 +56,30 @@ pub unsafe fn init(hhdm_offset: usize) {
 
         let cr3: usize;
         asm!(
-        "mov {0}, cr3",
-        out(reg) cr3,
+            "mov {0}, cr3",
+            out(reg) cr3,
         );
         KERNEL_CONTEXT = cr3 & X86_ADDR_MASK;
         g_kernel_context.root = KERNEL_CONTEXT;
+
+        let table = unsafe { KERNEL_CONTEXT + hhdm_offset } as *mut u64;
+        for i in 256..512 {
+            let mut entry_val = table.add(i).read();
+            if (entry_val & X86MappingFlags::PRESENT.bits()) == 0 {
+                let new_table_phys = kernel_bindings_gen::pmm_alloc_frame();
+                if new_table_phys == 0 {
+                    panic!("Could not allocate page frame for a page directory!");
+                }
+                let new_table_virt = (new_table_phys + HHDM_OFFSET) as *mut u64;
+
+                core::ptr::write_bytes(new_table_virt, 0, 512);
+
+                let hw_flags = X86MappingFlags::PRESENT | X86MappingFlags::WRITE;
+                entry_val = (new_table_phys as u64) | (hw_flags.bits());
+            }
+            entry_val |= X86MappingFlags::GLOBAL.bits();
+            table.add(i).write(entry_val);
+        }
     }
 }
 
