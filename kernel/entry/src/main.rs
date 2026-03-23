@@ -1,17 +1,17 @@
 #![no_std]
 #![no_main]
 
+use crate::early_allocator::EarlyAllocator;
+use crate::proxy_allocator::ProxyAllocator;
 use limine::BaseRevision;
 use limine::request::{
     ExecutableAddressRequest, FramebufferRequest, HhdmRequest, MemoryMapRequest, ModuleRequest,
     RequestsEndMarker, RequestsStartMarker, RsdpRequest, StackSizeRequest,
 };
-use crate::early_allocator::EarlyAllocator;
-use crate::proxy_allocator::ProxyAllocator;
 
+mod early_allocator;
 mod proxy_allocator;
 mod start;
-mod early_allocator;
 
 #[used]
 #[unsafe(link_section = ".limine_requests")]
@@ -53,9 +53,6 @@ static _REQUESTS_START_MARKER: RequestsStartMarker = RequestsStartMarker::new();
 #[unsafe(link_section = ".limine_requests_end")]
 static _REQUESTS_END_MARKER: RequestsEndMarker = RequestsEndMarker::new();
 
-static PAGED_ALLOCATOR: kernel_core::allocator::Allocator =
-    unsafe { kernel_core::allocator::Allocator::init() };
-
 #[global_allocator]
 static PROXY_ALLOCATOR: ProxyAllocator = unsafe { ProxyAllocator::init() };
 
@@ -72,7 +69,6 @@ unsafe fn main() -> ! {
 
     unsafe {
         PROXY_ALLOCATOR.switch_to_early_allocator(&raw const EARLY_ALLOCATOR);
-        // PROXY_ALLOCATOR.switch_to_paged_allocator(&raw const PAGED_ALLOCATOR);
     }
 
     kernel_core::main(
@@ -85,5 +81,8 @@ unsafe fn main() -> ! {
             as *mut limine::response::ModuleResponse)
             .cast(),
         RSDP_REQUEST.get_response().unwrap().address() as u64,
+        |paged_allocator| unsafe {
+            PROXY_ALLOCATOR.switch_to_paged_allocator(paged_allocator);
+        },
     )
 }

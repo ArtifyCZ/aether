@@ -53,12 +53,15 @@ use crate::task_registry::TaskRegistry;
 use scheduler::Scheduler;
 use ticker::Ticker;
 
+static PAGED_ALLOCATOR: allocator::Allocator = unsafe { allocator::Allocator::init() };
+
 pub fn main(
     hhdm_offset: u64,
     memmap: *mut kernel_bindings_gen::limine_memmap_response,
     framebuffer: *mut kernel_bindings_gen::limine_framebuffer,
     modules: *mut kernel_bindings_gen::limine_module_response,
     rsdp_address: u64,
+    switch_to_paged_allocator: impl FnOnce(*const allocator::Allocator),
 ) -> ! {
     unsafe {
         VirtualAddressAllocator::init();
@@ -76,6 +79,9 @@ pub fn main(
         println!("Terminal initialized!");
         println!("Booting...");
         Interrupts::init();
+        println!("Switching to paged allocator...");
+        switch_to_paged_allocator(&raw const PAGED_ALLOCATOR);
+        println!("Switched to paged allocator!");
 
         println!("Hello from Rust!");
         let registry = TaskRegistry::new();
