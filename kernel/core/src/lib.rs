@@ -4,6 +4,7 @@
 extern crate alloc;
 
 pub mod allocator;
+mod args;
 mod elf;
 mod init_process;
 mod interrupt_safe_spin_lock;
@@ -39,6 +40,7 @@ unsafe extern "C" {
     fn hcf() -> !;
 }
 
+use crate::args::KernelArgs;
 use crate::elf::Elf;
 use crate::platform::early_console::EarlyConsole;
 use crate::platform::interrupts::Interrupts;
@@ -56,6 +58,7 @@ use ticker::Ticker;
 static PAGED_ALLOCATOR: allocator::Allocator = unsafe { allocator::Allocator::init() };
 
 pub fn main(
+    cmdline: &str,
     hhdm_offset: u64,
     memmap: *mut kernel_bindings_gen::limine_memmap_response,
     framebuffer: *mut kernel_bindings_gen::limine_framebuffer,
@@ -77,6 +80,8 @@ pub fn main(
         Platform::init(rsdp_address);
         Terminal::init(NonNull::new(framebuffer).unwrap());
         println!("Terminal initialized!");
+        let args = KernelArgs::parse(cmdline);
+        println!("Cmdline: {:?}", args);
         println!("Booting...");
         Interrupts::init();
         println!("Switching to paged allocator...");

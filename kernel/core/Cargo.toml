@@ -8,6 +8,5 @@ syscalls_rust = { path = "../api/syscalls" }
 kernel_bindings_gen = { path = "../platform" }
 kernel_hal = { path = "../hal" }
 
-bitflags = "2.11.0"
 eclipse_framebuffer = "0.1.0"
 thiserror-no-std = { version = "2.0", features = [] }

@@ -4,10 +4,7 @@
 use crate::early_allocator::EarlyAllocator;
 use crate::proxy_allocator::ProxyAllocator;
 use limine::BaseRevision;
-use limine::request::{
-    ExecutableAddressRequest, FramebufferRequest, HhdmRequest, MemoryMapRequest, ModuleRequest,
-    RequestsEndMarker, RequestsStartMarker, RsdpRequest, StackSizeRequest,
-};
+use limine::request::{ExecutableAddressRequest, ExecutableCmdlineRequest, FramebufferRequest, HhdmRequest, MemoryMapRequest, ModuleRequest, RequestsEndMarker, RequestsStartMarker, RsdpRequest, StackSizeRequest};
 
 mod early_allocator;
 mod proxy_allocator;
@@ -46,6 +43,10 @@ static MODULE_REQUEST: ModuleRequest = ModuleRequest::new();
 static RSDP_REQUEST: RsdpRequest = RsdpRequest::new();
 
 #[used]
+#[unsafe(link_section = ".limine_requests")]
+static EXEC_CMDLINE_REQUEST: ExecutableCmdlineRequest = ExecutableCmdlineRequest::new();
+
+#[used]
 #[unsafe(link_section = ".limine_requests_start")]
 static _REQUESTS_START_MARKER: RequestsStartMarker = RequestsStartMarker::new();
 
@@ -71,7 +72,11 @@ unsafe fn main() -> ! {
         PROXY_ALLOCATOR.switch_to_early_allocator(&raw const EARLY_ALLOCATOR);
     }
 
+    let cmdline = EXEC_CMDLINE_REQUEST.get_response().unwrap().cmdline();
+    let cmdline = cmdline.to_string_lossy();
+
     kernel_core::main(
+        &cmdline,
         HHDM_REQUEST.get_response().unwrap().offset(),
         (MEMMAP_REQUEST.get_response().unwrap() as *const _
             as *mut limine::response::MemoryMapResponse)
