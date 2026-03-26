@@ -21,6 +21,6 @@ rust_library(
     visibility = ["//visibility:public"],
     deps = [
         "//kernel/core:kernel_bindings_gen",
-        "@crates//:bitflags",
+        "//3rdparty/crates:bitflags",
     ],
 )

@@ -13,6 +13,7 @@ mod platform;
 mod scheduler;
 mod spin_lock;
 mod syscall_handler;
+mod tarball_parsing;
 mod task_id;
 mod task_registry;
 mod ticker;

@@ -1,14 +1,11 @@
-use thiserror_no_std::Error;
 use crate::platform::memory_layout::PAGE_FRAME_SIZE;
 
 #[derive(Debug, Copy, Clone)]
 pub struct PhysicalPageFrame(usize);
 
-#[derive(Debug, Error)]
+#[derive(Debug)]
 pub enum PhysicalPageFrameParseError {
-    #[error("Page frame is not aligned to the page size")]
     NotAligned,
-    #[error("No physical page frames available")]
     NullPageFrame,
 }
 

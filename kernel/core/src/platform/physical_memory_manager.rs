@@ -1,18 +1,22 @@
 use crate::platform::memory_layout::PAGE_FRAME_SIZE;
 use crate::platform::physical_page_frame::{PhysicalPageFrame, PhysicalPageFrameParseError};
-use core::ptr::NonNull;
-use kernel_bindings_gen::{limine_memmap_entry, limine_memmap_response, LIMINE_MEMMAP_USABLE};
-use thiserror_no_std::Error;
 use crate::println;
+use core::ptr::NonNull;
+use kernel_bindings_gen::{LIMINE_MEMMAP_USABLE, limine_memmap_entry, limine_memmap_response};
+use nom::multi::many_till;
 
 pub struct PhysicalMemoryManager;
 
-#[derive(Debug, Error)]
+#[derive(Debug)]
 pub enum PhysicalMemoryManagerAllocFrameError {
-    #[error("No available physical memory pages")]
     NoAvailablePages,
-    #[error(transparent)]
-    InvalidPageFrame(#[from] PhysicalPageFrameParseError),
+    InvalidPageFrame(PhysicalPageFrameParseError),
+}
+
+impl From<PhysicalPageFrameParseError> for PhysicalMemoryManagerAllocFrameError {
+    fn from(err: PhysicalPageFrameParseError) -> Self {
+        Self::InvalidPageFrame(err)
+    }
 }
 
 fn align_up(v: usize, a: usize) -> usize {
@@ -92,9 +96,7 @@ unsafe extern "C" fn pmm_init(memmap: *mut limine_memmap_response) {
 
 #[unsafe(no_mangle)]
 unsafe extern "C" fn pmm_alloc_frame() -> usize {
-    unsafe {
-        pop_frame()
-    }
+    unsafe { pop_frame() }
 }
 
 #[unsafe(no_mangle)]

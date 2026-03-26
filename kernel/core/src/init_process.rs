@@ -1,7 +1,5 @@
 use core::str::FromStr;
 
-use alloc::{ffi::CString, sync::Arc};
-use kernel_hal::mmu::VirtualMemoryMappingFlags;
 use crate::elf::Elf;
 use crate::platform::memory_layout::PAGE_FRAME_SIZE;
 use crate::platform::physical_memory_manager::PhysicalMemoryManager;
@@ -10,8 +8,12 @@ use crate::platform::virtual_page_address::VirtualPageAddress;
 use crate::platform::{
     modules::Modules, virtual_memory_manager_context::VirtualMemoryManagerContext,
 };
+use crate::println;
 use crate::scheduler::Scheduler;
+use crate::tarball_parsing::parse_tarball_archive;
 use crate::task_registry::TaskSpec;
+use alloc::{ffi::CString, sync::Arc};
+use kernel_hal::mmu::VirtualMemoryMappingFlags;
 
 fn load_init_into_memory(elf: &Elf, init_ctx: &VirtualMemoryManagerContext) -> usize {
     let init_elf_string = CString::from_str("init.elf").expect("Failed to create CString");
@@ -21,10 +23,10 @@ fn load_init_into_memory(elf: &Elf, init_ctx: &VirtualMemoryManagerContext) -> u
 }
 
 fn load_initrd_into_memory(init_ctx: &VirtualMemoryManagerContext) -> (usize, usize) {
-    let initrd_string = CString::from_str("initrd").expect("Failed to create CString");
     const INITRD_VADDR: usize = 0x7FFFFFF00000usize; // arbitrary high virtual address for initrd
-    let initrd = unsafe { Modules::find(CString::from_str("initrd").unwrap().as_c_str()) }
-        .expect("Initrd module not found");
+    let initrd = unsafe { Modules::find(c"initrd") }.expect("Initrd module not found");
+    let tarball = parse_tarball_archive(initrd).unwrap();
+    println!("Parsed initrd tarball: {:?}", tarball);
     // Map the pages for initrd into the virtual memory and copy the data
     let initrd_size = initrd.len();
     let num_pages = (initrd_size + PAGE_FRAME_SIZE - 1) / PAGE_FRAME_SIZE;
@@ -42,11 +44,13 @@ fn load_initrd_into_memory(init_ctx: &VirtualMemoryManagerContext) -> (usize, us
                         | VirtualMemoryMappingFlags::WRITE,
                 )
                 .unwrap();
-            VirtualMemoryManagerContext::get_kernel_context().map_page(
-                kernel_vaddr,
-                page_phys,
-                VirtualMemoryMappingFlags::PRESENT | VirtualMemoryMappingFlags::WRITE,
-            ).unwrap();
+            VirtualMemoryManagerContext::get_kernel_context()
+                .map_page(
+                    kernel_vaddr,
+                    page_phys,
+                    VirtualMemoryMappingFlags::PRESENT | VirtualMemoryMappingFlags::WRITE,
+                )
+                .unwrap();
             // Copy the data from the initrd module to the mapped page
             let src_ptr = initrd.as_ptr().add(i * PAGE_FRAME_SIZE);
             let dst_ptr = kernel_vaddr.start().inner() as *mut u8;

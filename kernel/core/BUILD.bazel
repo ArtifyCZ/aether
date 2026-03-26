@@ -109,8 +109,8 @@ rust_library(
         ":syscalls_rust",
         "//kernel/api/init:init_contract_rust",
         "//kernel/hal:kernel_hal",
-        "@crates//:bitflags",
-        "@crates//:eclipse_framebuffer",
-        "@crates//:thiserror-no-std",
+        "//3rdparty/crates:bitflags",
+        "//3rdparty/crates:eclipse_framebuffer",
+        "//3rdparty/crates:nom",
     ],
 )

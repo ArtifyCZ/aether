@@ -279,7 +279,7 @@ cc_import(
 
 rust_bindgen_toolchain(
     name = "bindgen_toolchain_impl",
-    bindgen = "@crates//:bindgen-cli__bindgen",
+    bindgen = "@crates_host//:bindgen-cli__bindgen",
     clang = ":clang",
     libclang = ":libclang_import",
 )

@@ -1,9 +1,7 @@
-use thiserror_no_std::Error;
-
 #[derive(Debug, Copy, Clone, Ord, PartialOrd, Eq, PartialEq)]
 pub struct VirtualAddress(usize);
 
-#[derive(Debug, Error)]
+#[derive(Debug)]
 pub enum VirtualAddressParseError {}
 
 impl VirtualAddress {

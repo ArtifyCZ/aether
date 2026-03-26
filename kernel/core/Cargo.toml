@@ -9,4 +9,5 @@ kernel_bindings_gen = { path = "../platform" }
 kernel_hal = { path = "../hal" }
 
 eclipse_framebuffer = "0.1.0"
+nom = { version = "8.0.0", features = ["alloc"], default-features = false }
 thiserror-no-std = { version = "2.0", features = [] }

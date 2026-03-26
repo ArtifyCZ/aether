@@ -1,0 +1,32 @@
+load("@rules_rust//crate_universe:defs.bzl", "crate", "crates_vendor")
+
+crates_vendor(
+    name = "crates_vendor",
+    annotations = {
+    },
+    cargo_lockfile = "Cargo.Bazel.lock",
+    generate_build_scripts = False,
+    mode = "remote",
+    packages = {
+        "bitflags": crate.spec(
+            version = "=2.11.0",
+        ),
+        "limine": crate.spec(
+            version = "=0.5.0",
+        ),
+        "eclipse_framebuffer": crate.spec(
+            version = "=0.1.0",
+        ),
+        "nom": crate.spec(
+            version = "8.0.0",
+            features = ["alloc"],
+            default_features = False,
+        ),
+        "thiserror-no-std": crate.spec(
+            version = "2.0",
+            features = [],
+        ),
+    },
+    repository_name = "crate_index",
+    tags = ["manual"],
+)

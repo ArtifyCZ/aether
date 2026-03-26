@@ -35,6 +35,6 @@ rust_binary(
         "//kernel/platform:kernel_platform",
         "//kernel/core:kernel_core",
         "//kernel/core:kernel_bindings_gen",
-        "@crates//:limine",
+        "//3rdparty/crates:limine",
     ],
 )

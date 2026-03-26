@@ -70,8 +70,8 @@ pkg_tar(
 pkg_tar(
     name = "initrd_tar",
     srcs = [
-        "initrd_message.txt",
         ":hello_world",
+        ":init",
     ],
     mode = "0644",
     out = "initrd.tar",

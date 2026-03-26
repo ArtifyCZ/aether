@@ -1,5 +1,5 @@
 module(
-    name = "kernel",
+    name = "aether",
     version = "0.1.0",
 )
 
@@ -44,16 +44,27 @@ rust_host_tools.host_tools(
 )
 use_repo(rust_host_tools, "rust_host_tools_nightly")
 
-crates = use_extension("@rules_rust//crate_universe:extension.bzl", "crate")
-crates.spec(
+crates_host = use_extension("@rules_rust//crate_universe:extension.bzl", "crate")
+crates_host.spec(
     artifact = "bin",
     package = "bindgen-cli",
     version = "=0.72.1",
 )
-crates.annotation(
+crates_host.annotation(
     crate = "bindgen-cli",
     gen_all_binaries = True,
 )
+crates_host.from_specs(
+    name = "crates_host",
+    host_tools = "@rust_host_tools_nightly",
+    supported_platform_triples = [
+        "aarch64-apple-darwin",
+        "x86_64-unknown-linux-gnu",
+    ],
+)
+use_repo(crates_host, "crates_host")
+
+crates = use_extension("@rules_rust//crate_universe:extension.bzl", "crate")
 crates.spec(
     package = "bitflags",
     version = "2.11.0",
@@ -67,8 +78,16 @@ crates.spec(
     version = "0.5.0",
 )
 crates.spec(
-    package = "thiserror-no-std",
-    version = "2.0.2",
+    default_features = False,
+    features = ["alloc"],
+    package = "nom",
+    version = "8.0.0",
+)
+crates.spec(
+    default_features = False,
+    features = ["alloc"],
+    package = "memchr",
+    version = "2.7.0",
 )
 crates.from_specs(
     name = "crates",
@@ -80,7 +99,11 @@ crates.from_specs(
         "x86_64-unknown-linux-gnu",
     ],
 )
+crates.splicing_config(resolver_version = "3")
 use_repo(crates, "crates")
+
+third_party_deps = use_extension("//:internal_extensions.bzl", "third_party_deps")
+use_repo(third_party_deps, "crate_index", "crate_index__bitflags-2.11.0", "crate_index__eclipse_framebuffer-0.1.0", "crate_index__limine-0.5.0", "crate_index__nom-8.0.0", "crate_index__thiserror-no-std-2.0.2")
 
 llvm = use_extension("@toolchains_llvm//toolchain/extensions:llvm.bzl", "llvm")
 llvm.toolchain(
