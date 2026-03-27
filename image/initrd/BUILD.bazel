@@ -17,7 +17,7 @@ platform_binary_wrapper(
         "@platforms//cpu:aarch64": "//platforms:user_aarch64",
     }),
     target = "//init",
-    visibility = ["//visibility:public"],
+    visibility = ["//image/pkg:__subpackages__"],
 )
 
 pkg_tar(
@@ -28,5 +28,5 @@ pkg_tar(
     ],
     out = "initrd.tar",
     mode = "0644",
-    visibility = ["//visibility:public"],
+    visibility = ["//image/pkg:__subpackages__"],
 )

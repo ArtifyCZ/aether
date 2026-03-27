@@ -3,14 +3,15 @@ load("@rules_shell//shell:sh_binary.bzl", "sh_binary")
 genrule(
     name = "img",
     srcs = [
-        "//image:aether_tar",
+        "//image/pkg",
     ],
     outs = ["aether.img"],
     cmd = """
     dd if=/dev/zero of=$@ bs=1M count=64
     mformat -i $@ ::
+    rm -rf staging/
     mkdir -p staging/
-    tar -xf $(location //image:aether_tar) -C staging/
+    tar -xf $(location //image/pkg) -C staging/
     mcopy -i $@ -s staging/* ::
     """,
     target_compatible_with = [

@@ -3,12 +3,13 @@ load("@rules_shell//shell:sh_binary.bzl", "sh_binary")
 genrule(
     name = "iso",
     srcs = [
-        "//image:aether_tar",
+        "//image/pkg",
     ],
     outs = ["aether.iso"],
     cmd = """
+    rm -rf staging/
     mkdir -p staging/
-    tar -xf $(location //image:aether_tar) -C staging/
+    tar -xf $(location //image/pkg) -C staging/
 
     xorriso -as mkisofs -R -r -J -b boot/limine/limine-bios-cd.bin \
 		-no-emul-boot -boot-load-size 4 -boot-info-table -hfsplus \

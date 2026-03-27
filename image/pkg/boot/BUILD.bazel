@@ -1,0 +1,13 @@
+load("@rules_pkg//pkg:mappings.bzl", "pkg_files")
+
+pkg_files(
+    name = "boot",
+    srcs = [
+        "Mik_8x16.psf",
+        "//image/initrd",
+        "//image/initrd:init",
+        "//kernel",
+    ],
+    prefix = "/boot",
+    visibility = ["//image/pkg:__subpackages__"],
+)

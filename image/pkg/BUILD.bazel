@@ -1,0 +1,14 @@
+load("@rules_pkg//pkg:mappings.bzl", "pkg_files")
+load("@rules_pkg//pkg:tar.bzl", "pkg_tar")
+
+pkg_tar(
+    name = "pkg",
+    srcs = [
+        "//image/pkg/EFI/BOOT",
+        "//image/pkg/boot",
+        "//image/pkg/boot/limine",
+    ],
+    out = "aether.tar",
+    mode = "0644",
+    visibility = ["//image:__subpackages__"],
+)
