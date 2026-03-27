@@ -5,7 +5,7 @@ pkg_files(
     srcs = [
         "Mik_8x16.psf",
         "//image/initrd",
-        "//image/initrd:init",
+        "//init",
         "//kernel",
     ],
     prefix = "/boot",
