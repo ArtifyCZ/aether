@@ -1,0 +1,57 @@
+load("@rules_shell//shell:sh_binary.bzl", "sh_binary")
+
+alias(
+    name = "qemu",
+    actual = "run",
+    visibility = ["//visibility:public"],
+)
+
+sh_binary(
+    name = "run",
+    srcs = ["run_qemu.sh"],
+    args = select({
+        "@platforms//cpu:x86_64": [
+            "$(location //image/iso)",
+            "x86_64",
+            "-",
+        ],
+        "@platforms//cpu:aarch64": [
+            "$(location //image/img)",
+            "aarch64",
+            "$(location @qemu//:edk2-aarch64-code)",
+        ],
+    }) + ["NODEBUG"],
+    data = select({
+        "@platforms//cpu:x86_64": ["//image/iso"],
+        "@platforms//cpu:aarch64": [
+            "//image/img",
+            "@qemu//:edk2-aarch64-code",
+        ],
+    }),
+    visibility = ["//visibility:public"],
+)
+
+sh_binary(
+    name = "debug",
+    srcs = ["run_qemu.sh"],
+    args = select({
+        "@platforms//cpu:x86_64": [
+            "$(location //image/iso)",
+            "x86_64",
+            "-",
+        ],
+        "@platforms//cpu:aarch64": [
+            "$(location //image/img)",
+            "aarch64",
+            "$(location @qemu//:edk2-aarch64-code)",
+        ],
+    }) + ["DEBUG"],
+    data = select({
+        "@platforms//cpu:x86_64": ["//image/iso"],
+        "@platforms//cpu:aarch64": [
+            "//image/img",
+            "@qemu//:edk2-aarch64-code",
+        ],
+    }),
+    visibility = ["//visibility:public"],
+)

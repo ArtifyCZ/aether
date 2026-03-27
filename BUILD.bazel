@@ -1,56 +1,19 @@
-load("@rules_shell//shell:sh_binary.bzl", "sh_binary")
-
-package(default_visibility = ["//visibility:public"])
-
-exports_files([
-    "BUILD.freestnd-c-hdrs",
-    "BUILD.limine-protocol",
-])
-
-sh_binary(
+alias(
     name = "qemu",
-    srcs = ["run_qemu.sh"],
-    args = select({
-        "@platforms//cpu:x86_64": [
-            "$(location //image/iso)",
-            "x86_64",
-            "-",
-        ],
-        "@platforms//cpu:aarch64": [
-            "$(location //image/img)",
-            "aarch64",
-            "$(location @qemu//:edk2-aarch64-code)",
-        ],
-    }) + ["NODEBUG"],
-    data = select({
-        "@platforms//cpu:x86_64": ["//image/iso"],
-        "@platforms//cpu:aarch64": [
-            "//image/img",
-            "@qemu//:edk2-aarch64-code",
-        ],
-    }),
+    actual = "//tooling/qemu:run",
+    visibility = ["//visibility:public"],
 )
 
-sh_binary(
+alias(
     name = "qemu-debug",
-    srcs = ["run_qemu.sh"],
-    args = select({
-        "@platforms//cpu:x86_64": [
-            "$(location //image/iso)",
-            "x86_64",
-            "-",
-        ],
-        "@platforms//cpu:aarch64": [
-            "$(location //image/img)",
-            "aarch64",
-            "$(location @qemu//:edk2-aarch64-code)",
-        ],
-    }) + ["DEBUG"],
-    data = select({
-        "@platforms//cpu:x86_64": ["//image/iso"],
-        "@platforms//cpu:aarch64": [
-            "//image/img",
-            "@qemu//:edk2-aarch64-code",
-        ],
-    }),
+    actual = "//tooling/qemu:debug",
+    visibility = ["//visibility:public"],
+)
+
+exports_files(
+    [
+        "BUILD.freestnd-c-hdrs",
+        "BUILD.limine-protocol",
+    ],
+    visibility = ["//visibility:public"],
 )
