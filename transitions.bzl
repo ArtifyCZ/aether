@@ -1,4 +1,3 @@
-
 def _platform_transition_impl(settings, attr):
     # This transitions the build to the specific platform string provided in the attribute
     return {"//command_line_option:platforms": [attr.platform]}

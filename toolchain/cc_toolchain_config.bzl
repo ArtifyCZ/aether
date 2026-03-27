@@ -64,10 +64,10 @@ def _impl(ctx):
     linker_target_flags = []
     if ctx.attr.cpu == "x86_64":
         common_kernel_flags += ["-target", "x86_64-none-elf"]
-        common_kernel_flags += ["-D__x86_64__"]
+        common_kernel_flags.append("-D__x86_64__")
     elif ctx.attr.cpu == "aarch64":
         common_kernel_flags += ["-target", "aarch64-none-elf"]
-        common_kernel_flags += ["-D__aarch64__"]
+        common_kernel_flags.append("-D__aarch64__")
 
     features = [
         feature(

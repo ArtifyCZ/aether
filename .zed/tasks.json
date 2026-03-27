@@ -54,9 +54,18 @@
     {
         "label": "Qemu run x86_64",
         "command": "bazel run //:qemu --config x86_64",
-        //"args": [],
-        // Env overrides for the command, will be appended to the terminal's environment from the settings.
-        "env": { "foo": "bar" },
+        "use_new_terminal": false,
+        "allow_concurrent_runs": false,
+        "reveal": "always",
+        "reveal_target": "dock",
+        "hide": "on_success",
+        "shell": "system",
+        "show_summary": false,
+        "show_command": true,
+    },
+    {
+        "label": "Qemu run aarch64",
+        "command": "bazel run //:qemu --config aarch64",
         "use_new_terminal": false,
         "allow_concurrent_runs": false,
         "reveal": "always",

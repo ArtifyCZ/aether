@@ -1,5 +1,5 @@
 load("@bazel_skylib//rules:native_binary.bzl", "native_binary")
-load("@rules_cc//cc:defs.bzl", "cc_import", "cc_toolchain", "cc_toolchain_suite")
+load("@rules_cc//cc:defs.bzl", "cc_import", "cc_toolchain")
 load("@rules_rust//rust:toolchain.bzl", "rust_toolchain")
 load("@rules_rust_bindgen//:defs.bzl", "rust_bindgen_toolchain")
 load(":cc_toolchain_config.bzl", "cc_toolchain_config")
@@ -22,7 +22,10 @@ filegroup(
 
 filegroup(
     name = "all_files",
-    srcs = [":llvm_all", ":wrapper_scripts"],
+    srcs = [
+        ":llvm_all",
+        ":wrapper_scripts",
+    ],
 )
 
 cc_toolchain_config(
