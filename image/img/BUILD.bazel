@@ -1,0 +1,20 @@
+load("@rules_shell//shell:sh_binary.bzl", "sh_binary")
+
+genrule(
+    name = "img",
+    srcs = [
+        "//image:aether_tar",
+    ],
+    outs = ["aether.img"],
+    cmd = """
+    dd if=/dev/zero of=$@ bs=1M count=64
+    mformat -i $@ ::
+    mkdir -p staging/
+    tar -xf $(location //image:aether_tar) -C staging/
+    mcopy -i $@ -s staging/* ::
+    """,
+    target_compatible_with = [
+        "@platforms//cpu:aarch64",
+    ],
+    visibility = ["//visibility:public"],
+)

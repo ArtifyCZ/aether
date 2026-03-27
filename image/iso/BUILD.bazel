@@ -1,0 +1,26 @@
+load("@rules_shell//shell:sh_binary.bzl", "sh_binary")
+
+genrule(
+    name = "iso",
+    srcs = [
+        "//image:aether_tar",
+    ],
+    outs = ["aether.iso"],
+    cmd = """
+    mkdir -p staging/
+    tar -xf $(location //image:aether_tar) -C staging/
+
+    xorriso -as mkisofs -R -r -J -b boot/limine/limine-bios-cd.bin \
+		-no-emul-boot -boot-load-size 4 -boot-info-table -hfsplus \
+		-apm-block-size 2048 --efi-boot boot/limine/limine-uefi-cd.bin \
+		-efi-boot-part --efi-boot-image --protective-msdos-label \
+		staging/ -o $@
+
+    $(location @limine-bootloader//:limine_tool) bios-install $@
+    """,
+    target_compatible_with = [
+        "@platforms//cpu:x86_64",
+    ],
+    tools = ["@limine-bootloader//:limine_tool"],
+    visibility = ["//visibility:public"],
+)
