@@ -18,13 +18,13 @@ crates_vendor(
             version = "=0.1.0",
         ),
         "nom": crate.spec(
-            version = "8.0.0",
-            features = ["alloc"],
             default_features = False,
+            features = ["alloc"],
+            version = "8.0.0",
         ),
         "thiserror-no-std": crate.spec(
-            version = "2.0",
             features = [],
+            version = "2.0",
         ),
     },
     repository_name = "crate_index",

@@ -27,7 +27,7 @@ pkg_tar(
         ":hello_world",
         ":init",
     ],
-    mode = "0644",
     out = "initrd.tar",
+    mode = "0644",
     visibility = ["//visibility:public"],
 )

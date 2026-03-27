@@ -7,7 +7,7 @@ selects.config_setting_group(
         "@platforms//cpu:x86_64",
         "@platforms//os:none",
         "//platforms:kernel_mode",
-    ]
+    ],
 )
 
 selects.config_setting_group(
@@ -16,7 +16,7 @@ selects.config_setting_group(
         "@platforms//cpu:x86_64",
         "@platforms//os:none",
         "//platforms:user_mode",
-    ]
+    ],
 )
 
 selects.config_setting_group(
@@ -25,7 +25,7 @@ selects.config_setting_group(
         "@platforms//cpu:aarch64",
         "@platforms//os:uefi",
         "//platforms:kernel_mode",
-    ]
+    ],
 )
 
 selects.config_setting_group(
@@ -34,7 +34,7 @@ selects.config_setting_group(
         "@platforms//cpu:aarch64",
         "@platforms//os:none",
         "//platforms:user_mode",
-    ]
+    ],
 )
 
 cc_library(
@@ -52,6 +52,6 @@ cc_library(
         ":kernel_aarch64": [":kernel_aarch64"],
         ":user_aarch64": [":user_aarch64"],
     }),
-    deps = ["@freestnd-c-hdrs//:freestnd-c-hdrs"],
     visibility = ["//visibility:public"],
+    deps = ["@freestnd-c-hdrs//:freestnd-c-hdrs"],
 )

@@ -14,9 +14,9 @@ cc_library(
             "@platforms//os:none",
         ],
     }) + ["//platforms:user_mode"],
+    visibility = ["//visibility:public"],
     deps = [
-        "//kernel/api/syscalls:syscalls",
+        "//kernel/api/syscalls",
         "@freestnd-c-hdrs//:freestnd-c-hdrs",
     ],
-    visibility = ["//visibility:public"],
 )

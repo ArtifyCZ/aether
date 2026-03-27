@@ -13,7 +13,7 @@ cc_library(
     name = "syscalls",
     srcs = ["syscalls_wrapper.h"],
     hdrs = ["syscalls_wrapper.h"],
-    deps = ["//kernel/api/syscalls:syscalls"],
+    deps = ["//kernel/api/syscalls"],
 )
 
 rust_bindgen_library(
@@ -84,7 +84,7 @@ rust_bindgen_library(
     ],
     edition = "2024",
     header = "platform_wrapper.h",
-    visibility = ["//kernel:__subpackages__"]
+    visibility = ["//kernel:__subpackages__"],
 )
 
 rust_library(
@@ -107,10 +107,10 @@ rust_library(
     deps = [
         ":kernel_bindings_gen",
         ":syscalls_rust",
-        "//kernel/api/init:init_contract_rust",
-        "//kernel/hal:kernel_hal",
         "//3rdparty/crates:bitflags",
         "//3rdparty/crates:eclipse_framebuffer",
         "//3rdparty/crates:nom",
+        "//kernel/api/init:init_contract_rust",
+        "//kernel/hal:kernel_hal",
     ],
 )
