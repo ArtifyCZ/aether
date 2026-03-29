@@ -233,7 +233,7 @@
   "moduleExtensions": {
     "//3rdparty:extensions.bzl%third_party_deps": {
       "general": {
-        "bzlTransitiveDigest": "N14OCMkkVC9ZgPNUMVpq4KQg9GtqxHular3gZDI7qWk=",
+        "bzlTransitiveDigest": "K4FdoBKkO/nfLLa0UhosejIt9ACErnu1P+SJCr7pXUA=",
         "usagesDigest": "ehL9LDo56gVgUlvy8pWObdP3Zqm10y60CoU1MGhgyb4=",
         "recordedInputs": [
           "REPO_MAPPING:,bazel_skylib bazel_skylib+",
@@ -249,6 +249,14 @@
               "remote": "https://github.com/osdev0/freestnd-c-hdrs-0bsd.git",
               "commit": "5e4e9e70278fe89ea328d359a58aff4f4a94b165",
               "build_file": "@@//3rdparty:BUILD.freestnd_c_hdrs.bazel"
+            }
+          },
+          "limine_bootloader": {
+            "repoRuleId": "@@bazel_tools//tools/build_defs/repo:git.bzl%git_repository",
+            "attributes": {
+              "remote": "https://github.com/limine-bootloader/limine.git",
+              "branch": "v10.x-binary",
+              "build_file": "@@//3rdparty:BUILD.limine_bootloader.bazel"
             }
           },
           "crate_index": {
@@ -394,6 +402,7 @@
         "moduleExtensionMetadata": {
           "explicitRootModuleDirectDeps": [
             "freestnd_c_hdrs",
+            "limine_bootloader",
             "crate_index",
             "crate_index__bitflags-2.11.0",
             "crate_index__eclipse_framebuffer-0.1.0",

@@ -3,7 +3,7 @@ load("@rules_pkg//pkg:mappings.bzl", "pkg_files")
 pkg_files(
     name = "BOOT",
     srcs = [
-        "@limine-bootloader//:boot_artifacts",
+        "@limine_bootloader//:boot_artifacts",
     ],
     prefix = "/EFI/BOOT",
     visibility = ["//image/pkg:__subpackages__"],

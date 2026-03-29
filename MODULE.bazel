@@ -112,6 +112,7 @@ use_repo(
     "crate_index__nom-8.0.0",
     "crate_index__thiserror-no-std-2.0.2",
     "freestnd_c_hdrs",
+    "limine_bootloader",
 )
 
 llvm = use_extension("@toolchains_llvm//toolchain/extensions:llvm.bzl", "llvm")
@@ -128,13 +129,6 @@ register_toolchains("@llvm_toolchain_llvm//:all")
 register_toolchains("@rust_toolchains//:all")
 
 git_repository = use_repo_rule("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
-
-git_repository(
-    name = "limine-bootloader",
-    branch = "v10.x-binary",
-    build_file = "BUILD.limine-bootloader",
-    remote = "https://github.com/limine-bootloader/limine.git",
-)
 
 git_repository(
     name = "limine-protocol",

@@ -4,7 +4,7 @@ pkg_files(
     name = "limine",
     srcs = [
         "limine.conf",
-        "@limine-bootloader//:boot_artifacts",
+        "@limine_bootloader//:boot_artifacts",
     ],
     prefix = "/boot/limine",
     visibility = ["//image/pkg:__subpackages__"],

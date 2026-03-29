@@ -14,6 +14,15 @@ def _third_party_deps_impl(module_ctx):
     )
     direct_deps.append(struct(repo = "freestnd_c_hdrs", is_dev_dep = False))
 
+    maybe(
+        git_repository,
+        name = "limine_bootloader",
+        remote = "https://github.com/limine-bootloader/limine.git",
+        branch = "v10.x-binary",
+        build_file = "//3rdparty:BUILD.limine_bootloader.bazel",
+    )
+    direct_deps.append(struct(repo = "limine_bootloader", is_dev_dep = False))
+
     direct_deps.extend(_third_party_crates())
 
     return module_ctx.extension_metadata(

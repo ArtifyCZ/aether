@@ -15,11 +15,11 @@ genrule(
 		-efi-boot-part --efi-boot-image --protective-msdos-label \
 		staging/ -o $@
 
-    $(location @limine-bootloader//:limine_tool) bios-install $@
+    $(location @limine_bootloader//:limine_tool) bios-install $@
     """,
     target_compatible_with = [
         "@platforms//cpu:x86_64",
     ],
-    tools = ["@limine-bootloader//:limine_tool"],
+    tools = ["@limine_bootloader//:limine_tool"],
     visibility = ["//visibility:public"],
 )
