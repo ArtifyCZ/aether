@@ -4,7 +4,7 @@
 [
     {
         "label": "Sync Project for x86_64 (C + Rust)",
-        "command": "python3 discover_bazel_c_compile_commands.py --config=x86_64 && bash discover_bazel_rust_project.sh --bazel_arg=--platforms=//platforms:kernel_x86_64",
+        "command": "bazel run //tooling/sync_ide --config x86_64",
         //"args": [],
         // Env overrides for the command, will be appended to the terminal's environment from the settings.
         "env": { "foo": "bar" },

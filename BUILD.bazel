@@ -9,9 +9,3 @@ alias(
     actual = "//tooling/qemu:debug",
     visibility = ["//visibility:public"],
 )
-
-alias(
-    name = "sync_ide",
-    actual = "//tooling/sync_ide",
-    visibility = ["//visibility:public"],
-)
