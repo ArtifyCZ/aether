@@ -23,6 +23,15 @@ def _third_party_deps_impl(module_ctx):
     )
     direct_deps.append(struct(repo = "limine_bootloader", is_dev_dep = False))
 
+    maybe(
+        git_repository,
+        name = "limine_protocol",
+        remote = "https://github.com/limine-bootloader/limine-protocol.git",
+        commit = "42e836e30242c2c14f889fd76c6f9a57b0c18ec2",
+        build_file = "//3rdparty:BUILD.limine_protocol.bazel",
+    )
+    direct_deps.append(struct(repo = "limine_protocol", is_dev_dep = False))
+
     direct_deps.extend(_third_party_crates())
 
     return module_ctx.extension_metadata(

@@ -26,7 +26,7 @@ fn main() {
         .clang_arg("-fdata-sections")
         .clang_arg("-I./include")
         .clang_arg("-I./../../bazel-aether/external/+git_repository+freestnd-c-hdrs/include")
-        .clang_arg("-I./../../bazel-aether/external/+git_repository+limine-protocol/include")
+        .clang_arg("-I./../../bazel-aether/external/+git_repository+limine_protocol/include")
         .generate()
         // Unwrap the Result and panic on failure.
         .expect("Unable to generate bindings");

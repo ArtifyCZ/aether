@@ -113,6 +113,7 @@ use_repo(
     "crate_index__thiserror-no-std-2.0.2",
     "freestnd_c_hdrs",
     "limine_bootloader",
+    "limine_protocol",
 )
 
 llvm = use_extension("@toolchains_llvm//toolchain/extensions:llvm.bzl", "llvm")
@@ -129,13 +130,6 @@ register_toolchains("@llvm_toolchain_llvm//:all")
 register_toolchains("@rust_toolchains//:all")
 
 git_repository = use_repo_rule("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
-
-git_repository(
-    name = "limine-protocol",
-    build_file = "BUILD.limine-protocol",
-    commit = "42e836e30242c2c14f889fd76c6f9a57b0c18ec2",
-    remote = "https://github.com/limine-bootloader/limine-protocol.git",
-)
 
 git_repository(
     name = "qemu",

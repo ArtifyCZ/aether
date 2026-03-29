@@ -79,8 +79,8 @@ rust_bindgen_library(
     clang_flags = [
         "-nostdinc",
         "-ffreestanding",
-        "-Iexternal/+git_repository+freestnd-c-hdrs/include",
-        "-Iexternal/+git_repository+limine-protocol/include",
+        "-Iexternal/+git_repository+freestnd_c_hdrs/include",
+        "-Iexternal/+git_repository+limine_protocol/include",
     ],
     edition = "2024",
     header = "platform_wrapper.h",
