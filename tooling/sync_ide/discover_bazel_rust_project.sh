@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-workspace_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+workspace_dir="$BUILD_WORKSPACE_DIRECTORY"
 output_path="${workspace_dir}/rust-project.json"
 
 cd "${workspace_dir}"

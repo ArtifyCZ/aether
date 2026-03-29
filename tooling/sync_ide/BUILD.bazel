@@ -1,0 +1,21 @@
+load("@rules_shell//shell:sh_binary.bzl", "sh_binary")
+
+sh_binary(
+    name = "sync_ide",
+    srcs = [
+        "run_sync.sh",
+    ],
+    args = select({
+        "@platforms//cpu:x86_64": [
+            "x86_64",
+        ],
+        "@platforms//cpu:aarch64": [
+            "aarch64",
+        ],
+    }),
+    data = [
+        "discover_bazel_c_compile_commands.py",
+        "discover_bazel_rust_project.sh",
+    ],
+    env_inherit = ["PATH"],
+)
