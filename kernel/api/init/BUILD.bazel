@@ -75,7 +75,7 @@ rust_bindgen_library(
     clang_flags = [
         "-nostdinc",
         "-ffreestanding",
-        "-Iexternal/+git_repository+freestnd-c-hdrs/include",
+        "-Iexternal/+third_party_deps+freestnd_c_hdrs/include",
     ],
     edition = "2024",
     header = "boot_info.h",

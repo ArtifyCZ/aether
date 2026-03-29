@@ -9,10 +9,3 @@ alias(
     actual = "//tooling/qemu:debug",
     visibility = ["//visibility:public"],
 )
-
-exports_files(
-    [
-        "BUILD.limine-protocol",
-    ],
-    visibility = ["//visibility:public"],
-)

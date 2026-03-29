@@ -114,6 +114,7 @@ use_repo(
     "freestnd_c_hdrs",
     "limine_bootloader",
     "limine_protocol",
+    "qemu",
 )
 
 llvm = use_extension("@toolchains_llvm//toolchain/extensions:llvm.bzl", "llvm")
@@ -128,13 +129,3 @@ register_toolchains("//toolchain:all")
 register_toolchains("@llvm_toolchain_llvm//:all")
 
 register_toolchains("@rust_toolchains//:all")
-
-git_repository = use_repo_rule("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
-
-git_repository(
-    name = "qemu",
-    build_file = "BUILD.qemu",
-    # v10.2.1 release
-    commit = "2d3df8abca265c9bcc9e438d691d561592060998",
-    remote = "https://github.com/qemu/qemu.git",
-)

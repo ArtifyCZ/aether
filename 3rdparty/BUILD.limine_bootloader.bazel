@@ -2,7 +2,10 @@ load("@rules_cc//cc:cc_binary.bzl", "cc_binary")
 
 cc_binary(
     name = "limine_tool",
-    srcs = glob(["*.c", "*.h"]),
+    srcs = glob([
+        "*.c",
+        "*.h",
+    ]),
     copts = ["-std=c99"],
     visibility = ["//visibility:public"],
 )

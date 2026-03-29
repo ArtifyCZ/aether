@@ -32,6 +32,16 @@ def _third_party_deps_impl(module_ctx):
     )
     direct_deps.append(struct(repo = "limine_protocol", is_dev_dep = False))
 
+    maybe(
+        git_repository,
+        name = "qemu",
+        remote = "https://github.com/qemu/qemu.git",
+        # v10.2.1 release
+        commit = "2d3df8abca265c9bcc9e438d691d561592060998",
+        build_file = "//3rdparty:BUILD.qemu.bazel",
+    )
+    direct_deps.append(struct(repo = "qemu", is_dev_dep = False))
+
     direct_deps.extend(_third_party_crates())
 
     return module_ctx.extension_metadata(
