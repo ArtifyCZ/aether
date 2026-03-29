@@ -88,28 +88,12 @@ int main(struct boot_info *boot_info) {
     print("Keyboard initialized!\n");
 
     print("Trying to parse initrd...\n");
-    char *initrd_message;
-    size_t initrd_message_size;
-    tar_find_file(
-        boot_info->initrd_start,
-        boot_info->initrd_size,
-        "initrd_message.txt",
-        (void **) &initrd_message,
-        &initrd_message_size
-    );
-    if (initrd_message) {
-        print("Found initrd_message.txt in initrd! Contents:\n");
-        print(initrd_message);
-        print("\n");
-    } else {
-        print("Failed to find initrd_message.txt in initrd!\n");
-    }
     void *hello_world_elf;
     size_t hello_world_elf_size;
     tar_find_file(
         boot_info->initrd_start,
         boot_info->initrd_size,
-        "hello_world",
+        "bin/hello_world",
         &hello_world_elf,
         &hello_world_elf_size
     );

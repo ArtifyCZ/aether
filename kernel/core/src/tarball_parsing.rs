@@ -14,15 +14,15 @@ fn align_up(v: usize, a: usize) -> usize {
 }
 
 pub struct TarHeader<'data> {
-    name: Cow<'data, CStr>,
-    mode: &'data [u8],
-    uid: &'data [u8],
-    gid: &'data [u8],
-    size: usize,
-    mtime: &'data [u8],
-    checksum: &'data [u8],
-    type_flag: u8,
-    file_data: &'data [u8],
+    pub name: Cow<'data, CStr>,
+    pub mode: &'data [u8],
+    pub uid: &'data [u8],
+    pub gid: &'data [u8],
+    pub size: usize,
+    pub mtime: &'data [u8],
+    pub checksum: &'data [u8],
+    pub type_flag: u8,
+    pub file_data: &'data [u8],
 }
 
 impl<'data> Debug for TarHeader<'data> {

@@ -1,3 +1,4 @@
+use core::ffi::CStr;
 use core::str::FromStr;
 
 use crate::elf::Elf;
@@ -15,18 +16,20 @@ use crate::task_registry::TaskSpec;
 use alloc::{ffi::CString, sync::Arc};
 use kernel_hal::mmu::VirtualMemoryMappingFlags;
 
-fn load_init_into_memory(elf: &Elf, init_ctx: &VirtualMemoryManagerContext) -> usize {
-    let init_elf_string = CString::from_str("init.elf").expect("Failed to create CString");
-    let init_elf = unsafe { Modules::find(init_elf_string.as_c_str()) }.unwrap();
+fn load_init_into_memory(
+    init_elf: &[u8],
+    elf: &Elf,
+    init_ctx: &VirtualMemoryManagerContext,
+) -> usize {
     let entrypoint_vaddr = unsafe { elf.load(init_ctx, init_elf.as_ptr()) }.unwrap();
     entrypoint_vaddr
 }
 
-fn load_initrd_into_memory(init_ctx: &VirtualMemoryManagerContext) -> (usize, usize) {
+fn load_initrd_into_memory(
+    initrd: &[u8],
+    init_ctx: &VirtualMemoryManagerContext,
+) -> (usize, usize) {
     const INITRD_VADDR: usize = 0x7FFFFFF00000usize; // arbitrary high virtual address for initrd
-    let initrd = unsafe { Modules::find(c"initrd") }.expect("Initrd module not found");
-    let tarball = parse_tarball_archive(initrd).unwrap();
-    println!("Parsed initrd tarball: {:?}", tarball);
     // Map the pages for initrd into the virtual memory and copy the data
     let initrd_size = initrd.len();
     let num_pages = (initrd_size + PAGE_FRAME_SIZE - 1) / PAGE_FRAME_SIZE;
@@ -132,10 +135,26 @@ fn allocate_init_stack(init_ctx: &VirtualMemoryManagerContext) -> usize {
     INIT_STACK_TOP_VADDR
 }
 
-pub fn spawn_init_process(elf: &Elf, scheduler: &Scheduler) {
+pub fn spawn_init_process(init_program_name: &str, elf: &Elf, scheduler: &Scheduler) {
+    let initrd = unsafe { Modules::find(c"initrd") }.expect("Initrd module not found");
+    let initrd_tarball = parse_tarball_archive(initrd).unwrap();
+    let init_elf = initrd_tarball
+        .iter()
+        .find(|h| {
+            h.name
+                .to_str()
+                .map(|s| {
+                    s == init_program_name
+                        .split_once('/')
+                        .map(|(_, n)| n)
+                        .unwrap_or(init_program_name)
+                })
+                .unwrap_or(false)
+        })
+        .expect("Could not find the init program in initrd tarball!");
     let init_ctx = unsafe { VirtualMemoryManagerContext::create() };
-    let entrypoint_vaddr = load_init_into_memory(elf, &init_ctx);
-    let (initrd_vaddr, initrd_size) = load_initrd_into_memory(&init_ctx);
+    let entrypoint_vaddr = load_init_into_memory(&init_elf.file_data, elf, &init_ctx);
+    let (initrd_vaddr, initrd_size) = load_initrd_into_memory(initrd, &init_ctx);
     let stack_top_vaddr = allocate_init_stack(&init_ctx);
     let arg = load_boot_info_into_memory(&init_ctx, initrd_vaddr, initrd_size);
 

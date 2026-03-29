@@ -1,6 +1,6 @@
 #[derive(Debug)]
 pub struct KernelArgs<'cmdline> {
-    init_program: &'cmdline str,
+    pub init_program: &'cmdline str,
 }
 
 impl<'cmdline> KernelArgs<'cmdline> {
@@ -14,7 +14,7 @@ impl<'cmdline> KernelArgs<'cmdline> {
             if let Some((key, value)) = entry.split_once('=') {
                 match key {
                     "init" => args.init_program = value,
-                    _ => {}, // ignore unknown
+                    _ => {} // ignore unknown
                 }
             }
         }

@@ -109,7 +109,7 @@ pub fn main(
 
         println!("Gez1");
         let elf = Elf::init(hhdm_offset);
-        spawn_init_process(&elf, scheduler);
+        spawn_init_process(args.init_program, &elf, scheduler);
 
         println!("Disabling early console...");
         logging::disable_early_console();

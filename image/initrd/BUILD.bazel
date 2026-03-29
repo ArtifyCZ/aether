@@ -3,8 +3,7 @@ load("@rules_pkg//pkg:tar.bzl", "pkg_tar")
 pkg_tar(
     name = "initrd",
     srcs = [
-        "//hello_world",
-        "//init",
+        "//image/initrd/bin",
     ],
     out = "initrd.tar",
     mode = "0644",
