@@ -102,8 +102,17 @@ crates.from_specs(
 crates.splicing_config(resolver_version = "3")
 use_repo(crates, "crates")
 
-third_party_deps = use_extension("//:internal_extensions.bzl", "third_party_deps")
-use_repo(third_party_deps, "crate_index", "crate_index__bitflags-2.11.0", "crate_index__eclipse_framebuffer-0.1.0", "crate_index__limine-0.5.0", "crate_index__nom-8.0.0", "crate_index__thiserror-no-std-2.0.2")
+third_party_deps = use_extension("//3rdparty:extensions.bzl", "third_party_deps")
+use_repo(
+    third_party_deps,
+    "crate_index",
+    "crate_index__bitflags-2.11.0",
+    "crate_index__eclipse_framebuffer-0.1.0",
+    "crate_index__limine-0.5.0",
+    "crate_index__nom-8.0.0",
+    "crate_index__thiserror-no-std-2.0.2",
+    "freestnd_c_hdrs",
+)
 
 llvm = use_extension("@toolchains_llvm//toolchain/extensions:llvm.bzl", "llvm")
 llvm.toolchain(
@@ -119,13 +128,6 @@ register_toolchains("@llvm_toolchain_llvm//:all")
 register_toolchains("@rust_toolchains//:all")
 
 git_repository = use_repo_rule("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
-
-git_repository(
-    name = "freestnd-c-hdrs",
-    build_file = "BUILD.freestnd-c-hdrs",
-    commit = "5e4e9e70278fe89ea328d359a58aff4f4a94b165",
-    remote = "https://github.com/osdev0/freestnd-c-hdrs-0bsd.git",
-)
 
 git_repository(
     name = "limine-bootloader",

@@ -1,7 +1,7 @@
 load("@rules_cc//cc:cc_library.bzl", "cc_library")
 
 cc_library(
-    name = "freestnd-c-hdrs",
+    name = "freestnd_c_hdrs",
     hdrs = glob(["include/*.h"]),
     includes = ["include"],
     visibility = ["//visibility:public"],

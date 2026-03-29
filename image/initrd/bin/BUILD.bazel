@@ -3,8 +3,8 @@ load("@rules_pkg//pkg:mappings.bzl", "pkg_files")
 pkg_files(
     name = "bin",
     srcs = [
-        "//init",
         "//hello_world",
+        "//init",
     ],
     prefix = "/bin",
     visibility = ["//image/initrd:__subpackages__"],

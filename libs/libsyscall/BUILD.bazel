@@ -17,6 +17,6 @@ cc_library(
     visibility = ["//visibility:public"],
     deps = [
         "//kernel/api/syscalls",
-        "@freestnd-c-hdrs//:freestnd-c-hdrs",
+        "@freestnd_c_hdrs",
     ],
 )

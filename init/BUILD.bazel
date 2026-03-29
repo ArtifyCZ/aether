@@ -40,7 +40,7 @@ cc_library(
     deps = [
         "//kernel/api/init:init_contract",
         "//libs/libsyscall",
-        "@freestnd-c-hdrs//:freestnd-c-hdrs",
+        "@freestnd_c_hdrs",
     ],
 )
 

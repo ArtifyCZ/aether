@@ -51,7 +51,7 @@ cc_library(
         ":user_aarch64": [":user_aarch64"],
     }),
     visibility = ["//visibility:public"],
-    deps = ["@freestnd-c-hdrs//:freestnd-c-hdrs"],
+    deps = ["@freestnd_c_hdrs"],
 )
 
 rust_bindgen_library(

@@ -25,6 +25,6 @@ cc_binary(
     }),
     deps = [
         "//libs/libsyscall",
-        "@freestnd-c-hdrs//:freestnd-c-hdrs",
+        "@freestnd_c_hdrs",
     ],
 )

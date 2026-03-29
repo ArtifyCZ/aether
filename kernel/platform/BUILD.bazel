@@ -29,7 +29,7 @@ cc_library(
         ],
     }),
     deps = [
-        "@freestnd-c-hdrs//:freestnd-c-hdrs",
+        "@freestnd_c_hdrs",
         "@limine-protocol//:limine-protocol",
     ],
 )

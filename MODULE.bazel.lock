@@ -231,10 +231,10 @@
   },
   "selectedYankedVersions": {},
   "moduleExtensions": {
-    "//:internal_extensions.bzl%third_party_deps": {
+    "//3rdparty:extensions.bzl%third_party_deps": {
       "general": {
-        "bzlTransitiveDigest": "DT5XA2smagV0kT28o1+MP5VD7yv4C7SGh5H0s+tZclw=",
-        "usagesDigest": "5v8jm0Xruz7nbzOF+RkXEgj4BZvfE6+451oANJzG3NI=",
+        "bzlTransitiveDigest": "N14OCMkkVC9ZgPNUMVpq4KQg9GtqxHular3gZDI7qWk=",
+        "usagesDigest": "ehL9LDo56gVgUlvy8pWObdP3Zqm10y60CoU1MGhgyb4=",
         "recordedInputs": [
           "REPO_MAPPING:,bazel_skylib bazel_skylib+",
           "REPO_MAPPING:,bazel_tools bazel_tools",
@@ -243,6 +243,14 @@
           "REPO_MAPPING:rules_rust+,bazel_tools bazel_tools"
         ],
         "generatedRepoSpecs": {
+          "freestnd_c_hdrs": {
+            "repoRuleId": "@@bazel_tools//tools/build_defs/repo:git.bzl%git_repository",
+            "attributes": {
+              "remote": "https://github.com/osdev0/freestnd-c-hdrs-0bsd.git",
+              "commit": "5e4e9e70278fe89ea328d359a58aff4f4a94b165",
+              "build_file": "@@//3rdparty:BUILD.freestnd_c_hdrs.bazel"
+            }
+          },
           "crate_index": {
             "repoRuleId": "@@rules_rust+//crate_universe/private:crates_vendor.bzl%crates_vendor_remote_repository",
             "attributes": {
@@ -385,6 +393,7 @@
         },
         "moduleExtensionMetadata": {
           "explicitRootModuleDirectDeps": [
+            "freestnd_c_hdrs",
             "crate_index",
             "crate_index__bitflags-2.11.0",
             "crate_index__eclipse_framebuffer-0.1.0",
