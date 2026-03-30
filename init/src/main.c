@@ -1,10 +1,12 @@
 #include "init/include/tar.h"
 #include "kernel/api/init/boot_info.h"
+#include "kernel/api/syscalls/syscall_list.h"
 #include "libs/libsyscall/syscalls.h"
 #include "drivers/keyboard/keyboard.h"
 #include "drivers/serial/serial.h"
 #include <stddef.h>
 #include <stdint.h>
+#include <string.h>
 
 #include "elf.h"
 
@@ -51,8 +53,18 @@ void spawn_hello_world(const uint64_t proc_handle, const uintptr_t entrypoint_ad
     }
     const uintptr_t stack_top = stack_base + stack_size;
 
+    print("Allocating IPC area...\n");
+    uintptr_t ipc_base = 0x7FFFFFF00000;
+    const size_t ipc_size = 0x1000;
+    void *ipc_ptr = NULL;
+    if (sys_proc_mmap(proc_handle, ipc_base, ipc_size, SYS_PROT_READ | SYS_PROT_WRITE, SYS_MMAP_FL_MIRROR, (uintptr_t *) &ipc_ptr)) {
+        print("Failed to allocate IPC buffer!\n");
+        return;
+    }
+    memset(ipc_ptr, 0, ipc_size);
+
     print("Spawning hello_world...\n");
-    if (sys_proc_spawn(proc_handle, 0, stack_top, entrypoint_addr, 0, NULL)) {
+    if (sys_proc_spawn(proc_handle, 0, stack_top, entrypoint_addr, ipc_base, NULL)) {
         print("Failed to spawn hello_world...\n");
     } else {
         print("Spawned hello_world successfully!\n");
