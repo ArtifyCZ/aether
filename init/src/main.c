@@ -64,7 +64,8 @@ void spawn_hello_world(const uint64_t proc_handle, const uintptr_t entrypoint_ad
     memset(ipc_ptr, 0, ipc_size);
 
     print("Spawning hello_world...\n");
-    if (sys_proc_spawn(proc_handle, 0, stack_top, entrypoint_addr, ipc_base, NULL)) {
+    uint64_t task_id;
+    if (sys_proc_spawn(proc_handle, 0, stack_top, entrypoint_addr, ipc_base, &task_id)) {
         print("Failed to spawn hello_world...\n");
     } else {
         print("Spawned hello_world successfully!\n");

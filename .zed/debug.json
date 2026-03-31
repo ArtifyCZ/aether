@@ -1,0 +1,16 @@
+// Project-local debug tasks
+//
+// For more documentation on how to configure debug tasks,
+// see: https://zed.dev/docs/debugger
+[
+    {
+        "label": "Qemu debug",
+        "adapter": "CodeLLDB",
+        "request": "attach",
+        "program": "$ZED_WORKTREE_ROOT/bazel-bin/kernel/entry/kernel",
+        "tcp_connection": {
+            "port": 1234,
+            "host": "127.0.0.1",
+        },
+    },
+]

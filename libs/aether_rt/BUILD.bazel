@@ -1,0 +1,13 @@
+load("@rules_rust//rust:defs.bzl", "rust_library")
+
+rust_library(
+    name = "aether_rt",
+    srcs = glob(["src/**/*.rs"]),
+    edition = "2024",
+    target_compatible_with = ["//platforms:user_mode"] + select({
+        "@platforms//cpu:x86_64": ["@platforms//cpu:x86_64"],
+        "@platforms//cpu:aarch64": ["@platforms//cpu:aarch64"],
+    }),
+    visibility = ["//visibility:public"],
+    alwayslink = True,
+)

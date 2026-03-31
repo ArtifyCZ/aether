@@ -26,5 +26,19 @@
         "--query-driver=${workspaceFolder}/external/toolchains_llvm*/**/bin/clang*",
         "--background-index"
     ],
-    "rust-analyzer.debug.engine": "llvm-vs-code-extensions.lldb-dap",
+    "editor.tabSize": 4,
+    "editor.unusualLineTerminators": "auto",
+    "files.insertFinalNewline": true,
+    "[json]": {
+        "editor.quickSuggestions": {
+            "strings": true
+        },
+        "editor.indentSize": "tabSize",
+        "editor.suggest.insertMode": "replace"
+    },
+    "[c]": {
+        "editor.indentSize": "tabSize",
+        "editor.suggest.insertMode": "replace"
+    },
+    "clangd.onConfigChanged": "restart",
 }

@@ -15,4 +15,4 @@ cd "$BUILD_WORKSPACE_DIRECTORY" || exit 1
 
 
 python3 tooling/sync_ide/discover_bazel_c_compile_commands.py --config="$ARCH"
-bash tooling/sync_ide/discover_bazel_rust_project.sh --bazel_arg=--platforms=//platforms:kernel_"$ARCH"
+bash tooling/sync_ide/discover_bazel_rust_project.sh "$ARCH"

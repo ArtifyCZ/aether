@@ -5,12 +5,28 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Local Debug Server",
+            "name": "Debug kernel in Qemu",
             "type": "lldb-dap",
             "request": "attach",
-            "program": "${workspaceFolder}/bazel-bin/kernel/kernel",
+            "program": "${workspaceFolder}/bazel-bin/kernel/entry/kernel",
             "gdb-remote-port": 1234,
             "gdb-remote-hostname": "127.0.0.1",
-        }
-    ]
+        },
+        {
+            "name": "Debug init in Qemu",
+            "type": "lldb-dap",
+            "request": "attach",
+            "program": "${workspaceFolder}/bazel-bin/init/init",
+            "gdb-remote-port": 1234,
+            "gdb-remote-hostname": "127.0.0.1",
+        },
+        {
+            "name": "Debug hello_world in Qemu",
+            "type": "lldb-dap",
+            "request": "attach",
+            "program": "${workspaceFolder}/bazel-bin/hello_world/hello_world",
+            "gdb-remote-port": 1234,
+            "gdb-remote-hostname": "127.0.0.1",
+        },
+    ],
 }

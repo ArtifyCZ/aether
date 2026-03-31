@@ -5,8 +5,8 @@ alias(
 
 genrule(
     name = "edk2-aarch64-code",
-    outs = ["edk2-aarch64-code.fd"],
     srcs = [":edk2-aarch64-code.fd.bz2"],
+    outs = ["edk2-aarch64-code.fd"],
     cmd = """
     cp $(location :edk2-aarch64-code.fd.bz2) edk2-aarch64-code.fd.bz2
     bzip2 -dk edk2-aarch64-code.fd.bz2

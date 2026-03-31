@@ -1,6 +1,8 @@
 {
     "recommendations": [
         "llvm-vs-code-extensions.vscode-clangd",
-        "bazelbuild.vscode-bazel"
+        "bazelbuild.vscode-bazel",
+        "rust-lang.rust-analyzer",
+        "llvm-vs-code-extensions.lldb-dap",
     ]
 }

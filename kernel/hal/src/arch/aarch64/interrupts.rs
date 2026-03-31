@@ -119,7 +119,10 @@ unsafe extern "C" fn handle_sync_exception(frame: *mut InterruptFrame) -> usize 
         emergency_console::print("Synchronous abort!");
         let str = ec.to_string();
         emergency_console::print(&str);
-        panic!("Synchronous abort!");
+        panic!(
+            "Synchronous abort! Task ID: {}",
+            crate::tasks::get_current_id(),
+        );
     }
 }
 
