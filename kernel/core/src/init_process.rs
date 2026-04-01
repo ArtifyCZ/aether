@@ -117,7 +117,6 @@ fn allocate_init_stack(init_ctx: &VirtualMemoryManagerContext) -> usize {
     for i in 0..4 {
         // allocate 4 pages as stack
         let page_vaddr = INIT_STACK_TOP_VADDR - (i + 1) * PAGE_FRAME_SIZE;
-        #[allow(mutable_transmutes)]
         unsafe {
             let page_phys = PhysicalMemoryManager::alloc_frame().unwrap();
             init_ctx

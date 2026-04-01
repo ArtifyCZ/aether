@@ -152,9 +152,22 @@ unsafe extern "C" fn x86_64_interrupt_dispatcher(frame: *mut InterruptFrame) -> 
     let error_code = f.error_code;
     let interrupt_vector = f.interrupt_vector;
     if error_code != 0 || interrupt_vector < 0x20 {
-        // non-zero error code and/or exceptions
-        // @TODO: dump the interrupt vector, received error code, cr2, stack and possibly other vars
-        panic!("Unexpected/unhandled interrupt");
+        let cr2: u64;
+        asm!("mov {}, cr2", out(reg) cr2);
+
+        // Raw Serial Dump
+        unsafe {
+            crate::emergency_console::print("\n!! EXCEPTION ");
+            crate::emergency_console::put_hex(interrupt_vector);
+            crate::emergency_console::print(" !!\nRIP: ");
+            crate::emergency_console::put_hex(f.rip);
+            crate::emergency_console::print("\nCR2: ");
+            crate::emergency_console::put_hex(cr2);
+            crate::emergency_console::print("\nERR: ");
+            crate::emergency_console::put_hex(f.error_code);
+            crate::emergency_console::print("\n");
+        }
+        panic!("CPU Exception");
     }
 
     let mut return_frame: *mut InterruptFrame = frame;

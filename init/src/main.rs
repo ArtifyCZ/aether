@@ -27,8 +27,7 @@ unsafe extern "C" fn sys_write(fd: i32, buffer: *const u8, size: usize) {
             in("x2") size as u64,
         );
         if error_code != 0 {
-            loop {
-            }
+            loop {}
         }
         let _ = result;
     }
@@ -59,15 +58,37 @@ macro_rules! println {
 }
 
 #[unsafe(no_mangle)]
-unsafe extern "C" fn _start(boot_info: *mut boot_info) -> ! {
-    rmain(boot_info);
+#[unsafe(naked)] // CRITICAL: No compiler prologue/epilogue
+pub unsafe extern "C" fn _start(boot_info: *mut boot_info) -> ! {
+    #[cfg(target_arch = "x86_64")]
+    core::arch::naked_asm!(
+        "xor rbp, rbp",      // Clear frame pointer for clean backtrace
+        "mov rdi, rdi",      // boot_info is already in rdi, but this is for clarity
+        "and rsp, -16",      // Align stack to 16 bytes
+        "sub rsp, 8",        // Standard ABI: stack should be (16n + 8) at function entry
+                             // (because the 'call' instruction pushes an 8-byte return address)
+        "call {rmain}",
+        "1: pause",
+        "jmp 1b",
+        rmain = sym rmain,
+    );
+
+    #[cfg(target_arch = "aarch64")]
+    core::arch::naked_asm!(
+        "mov x29, #0",
+        "mov x30, #0",
+        "and sp, x1, #0xfffffffffffffff0",
+        "bl {rmain}",
+        "1: wfe",
+        "b 1b",
+        rmain = sym rmain,
+    );
 }
 
 #[cfg(not(test))]
 #[panic_handler]
 fn panic_handler(_info: &core::panic::PanicInfo) -> ! {
-    loop {
-    }
+    loop {}
 }
 
 unsafe extern "C" {
@@ -76,11 +97,11 @@ unsafe extern "C" {
 
 fn rmain(boot_info: *mut boot_info) -> ! {
     println!("Hello Rust init world!");
+    // println!("Boot info at: {:p}", boot_info);
 
     unsafe {
         main(boot_info);
     }
 
-    loop {
-    }
+    loop {}
 }
