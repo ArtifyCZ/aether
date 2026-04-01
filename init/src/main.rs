@@ -1,6 +1,8 @@
 #![no_std]
 #![no_main]
 
+extern crate aether_rt;
+
 use core::arch::asm;
 use core::fmt::Write;
 use init_contract_rust::boot_info;
@@ -59,7 +61,7 @@ macro_rules! println {
 
 #[unsafe(no_mangle)]
 #[unsafe(naked)] // CRITICAL: No compiler prologue/epilogue
-pub unsafe extern "C" fn _start(boot_info: *mut boot_info) -> ! {
+pub unsafe extern "C" fn _entry(boot_info: *mut boot_info) -> ! {
     #[cfg(target_arch = "x86_64")]
     core::arch::naked_asm!(
         "xor rbp, rbp",      // Clear frame pointer for clean backtrace
@@ -83,12 +85,6 @@ pub unsafe extern "C" fn _start(boot_info: *mut boot_info) -> ! {
         "b 1b",
         rmain = sym rmain,
     );
-}
-
-#[cfg(not(test))]
-#[panic_handler]
-fn panic_handler(_info: &core::panic::PanicInfo) -> ! {
-    loop {}
 }
 
 unsafe extern "C" {
