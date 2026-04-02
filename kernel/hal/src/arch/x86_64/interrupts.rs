@@ -2,11 +2,11 @@ use super::ioapic;
 use crate::arch::x86_64::{lapic, timer};
 use core::arch::asm;
 use core::ffi::c_void;
+use core::fmt;
 use core::mem::zeroed;
 use core::ptr::null_mut;
 use kernel_bindings_gen::irq_handler_new_t;
 
-#[derive(Debug)]
 #[repr(C, align(16))]
 pub(crate) struct InterruptFrame {
     pub(crate) cr3: u64, // Pushed LAST in ASM (the lowest address)
@@ -33,6 +33,33 @@ pub(crate) struct InterruptFrame {
     pub(crate) rflags: u64,
     pub(crate) rsp: u64,
     pub(crate) ss: u64,
+}
+
+impl fmt::Debug for InterruptFrame {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("InterruptFrame")
+            .field("rip", &format_args!("0x{:016x}", self.rip))
+            .field("rsp", &format_args!("0x{:016x}", self.rsp))
+            .field("rax", &format_args!("0x{:016x}", self.rax))
+            .field("rbx", &format_args!("0x{:016x}", self.rbx))
+            .field("rcx", &format_args!("0x{:016x}", self.rcx))
+            .field("rdx", &format_args!("0x{:016x}", self.rdx))
+            .field("rdi", &format_args!("0x{:016x}", self.rdi))
+            .field("rsi", &format_args!("0x{:016x}", self.rsi))
+            .field("rbp", &format_args!("0x{:016x}", self.rbp))
+            .field("r8", &format_args!("0x{:016x}", self.r8))
+            .field("r9", &format_args!("0x{:016x}", self.r9))
+            .field("r10", &format_args!("0x{:016x}", self.r10))
+            .field("r11", &format_args!("0x{:016x}", self.r11))
+            .field("r12", &format_args!("0x{:016x}", self.r12))
+            .field("r13", &format_args!("0x{:016x}", self.r13))
+            .field("r14", &format_args!("0x{:016x}", self.r14))
+            .field("r15", &format_args!("0x{:016x}", self.r15))
+            .field("err", &format_args!("0x{:x}", self.error_code))
+            .field("num", &format_args!("0x{:x}", self.interrupt_vector))
+            .field("flg", &format_args!("0x{:016x}", self.rflags))
+            .finish()
+    }
 }
 
 impl InterruptFrame {
@@ -166,8 +193,8 @@ unsafe extern "C" fn x86_64_interrupt_dispatcher(frame: *mut InterruptFrame) -> 
             crate::emergency_console::print("\nERR: ");
             crate::emergency_console::put_hex(f.error_code);
             crate::emergency_console::print("\n");
+            panic!("CPU Exception {:#?}", frame.as_ref());
         }
-        panic!("CPU Exception");
     }
 
     let mut return_frame: *mut InterruptFrame = frame;
