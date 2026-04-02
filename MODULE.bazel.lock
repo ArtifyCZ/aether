@@ -233,7 +233,7 @@
   "moduleExtensions": {
     "//3rdparty:extensions.bzl%third_party_deps": {
       "general": {
-        "bzlTransitiveDigest": "m+K6IYWQ96Rv5R2qXspPULOl8gWGE2JaZ/a+owKFSmc=",
+        "bzlTransitiveDigest": "fKiGU9Rb7mC4pI7XOq4nbEzViY6HV8dx1aecgUvz0pQ=",
         "usagesDigest": "ehL9LDo56gVgUlvy8pWObdP3Zqm10y60CoU1MGhgyb4=",
         "recordedInputs": [
           "REPO_MAPPING:,bazel_skylib bazel_skylib+",
@@ -265,6 +265,22 @@
               "remote": "https://github.com/limine-bootloader/limine-protocol.git",
               "commit": "42e836e30242c2c14f889fd76c6f9a57b0c18ec2",
               "build_file": "@@//3rdparty:BUILD.limine_protocol.bazel"
+            }
+          },
+          "memchr": {
+            "repoRuleId": "@@bazel_tools//tools/build_defs/repo:git.bzl%git_repository",
+            "attributes": {
+              "remote": "https://github.com/BurntSushi/memchr.git",
+              "commit": "886ca4ca4820297191c6e9f7b023dc356f31a4d1",
+              "build_file": "@@//3rdparty:BUILD.memchr.bazel"
+            }
+          },
+          "nom": {
+            "repoRuleId": "@@bazel_tools//tools/build_defs/repo:git.bzl%git_repository",
+            "attributes": {
+              "remote": "https://github.com/rust-bakery/nom.git",
+              "commit": "2cec1b3e4c9ccac62c902d60c00de6d1549ccbe1",
+              "build_file": "@@//3rdparty:BUILD.nom.bazel"
             }
           },
           "qemu": {
@@ -420,11 +436,14 @@
             "freestnd_c_hdrs",
             "limine_bootloader",
             "limine_protocol",
+            "memchr",
+            "nom",
             "qemu",
             "crate_index",
             "crate_index__bitflags-2.11.0",
             "crate_index__eclipse_framebuffer-0.1.0",
             "crate_index__limine-0.5.0",
+            "crate_index__memchr-2.8.0",
             "crate_index__nom-8.0.0",
             "crate_index__thiserror-no-std-2.0.2"
           ],

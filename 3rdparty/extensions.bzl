@@ -34,6 +34,26 @@ def _third_party_deps_impl(module_ctx):
 
     maybe(
         git_repository,
+        name = "memchr",
+        remote = "https://github.com/BurntSushi/memchr.git",
+        # v2.8.0 release
+        commit = "886ca4ca4820297191c6e9f7b023dc356f31a4d1",
+        build_file = "//3rdparty:BUILD.memchr.bazel",
+    )
+    direct_deps.append(struct(repo = "memchr", is_dev_dep = False))
+
+    maybe(
+        git_repository,
+        name = "nom",
+        remote = "https://github.com/rust-bakery/nom.git",
+        # v8.0.0 release
+        commit = "2cec1b3e4c9ccac62c902d60c00de6d1549ccbe1",
+        build_file = "//3rdparty:BUILD.nom.bazel",
+    )
+    direct_deps.append(struct(repo = "nom", is_dev_dep = False))
+
+    maybe(
+        git_repository,
         name = "qemu",
         remote = "https://github.com/qemu/qemu.git",
         # v10.2.1 release

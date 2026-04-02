@@ -27,11 +27,23 @@ crates_vendor(
             features = ["alloc"],
             version = "8.0.0",
         ),
+        "memchr": crate.spec(
+            default_features = False,
+            features = ["alloc"],
+            version = "2.7.0",
+        ),
         "thiserror-no-std": crate.spec(
             features = [],
             version = "2.0",
         ),
     },
     repository_name = "crate_index",
+    supported_platform_triples = [
+        "x86_64-unknown-none",
+        "aarch64-unknown-uefi",  # Apparently, Bazel's rules_rust doesn't support the aarch64-unknown-none triple
+        # Note that the host's toolchain is required for rules_rust to fetch the crates' features
+        "aarch64-apple-darwin",
+        "x86_64-unknown-linux-gnu",
+    ],
     tags = ["manual"],
 )

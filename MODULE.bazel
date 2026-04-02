@@ -23,17 +23,21 @@ rust.toolchain(
         "x86_64-unknown-none",
         "aarch64-unknown-none",
         "aarch64-unknown-uefi",
+        "aarch64-apple-darwin",
+        "x86_64-unknown-linux-gnu",
     ],
-    versions = ["1.94.0"],
+    versions = [
+        "nightly/2026-03-26",
+    ],
 )
 use_repo(
     rust,
-    "rust_linux_x86_64__aarch64-unknown-none__stable_tools",
-    "rust_linux_x86_64__aarch64-unknown-uefi__stable_tools",
-    "rust_linux_x86_64__x86_64-unknown-none__stable_tools",
-    "rust_macos_aarch64__aarch64-unknown-none__stable_tools",
-    "rust_macos_aarch64__aarch64-unknown-uefi__stable_tools",
-    "rust_macos_aarch64__x86_64-unknown-none__stable_tools",
+    "rust_linux_x86_64__aarch64-unknown-none__nightly_tools",
+    "rust_linux_x86_64__aarch64-unknown-uefi__nightly_tools",
+    "rust_linux_x86_64__x86_64-unknown-none__nightly_tools",
+    "rust_macos_aarch64__aarch64-unknown-none__nightly_tools",
+    "rust_macos_aarch64__aarch64-unknown-uefi__nightly_tools",
+    "rust_macos_aarch64__x86_64-unknown-none__nightly_tools",
     "rust_toolchains",
 )
 
@@ -111,11 +115,14 @@ use_repo(
     "crate_index__bitflags-2.11.0",
     "crate_index__eclipse_framebuffer-0.1.0",
     "crate_index__limine-0.5.0",
+    "crate_index__memchr-2.8.0",
     "crate_index__nom-8.0.0",
     "crate_index__thiserror-no-std-2.0.2",
     "freestnd_c_hdrs",
     "limine_bootloader",
     "limine_protocol",
+    "memchr",
+    "nom",
     "qemu",
 )
 

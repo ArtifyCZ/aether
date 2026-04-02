@@ -12,3 +12,4 @@ build --host_platform=@platforms//host
 run:x86_64 --platform_suffix=x86_64
 run:aarch64 --platform_suffix=aarch64
 run --host_platform=@platforms//host
+build --@rules_rust//rust/toolchain/channel=nightly

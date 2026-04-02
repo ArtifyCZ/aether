@@ -15,6 +15,7 @@ dependencies = [
  "bitflags",
  "eclipse_framebuffer",
  "limine",
+ "memchr",
  "nom",
  "thiserror-no-std",
 ]

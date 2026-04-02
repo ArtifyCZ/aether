@@ -68,6 +68,18 @@ alias(
 )
 
 alias(
+    name = "memchr-2.8.0",
+    actual = "@crate_index__memchr-2.8.0//:memchr",
+    tags = ["manual"],
+)
+
+alias(
+    name = "memchr",
+    actual = "@crate_index__memchr-2.8.0//:memchr",
+    tags = ["manual"],
+)
+
+alias(
     name = "nom-8.0.0",
     actual = "@crate_index__nom-8.0.0//:nom",
     tags = ["manual"],

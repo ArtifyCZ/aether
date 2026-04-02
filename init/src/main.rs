@@ -87,7 +87,10 @@ pub unsafe extern "C" fn _entry(boot_info: *mut boot_info) -> ! {
     core::arch::naked_asm!(
         "mov x29, #0",
         "mov x30, #0",
-        "and sp, x1, #0xfffffffffffffff0",
+        "mov x1, sp",
+        "and x1, x1, #0xfffffffffffffff0",
+        "sub x1, x1, #8",
+        "mov sp, x1",
         "bl {rmain}",
         "1: wfe",
         "b 1b",

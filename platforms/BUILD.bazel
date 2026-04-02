@@ -1,5 +1,7 @@
 package(default_visibility = ["//visibility:public"])
 
+exports_files(["aarch64-aether-user.json"])
+
 constraint_setting(name = "execution_mode")
 
 constraint_value(
