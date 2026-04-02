@@ -1,8 +1,8 @@
-use kernel_hal::mmu::VirtualMemoryMappingFlags;
-use crate::platform::virtual_memory_manager_context::VirtualMemoryManagerContext;
 use crate::platform::memory_layout::PAGE_FRAME_SIZE;
 use crate::platform::physical_memory_manager::PhysicalMemoryManager;
+use crate::platform::virtual_memory_manager_context::VirtualMemoryManagerContext;
 use crate::platform::virtual_page_address::VirtualPageAddress;
+use kernel_hal::mmu::VirtualMemoryMappingFlags;
 
 pub struct Elf {
     hhdm_offset: u64,
@@ -94,7 +94,8 @@ impl Elf {
 
                 let flags = {
                     let p_flags = (*phdr).p_flags;
-                    let mut flags = VirtualMemoryMappingFlags::PRESENT | VirtualMemoryMappingFlags::USER;
+                    let mut flags =
+                        VirtualMemoryMappingFlags::PRESENT | VirtualMemoryMappingFlags::USER;
                     if p_flags & ELF_PF_W != 0 {
                         flags.insert(VirtualMemoryMappingFlags::WRITE);
                     }
@@ -117,21 +118,36 @@ impl Elf {
                     let phys = PhysicalMemoryManager::alloc_frame().unwrap();
                     let virt = page_start + p * PAGE_FRAME_SIZE;
 
-                    vmm_ctx.map_page(VirtualPageAddress::new(virt).unwrap(), phys, flags).unwrap();
+                    vmm_ctx
+                        .map_page(VirtualPageAddress::new(virt).unwrap(), phys, flags)
+                        .unwrap();
 
                     let dest = (self.hhdm_offset as *mut u8).add(phys.inner());
                     core::ptr::write_bytes(dest, 0, PAGE_FRAME_SIZE);
 
-                    let copy_dst_v = if virt < (*phdr).p_vaddr as usize { (*phdr).p_vaddr as usize } else { virt };
+                    let copy_dst_v = if virt < (*phdr).p_vaddr as usize {
+                        (*phdr).p_vaddr as usize
+                    } else {
+                        virt
+                    };
                     let segment_v_end = (*phdr).p_vaddr as usize + (*phdr).p_filesz as usize;
-                    let copy_end_v = if virt + PAGE_FRAME_SIZE < segment_v_end { virt + PAGE_FRAME_SIZE } else { segment_v_end };
+                    let copy_end_v = if virt + PAGE_FRAME_SIZE < segment_v_end {
+                        virt + PAGE_FRAME_SIZE
+                    } else {
+                        segment_v_end
+                    };
 
                     if copy_dst_v < copy_end_v {
                         let copy_len = copy_end_v - copy_dst_v;
                         let dest_offset = copy_dst_v - virt;
-                        let src_offset = (*phdr).p_offset as usize + (copy_dst_v - (*phdr).p_vaddr as usize);
+                        let src_offset =
+                            (*phdr).p_offset as usize + (copy_dst_v - (*phdr).p_vaddr as usize);
 
-                        core::ptr::copy_nonoverlapping(data.add(src_offset), dest.add(dest_offset), copy_len);
+                        core::ptr::copy_nonoverlapping(
+                            data.add(src_offset),
+                            dest.add(dest_offset),
+                            copy_len,
+                        );
                     }
                 }
             }
