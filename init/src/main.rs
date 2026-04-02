@@ -2,10 +2,17 @@
 #![no_main]
 
 extern crate aether_rt;
+extern crate alloc;
 
+use alloc::boxed::Box;
 use core::arch::asm;
+use core::ffi::{c_char, c_void};
 use core::fmt::Write;
 use init_contract_rust::boot_info;
+
+// use crate::tarball_parsing::parse_tarball_archive;
+
+// mod tarball_parsing;
 
 unsafe extern "C" fn sys_write(fd: i32, buffer: *const u8, size: usize) {
     unsafe {
@@ -91,8 +98,25 @@ unsafe extern "C" {
     fn main(boot_info: *mut boot_info);
 }
 
+// #[unsafe(no_mangle)]
+unsafe extern "C" fn tar_find_file(
+    tar_addr: *mut c_void,
+    tar_size: usize,
+    filename: *const c_char,
+    file_data: *mut *mut c_void,
+    file_size: *mut usize,
+) {
+    let tar_data: &[u8] = core::slice::from_raw_parts(tar_addr.cast(), tar_size);
+    let filename = unsafe { core::ffi::CStr::from_ptr(filename) };
+
+    // let tarball = parse_tarball_archive(tar_data).expect("Failed to parse a tarball!");
+    // let file = tarball;
+    todo!()
+}
+
 fn rmain(boot_info: *mut boot_info) -> ! {
     println!("Hello Rust init world!");
+    // @FIXME: support for PIC needed to be able to use formatting
     // println!("Boot info at: {:p}", boot_info);
 
     unsafe {
