@@ -80,6 +80,13 @@ fn parse_header(input: &[u8]) -> IResult<&[u8], TarHeader<'_>> {
     let (input, type_flag) = take(1usize)(input)?;
     let type_flag = type_flag[0];
 
+    if size >= start_input.len() {
+        return Err(nom::Err::Failure(nom::error::Error::new(
+            input,
+            nom::error::ErrorKind::Eof,
+        )));
+    }
+
     // 1. The header is exactly 512 bytes. Skip the rest of the metadata block.
     // (100 + 8 + 8 + 8 + 12 + 12 + 8 + 1 = 157 bytes parsed so far)
     let (input, _) = take(512usize - (start_input.len() - input.len()))(input)?;
@@ -113,8 +120,15 @@ fn parse_header(input: &[u8]) -> IResult<&[u8], TarHeader<'_>> {
 }
 
 fn parse_eof(input: &[u8]) -> IResult<&[u8], ()> {
-    let (input, _) = nom::bytes::complete::tag(b"\0".as_ref())(input)?;
-    Ok((input, ()))
+    let (input, block) = take(512usize)(input)?;
+    if block.iter().all(|&b| b == 0) {
+        Ok((input, ()))
+    } else {
+        Err(nom::Err::Error(nom::error::Error::new(
+            input,
+            nom::error::ErrorKind::Tag,
+        )))
+    }
 }
 
 pub fn parse_tarball_archive(

@@ -29,7 +29,7 @@ fn load_initrd_into_memory(
     initrd: &[u8],
     init_ctx: &VirtualMemoryManagerContext,
 ) -> (usize, usize) {
-    const INITRD_VADDR: usize = 0x7FFFFFF00000usize; // arbitrary high virtual address for initrd
+    const INITRD_VADDR: usize = 0x2FFFFFF00000usize;
     // Map the pages for initrd into the virtual memory and copy the data
     let initrd_size = initrd.len();
     let num_pages = (initrd_size + PAGE_FRAME_SIZE - 1) / PAGE_FRAME_SIZE;

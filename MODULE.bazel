@@ -64,6 +64,8 @@ crates_host.from_specs(
 )
 use_repo(crates_host, "crates_host")
 
+# @TODO: remove these unused dependency declarations as they are vendored in the /3rdparty directory
+# and not used directly in the BUILD files.
 crates = use_extension("@rules_rust//crate_universe:extension.bzl", "crate")
 crates.spec(
     package = "bitflags",

@@ -54,7 +54,9 @@ unsafe impl GlobalAlloc for Allocator {
             let end_addr = start_addr + size;
 
             if end_addr >= static_heap_mem_end_addr {
-                return null_mut();
+                // return null_mut();
+                // @TODO: Return a null pointer, as Rust expects to be done.
+                loop {}
             }
 
             if self
@@ -73,6 +75,6 @@ unsafe impl GlobalAlloc for Allocator {
     }
 
     unsafe fn dealloc(&self, ptr: *mut u8, layout: Layout) {
-        todo!()
+        // Bump allocator - dealloc is no-op
     }
 }

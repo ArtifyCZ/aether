@@ -8,11 +8,12 @@ use alloc::boxed::Box;
 use core::arch::asm;
 use core::ffi::{c_char, c_void};
 use core::fmt::Write;
+use core::ptr::null_mut;
 use init_contract_rust::boot_info;
 
-// use crate::tarball_parsing::parse_tarball_archive;
+use crate::tarball_parsing::parse_tarball_archive;
 
-// mod tarball_parsing;
+mod tarball_parsing;
 
 unsafe extern "C" fn sys_write(fd: i32, buffer: *const u8, size: usize) {
     unsafe {
@@ -98,7 +99,7 @@ unsafe extern "C" {
     fn main(boot_info: *mut boot_info);
 }
 
-// #[unsafe(no_mangle)]
+#[unsafe(no_mangle)]
 unsafe extern "C" fn tar_find_file(
     tar_addr: *mut c_void,
     tar_size: usize,
@@ -109,9 +110,21 @@ unsafe extern "C" fn tar_find_file(
     let tar_data: &[u8] = core::slice::from_raw_parts(tar_addr.cast(), tar_size);
     let filename = unsafe { core::ffi::CStr::from_ptr(filename) };
 
-    // let tarball = parse_tarball_archive(tar_data).expect("Failed to parse a tarball!");
-    // let file = tarball;
-    todo!()
+    let first_byte = tar_data[0];
+
+    let tarball = parse_tarball_archive(tar_data).expect("Failed to parse a tarball!");
+    let file = tarball.iter().find(|h| h.name == filename);
+
+    match file {
+        Some(file) => unsafe {
+            file_data.write(file.file_data.as_ptr() as *mut u8 as *mut c_void);
+            file_size.write(file.size);
+        },
+        None => {
+            file_data.write(null_mut());
+            file_size.write(0);
+        }
+    }
 }
 
 fn rmain(boot_info: *mut boot_info) -> ! {
