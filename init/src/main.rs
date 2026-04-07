@@ -89,7 +89,7 @@ pub unsafe extern "C" fn _entry(boot_info: *mut boot_info) -> ! {
         "mov x30, #0",
         "mov x1, sp",
         "and x1, x1, #0xfffffffffffffff0",
-        "sub x1, x1, #8",
+        "sub x1, x1, #16",
         "mov sp, x1",
         "bl {rmain}",
         "1: wfe",

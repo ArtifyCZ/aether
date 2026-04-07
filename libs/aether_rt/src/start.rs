@@ -28,7 +28,8 @@ pub unsafe extern "C" fn _start() -> ! {
     unsafe {
         naked_asm!(
             "mov x1, sp",
-            "bic x1, x1, #0xf", // Force 16-byte alignment
+            "and x1, x1, 0xfffffffffffffff0", // Force 16-byte alignment
+            "sub x1, x1, #16",
             "mov sp, x1",
             // Clear the Frame Pointer (x29) and Link Register (x30)
             "mov x29, #0",

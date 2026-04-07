@@ -64,6 +64,8 @@ pub unsafe extern "C" fn main(ipc_base: usize) {
         // @FIXME: For some reason, with the println it crashes on aarch64.
         #[cfg(not(target_arch = "aarch64"))]
         println!("Hello world from hello_world binary!");
+        #[cfg(target_arch = "aarch64")]
+        print("Hello world from hello_world binary!\n");
         loop {}
     }
 }
