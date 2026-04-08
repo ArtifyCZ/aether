@@ -41,4 +41,7 @@
         "editor.suggest.insertMode": "replace"
     },
     "clangd.onConfigChanged": "restart",
+    "python.analysis.extraPaths": [
+        "./kernel/api/syscalls"
+    ],
 }

@@ -22,7 +22,7 @@ aquery_kernel_cmd = [
     f"--config={args_cli.config}",
     "--output=jsonproto",
 ]
-kernel_data = json.loads(subprocess.check_output(aquery_kernel_cmd))
+kernel_data = json.loads(subprocess.check_output(aquery_kernel_cmd, stderr=sys.stderr))
 aquery_userspace_cmd = [
     "bazel",
     "aquery",
@@ -30,7 +30,7 @@ aquery_userspace_cmd = [
     f"--config={args_cli.config}",
     "--output=jsonproto",
 ]
-userspace_data = json.loads(subprocess.check_output(aquery_userspace_cmd))
+userspace_data = json.loads(subprocess.check_output(aquery_userspace_cmd, stderr=sys.stderr))
 actions = kernel_data.get("actions", []) + userspace_data.get("actions", [])
 
 commands = []

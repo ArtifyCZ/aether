@@ -1,5 +1,6 @@
 load("@bazel_skylib//lib:selects.bzl", "selects")
 load("@rules_cc//cc:cc_library.bzl", "cc_library")
+load("@rules_python//python:defs.bzl", "py_binary", "py_library")
 
 selects.config_setting_group(
     name = "kernel_x86_64",
@@ -37,15 +38,56 @@ selects.config_setting_group(
     ],
 )
 
+py_library(
+    name = "syscall_lib",
+    srcs = ["syscall_parser.py"],
+    imports = ["."],
+    # Disable precompilation to avoid searching for a target-platform Python toolchain
+    precompile = "disabled",
+    target_compatible_with = select({
+        "@platforms//os:macos": [],
+        "@platforms//os:linux": [],
+        "//conditions:default": ["@platforms//:incompatible"],
+    }),
+    visibility = ["//visibility:public"],
+)
+
+py_binary(
+    name = "compat_syscall_gen_tool",
+    srcs = ["compat_generator.py"],
+    main = "compat_generator.py",
+    precompile = "disabled",
+    target_compatible_with = select({
+        "@platforms//os:macos": [],
+        "@platforms//os:linux": [],
+        "//conditions:default": ["@platforms//:incompatible"],
+    }),
+    deps = [":syscall_lib"],
+)
+
+genrule(
+    name = "compat_syscall_gen",
+    srcs = ["syscalls.toml"],
+    outs = ["syscall_list.h"],
+    cmd = "$(location :compat_syscall_gen_tool) $(location syscalls.toml) > $@",
+    tools = [":compat_syscall_gen_tool"],
+)
+
+exports_files(
+    ["syscalls.toml"],
+    visibility = ["//visibility:public"],
+)
+
 cc_library(
     name = "syscalls",
-    srcs = ["syscalls_dummy.c"] + glob(["*.h"]),
+    srcs = ["syscalls_dummy.c"] + glob(["*.h"]) + [":compat_syscall_gen"],
     hdrs = [
         "syscall_err_list.h",
         "syscall_errs.h",
-        "syscall_list.h",
         "syscall_nums.h",
+        ":compat_syscall_gen",
     ],
+    includes = ["."],
     target_compatible_with = select({
         ":kernel_x86_64": [":kernel_x86_64"],
         ":user_x86_64": [":user_x86_64"],

@@ -1,0 +1,90 @@
+[syscalls.exit]
+number = 0x00
+return_type = "unit"
+args = []
+
+[syscalls.write]
+number = 0x01
+return_type = "unit"
+args = [
+    { name = "fd", type = "int32" },
+    { name = "buf", type = "const uint8*" },
+    { name = "count", type = "usize" },
+]
+
+[syscalls.irq_wait]
+number = 0x04
+return_type = "unit"
+args = [{ name = "irq", type = "uint8" }]
+
+[syscalls.irq_unmask]
+number = 0x05
+return_type = "unit"
+args = [{ name = "irq", type = "uint8" }]
+
+[syscalls.mmap_dev]
+number = 0x06
+return_type = "uptr"
+args = [
+    { name = "addr", type = "uptr" },
+    { name = "len", type = "uptr" },
+    { name = "phys", type = "uptr" },
+    { name = "pr", type = "uint32" },
+    { name = "fl", type = "uint32" },
+]
+
+[syscalls.proc_create]
+number = 0x07
+return_type = "uint64"
+args = [{ name = "fl", type = "uint64" }]
+
+[syscalls.proc_mmap]
+number = 0x08
+return_type = "uptr"
+args = [
+    { name = "proc_handle", type = "uint64" },
+    { name = "addr", type = "uptr" },
+    { name = "len", type = "uptr" },
+    { name = "pr", type = "uint32" },
+    { name = "fl", type = "uint32" },
+]
+
+[syscalls.proc_mprot]
+number = 0x09
+return_type = "unit"
+args = [
+    { name = "proc_handle", type = "uint64" },
+    { name = "addr", type = "uptr" },
+    { name = "len", type = "uptr" },
+    { name = "pr", type = "uint32" },
+]
+
+[syscalls.proc_munmap]
+number = 0x0A
+return_type = "unit"
+args = [
+    { name = "proc_handle", type = "uint64" },
+    { name = "addr", type = "uptr" },
+    { name = "len", type = "uptr" },
+]
+
+[syscalls.proc_spawn]
+number = 0x0B
+return_type = "uint64"
+args = [
+    { name = "proc_handle", type = "uint64" },
+    { name = "fl", type = "uint64" },
+    { name = "sp", type = "uptr" },
+    { name = "ip", type = "uptr" },
+    { name = "arg", type = "uint64" },
+]
+
+
+[constants]
+# Memory-mapping protection flags
+prot_read = 0x01
+prot_write = 0x02
+prot_exec = 0x04
+
+# Memory-mapping flags
+mmap_fl_mirror = 0x01

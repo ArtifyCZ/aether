@@ -1,8 +1,38 @@
 load("@rules_cc//cc:cc_library.bzl", "cc_library")
+load("@rules_python//python:defs.bzl", "py_binary")
+
+py_binary(
+    name = "syscall_c_stubs_tool",
+    srcs = ["syscall_c_stubs.py"],
+    main = "syscall_c_stubs.py",
+    precompile = "disabled",
+    target_compatible_with = select({
+        "@platforms//os:macos": [],
+        "@platforms//os:linux": [],
+        "//conditions:default": ["@platforms//:incompatible"],
+    }),
+    deps = ["//kernel/api/syscalls:syscall_lib"],
+)
+
+alias(
+    name = "syscalls.toml",
+    actual = "//kernel/api/syscalls:syscalls.toml",
+)
+
+genrule(
+    name = "syscall_c_stubs",
+    srcs = [":syscalls.toml"],
+    outs = ["syscall_c_stubs.h"],
+    cmd = "$(location :syscall_c_stubs_tool) $(location :syscalls.toml) > $@",
+    tools = [":syscall_c_stubs_tool"],
+)
 
 cc_library(
     name = "libsyscall",
-    srcs = ["syscalls.c"],
+    srcs = [
+        "syscalls.c",
+        ":syscall_c_stubs",
+    ],
     hdrs = ["syscalls.h"],
     visibility = ["//visibility:public"],
     deps = [
