@@ -11,8 +11,12 @@ use core::fmt::Write;
 use core::ptr::null_mut;
 use init_contract_rust::boot_info;
 
+use crate::elf_loading::load_elf_program;
+use crate::elf_parsing::parse_elf_file;
 use crate::tarball_parsing::parse_tarball_archive;
 
+mod elf_loading;
+mod elf_parsing;
 mod tarball_parsing;
 
 unsafe extern "C" fn sys_write(fd: i32, buffer: *const u8, size: usize) {
@@ -100,6 +104,28 @@ pub unsafe extern "C" fn _entry(boot_info: *mut boot_info) -> ! {
 
 unsafe extern "C" {
     fn main(boot_info: *mut boot_info);
+}
+
+#[unsafe(no_mangle)]
+unsafe extern "C" fn elf_load(
+    data: *mut c_void,
+    data_length: usize,
+    out_vaddr_entrypoint: *mut usize,
+    out_proc_handle: *mut u64,
+) -> i32 {
+    let data = unsafe { core::slice::from_raw_parts(data.cast(), data_length) };
+    let Ok(elf) = parse_elf_file(data) else {
+        return -1;
+    };
+
+    let (proc_handle, entrypoint) = load_elf_program(&elf);
+
+    unsafe {
+        out_vaddr_entrypoint.write(entrypoint);
+        out_proc_handle.write(proc_handle);
+    }
+
+    0
 }
 
 #[unsafe(no_mangle)]
