@@ -1,14 +1,15 @@
-from syscall_parser import VALID_SYSCALL_VALUE_TYPES, Constant, SyscallDefinition, SyscallParser, Type
+from syscall_parser import VALID_SYSCALL_VALUE_TYPES, Constant, SyscallDefinition, SyscallError, SyscallParser, Type
 import sys
 
 def main():
     # Retrieve the toml path from the argv
-    if len(sys.argv) != 2:
-        print("Usage: python compat_generator.py <path_to_syscalls.toml>", file=sys.stderr)
+    if len(sys.argv) != 3:
+        print("Usage: python compat_generator.py <path_to_syscalls.toml> <path_to_errors.toml>", file=sys.stderr)
         sys.exit(1)
         pass
     toml_path = sys.argv[1]
-    parser = SyscallParser([toml_path])
+    errors_path = sys.argv[2]
+    parser = SyscallParser([toml_path, errors_path])
     generated_output = parser.generate(adapter=CompatAdapter())
 
     print("#pragma once\n")
@@ -21,6 +22,12 @@ def main():
     for constant in generated_output.constants:
         print(constant)
         pass
+
+    print("\n#define SYSCALLS_ERR_LIST(X) \\")
+    for error in generated_output.errors:
+        print(error)
+        pass
+    print("    /* End of generated errors */\n")
 
     print("Generated syscalls for legacy compatibility successfully!", file=sys.stderr)
     pass
@@ -61,11 +68,17 @@ class CompatAdapter:
             args_rendered = ", " + ", ".join(raw_args)
 
         return f"    X({syscall.id}, {syscall.id.upper()}, {hex(syscall.number)}, {return_type}, {args_count}{args_rendered}) \\"
-    
+
     def render_constant(self, constant: Constant) -> str:
         name = f"SYS_{constant.name.upper()}"
         value = hex(constant.value)
         return f"#define {name} {value}"
+
+    def render_error(self, error: SyscallError) -> str:
+        name = error.name.upper()
+        code = hex(error.code)
+        message = error.message
+        return f"    X({name}, {code}, \"{message}\") \\"
 
 if __name__ == "__main__":
     main()

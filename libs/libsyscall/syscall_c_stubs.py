@@ -1,14 +1,15 @@
-from syscall_parser import VALID_SYSCALL_VALUE_TYPES, Constant, SyscallDefinition, SyscallParser, Type
+from syscall_parser import VALID_SYSCALL_VALUE_TYPES, Constant, SyscallDefinition, SyscallError, SyscallParser, Type
 import sys
 
 def main():
     # Retrieve the toml path from the argv
-    if len(sys.argv) != 2:
-        print("Usage: python syscall_c_stubs.py <path_to_syscalls.toml>", file=sys.stderr)
+    if len(sys.argv) != 3:
+        print("Usage: python syscall_c_stubs.py <path_to_syscalls.toml> <path_to_errors.toml>", file=sys.stderr)
         sys.exit(1)
         pass
     toml_path = sys.argv[1]
-    parser = SyscallParser([toml_path])
+    errors_path = sys.argv[2]
+    parser = SyscallParser([toml_path, errors_path])
     generated_output = parser.generate(adapter=CompatAdapter())
 
     print("#pragma once\n")
@@ -87,6 +88,10 @@ static sys_err_t sys_{syscall.name}({fn_args}) {{
         name = f"SYS_{constant.name.upper()}"
         value = hex(constant.value)
         return f"#define {name} {value}"
+
+    def render_error(self, error: SyscallError) -> str:
+        # TODO: also generate something for the error handling and so
+        return ""
 
 if __name__ == "__main__":
     main()

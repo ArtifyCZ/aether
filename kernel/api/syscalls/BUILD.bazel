@@ -67,14 +67,20 @@ py_binary(
 
 genrule(
     name = "compat_syscall_gen",
-    srcs = ["syscalls.toml"],
-    outs = ["syscall_list.h"],
-    cmd = "$(location :compat_syscall_gen_tool) $(location syscalls.toml) > $@",
+    srcs = [
+        "errors.toml",
+        "syscalls.toml",
+    ],
+    outs = ["syscall_gen.h"],
+    cmd = "$(location :compat_syscall_gen_tool) $(location syscalls.toml) $(location errors.toml) > $@",
     tools = [":compat_syscall_gen_tool"],
 )
 
 exports_files(
-    ["syscalls.toml"],
+    [
+        "errors.toml",
+        "syscalls.toml",
+    ],
     visibility = ["//visibility:public"],
 )
 
@@ -82,7 +88,6 @@ cc_library(
     name = "syscalls",
     srcs = ["syscalls_dummy.c"] + glob(["*.h"]) + [":compat_syscall_gen"],
     hdrs = [
-        "syscall_err_list.h",
         "syscall_errs.h",
         "syscall_nums.h",
         ":compat_syscall_gen",

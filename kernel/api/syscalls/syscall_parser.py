@@ -54,31 +54,49 @@ class Constant:
     pass
 
 @dataclass
+class SyscallError:
+    def __init__(self, id: str, data: dict):
+        assert id != "", "Error identifier cannot be empty"
+        self.id = id
+        self.code = int(data["code"])
+        assert self.code >= 0, "Error code must be a non-negative integer"
+        assert self.code <= 255, "Probably a bug: Error code greater than 255"
+        self.name = str(data["name"] if "name" in data else id)
+        self.message = str(data["message"])
+        assert self.message != "", "Error message cannot be empty"
+    pass
+
+@dataclass
 class GeneratedOutput:
-    def __init__(self, syscalls: list[SyscallDefinition], constants: list[Constant]):
+    def __init__(self, syscalls: list[SyscallDefinition], constants: list[Constant], errors: list[SyscallError]):
         assert len(syscalls) > 0, "Empty list of syscalls is probably a bug, and therefore failed to generate any code"
+        assert len(constants) > 0, "Empty list of constants is probably a bug, and therefore failed to generate any code"
+        assert len(errors) > 0, "Empty list of errors is probably a bug, and therefore failed to generate any code"
         self.syscalls = syscalls
         self.constants = constants
+        self.errors = errors
     pass
 
 class SyscallParser:
     def __init__(self, toml_paths: list[str]):
         self.syscalls = {}
         self.constants = {}
+        self.errors = {}
         for toml_path in toml_paths:
             with open(toml_path, "rb") as f:
                 definitions = tomllib.load(f)
-                self.syscalls |= definitions["syscalls"]
-                self.constants |= definitions["constants"]
+                self.syscalls |= definitions.get("syscalls", {})
+                self.constants |= definitions.get("constants", {})
+                self.errors |= definitions.get("errors", {})
                 pass
             pass
         pass
 
-    def generate(self, adapter) -> str:
+    def generate(self, adapter) -> GeneratedOutput:
         generated_syscalls = []
         generated_constants = []
+        generated_errors = []
 
-        # Implementation for generating syscall code
         for id, syscall in self.syscalls.items():
             syscall_def = SyscallDefinition(id, syscall)
             generated_syscall = adapter.render_syscall(syscall_def)
@@ -91,5 +109,11 @@ class SyscallParser:
             generated_constants.append(generated_constant)
             pass
 
-        return GeneratedOutput(generated_syscalls, generated_constants)
+        for id, error in self.errors.items():
+            error_def = SyscallError(id, error)
+            generated_error = adapter.render_error(error_def)
+            generated_errors.append(generated_error)
+            pass
+
+        return GeneratedOutput(generated_syscalls, generated_constants, generated_errors)
     pass

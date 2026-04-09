@@ -1,0 +1,25 @@
+# Every syscall returns an error code (if it is to switch back to the task),
+# and optionally a return value. Both are done through registers. Using the
+# return value if error code != SYS_SUCCESS is undefined behavior.
+# Error code values are guaranteed to be unique, even in cases of error codes
+# specific to a single syscall.
+
+[errors.success]
+code = 0x0000
+message = "Success"
+
+[errors.efault]
+code = 0x0001
+message = "Bad address"
+
+[errors.ebadf]
+code = 0x0002
+message = "Bad file descriptor"
+
+[errors.einval]
+code = 0x0003
+message = "Invalid argument"
+
+[errors.enosys]
+code = 0x0004
+message = "Function not implemented"

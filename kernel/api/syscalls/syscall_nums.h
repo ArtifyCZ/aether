@@ -1,6 +1,6 @@
 #pragma once
 
-#include "syscall_list.h"
+#include "kernel/api/syscalls/syscall_gen.h"
 #include <stdint.h>
 
 #define GEN_ENUM(name, NAME, num, ret, count, ...) \

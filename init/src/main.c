@@ -2,7 +2,6 @@
 #include "drivers/serial/serial.h"
 #include "init/include/tar.h"
 #include "kernel/api/init/boot_info.h"
-#include "kernel/api/syscalls/syscall_list.h"
 #include "libs/libsyscall/syscalls.h"
 #include <stddef.h>
 #include <stdint.h>

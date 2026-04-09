@@ -19,11 +19,19 @@ alias(
     actual = "//kernel/api/syscalls:syscalls.toml",
 )
 
+alias(
+    name = "errors.toml",
+    actual = "//kernel/api/syscalls:errors.toml",
+)
+
 genrule(
     name = "syscall_c_stubs",
-    srcs = [":syscalls.toml"],
+    srcs = [
+        ":errors.toml",
+        ":syscalls.toml",
+    ],
     outs = ["syscall_c_stubs.h"],
-    cmd = "$(location :syscall_c_stubs_tool) $(location :syscalls.toml) > $@",
+    cmd = "$(location :syscall_c_stubs_tool) $(location :syscalls.toml) $(location :errors.toml) > $@",
     tools = [":syscall_c_stubs_tool"],
 )
 
