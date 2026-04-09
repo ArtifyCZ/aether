@@ -1,8 +1,10 @@
 #pragma once
 
-#include "kernel/api/syscalls/syscall_errs.h"
 #include <stdint.h>
 #include <stddef.h>
+
+enum syscall_err : uint64_t;
+typedef enum syscall_err sys_err_t;
 
 struct syscall_result {
     enum syscall_err err_code;
@@ -80,5 +82,3 @@ static sys_err_t sys_mmap(uint64_t addr, uint64_t len, uint32_t pr, uint32_t fl,
     const uint64_t proc_handle = 0;
     return sys_proc_mmap(proc_handle, addr, len, SYS_PROT_READ | SYS_PROT_WRITE, fl, out);
 }
-
-const char *sys_err_get_message(sys_err_t err_code);

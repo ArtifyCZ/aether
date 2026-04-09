@@ -82,9 +82,9 @@ args = [
 
 [constants]
 # Memory-mapping protection flags
-prot_read = 0x01
-prot_write = 0x02
-prot_exec = 0x04
+prot_read.uint32 = 0x01
+prot_write.uint32 = 0x02
+prot_exec.uint32 = 0x04
 
 # Memory-mapping flags
-mmap_fl_mirror = 0x01
+mmap_fl_mirror.uint32 = 0x01

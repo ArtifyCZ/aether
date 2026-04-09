@@ -46,11 +46,17 @@ class SyscallArgument:
 
 @dataclass
 class Constant:
-    def __init__(self, name: str, value: int):
+    def __init__(self, name: str, data: dict):
         assert name != "", "Constant name cannot be empty"
+        POSSIBLE_TYPES = [Type("uint8"), Type("uint32"), Type("uint64")]
+        assert len(data) == 1, f"Constant value for {name} must have exactly one entry with the type as the key and the integer value as the value, but got: {data}"
+        type_name, value = next(iter(data.items()))
+        assert type_name in [t.name for t in POSSIBLE_TYPES], f"Constant value {name} has unsupported or invalid type: {type_name}"
+        type = Type(type_name)
         assert isinstance(value, int), "Constant value must be an integer"
         self.name = name
         self.value = value
+        self.type = type
     pass
 
 @dataclass
@@ -104,6 +110,7 @@ class SyscallParser:
             pass
 
         for name, value in self.constants.items():
+            assert isinstance(value, dict), f"Constant value for {name} must have exactly one entry with the type as the key and the integer value as the value, but got: {value}"
             constant = Constant(name, value)
             generated_constant = adapter.render_constant(constant)
             generated_constants.append(generated_constant)

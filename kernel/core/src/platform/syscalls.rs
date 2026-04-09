@@ -2,8 +2,8 @@ use crate::println;
 use alloc::boxed::Box;
 use kernel_hal::syscalls;
 use kernel_hal::tasks::TaskFrame;
-pub use syscalls_rust::syscall_err as SyscallError;
-pub use syscalls_rust::syscall_num;
+pub use syscalls_rust::SyscallError;
+pub use syscalls_rust::SyscallNumber;
 
 pub struct Syscalls;
 
@@ -57,7 +57,10 @@ impl SyscallReturnable for u64 {
 impl Syscalls {
     pub unsafe fn init<F>(mut f: F)
     where
-        F: (FnMut(SyscallContext) -> Result<SyscallIntent<SyscallReturnValue>, (Box<TaskFrame>, SyscallError)>)
+        F: (FnMut(
+                SyscallContext,
+            )
+                -> Result<SyscallIntent<SyscallReturnValue>, (Box<TaskFrame>, SyscallError)>)
             + 'static,
     {
         println!("Initializing syscalls...");
@@ -73,14 +76,20 @@ impl Syscalls {
                 };
                 let intent = match f(context) {
                     Ok(intent) => match intent {
-                        SyscallIntent::Return(task_frame, value) => SyscallIntent::Return(task_frame, Ok(value)),
+                        SyscallIntent::Return(task_frame, value) => {
+                            SyscallIntent::Return(task_frame, Ok(value))
+                        }
                         SyscallIntent::SwitchTo(frame) => SyscallIntent::SwitchTo(frame),
                     },
                     Err((task_frame, error)) => SyscallIntent::Return(task_frame, Err(error)),
                 };
                 match intent {
                     SyscallIntent::Return(mut task_frame, value) => unsafe {
-                        task_frame.set_syscall_return_value(value.map(|value| value.0).map_err(|err_code| err_code as u64));
+                        task_frame.set_syscall_return_value(
+                            value
+                                .map(|value| value.0)
+                                .map_err(|err_code| err_code as u64),
+                        );
                         task_frame
                     },
                     SyscallIntent::SwitchTo(task_frame) => task_frame,

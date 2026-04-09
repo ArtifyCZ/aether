@@ -1,42 +1,4 @@
-load("@bazel_skylib//lib:selects.bzl", "selects")
-load("@rules_cc//cc:cc_library.bzl", "cc_library")
-load("@rules_python//python:defs.bzl", "py_binary", "py_library")
-
-selects.config_setting_group(
-    name = "kernel_x86_64",
-    match_all = [
-        "@platforms//cpu:x86_64",
-        "@platforms//os:none",
-        "//platforms:kernel_mode",
-    ],
-)
-
-selects.config_setting_group(
-    name = "user_x86_64",
-    match_all = [
-        "@platforms//cpu:x86_64",
-        "@platforms//os:none",
-        "//platforms:user_mode",
-    ],
-)
-
-selects.config_setting_group(
-    name = "kernel_aarch64",
-    match_all = [
-        "@platforms//cpu:aarch64",
-        "@platforms//os:uefi",
-        "//platforms:kernel_mode",
-    ],
-)
-
-selects.config_setting_group(
-    name = "user_aarch64",
-    match_all = [
-        "@platforms//cpu:aarch64",
-        "@platforms//os:none",
-        "//platforms:user_mode",
-    ],
-)
+load("@rules_python//python:defs.bzl", "py_library")
 
 py_library(
     name = "syscall_lib",
@@ -52,53 +14,10 @@ py_library(
     visibility = ["//visibility:public"],
 )
 
-py_binary(
-    name = "compat_syscall_gen_tool",
-    srcs = ["compat_generator.py"],
-    main = "compat_generator.py",
-    precompile = "disabled",
-    target_compatible_with = select({
-        "@platforms//os:macos": [],
-        "@platforms//os:linux": [],
-        "//conditions:default": ["@platforms//:incompatible"],
-    }),
-    deps = [":syscall_lib"],
-)
-
-genrule(
-    name = "compat_syscall_gen",
-    srcs = [
-        "errors.toml",
-        "syscalls.toml",
-    ],
-    outs = ["syscall_gen.h"],
-    cmd = "$(location :compat_syscall_gen_tool) $(location syscalls.toml) $(location errors.toml) > $@",
-    tools = [":compat_syscall_gen_tool"],
-)
-
 exports_files(
     [
         "errors.toml",
         "syscalls.toml",
     ],
     visibility = ["//visibility:public"],
-)
-
-cc_library(
-    name = "syscalls",
-    srcs = ["syscalls_dummy.c"] + glob(["*.h"]) + [":compat_syscall_gen"],
-    hdrs = [
-        "syscall_errs.h",
-        "syscall_nums.h",
-        ":compat_syscall_gen",
-    ],
-    includes = ["."],
-    target_compatible_with = select({
-        ":kernel_x86_64": [":kernel_x86_64"],
-        ":user_x86_64": [":user_x86_64"],
-        ":kernel_aarch64": [":kernel_aarch64"],
-        ":user_aarch64": [":user_aarch64"],
-    }),
-    visibility = ["//visibility:public"],
-    deps = ["@freestnd_c_hdrs"],
 )

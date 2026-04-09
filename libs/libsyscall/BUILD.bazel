@@ -38,13 +38,11 @@ genrule(
 cc_library(
     name = "libsyscall",
     srcs = [
-        "syscalls.c",
         ":syscall_c_stubs",
     ],
     hdrs = ["syscalls.h"],
     visibility = ["//visibility:public"],
     deps = [
-        "//kernel/api/syscalls",
         "@freestnd_c_hdrs",
     ],
 )

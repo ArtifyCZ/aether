@@ -10,9 +10,24 @@ def main():
     toml_path = sys.argv[1]
     errors_path = sys.argv[2]
     parser = SyscallParser([toml_path, errors_path])
-    generated_output = parser.generate(adapter=CompatAdapter())
+    generated_output = parser.generate(adapter=SyscallCStubsAdapter())
 
     print("#pragma once\n")
+    print("enum syscall_err : uint64_t {")
+    for error in generated_output.errors:
+        print(error[0])
+        pass
+    print("};\n")
+
+    print("static const char *sys_err_get_message(sys_err_t err_code) {")
+    print("    switch (err_code) {")
+    for error in generated_output.errors:
+        print(error[1])
+        pass
+    print("        default: return \"Unknown error code\";")
+    print("    }")
+    print("}\n")
+
     for syscall in generated_output.syscalls:
         print(syscall)
         print()
@@ -22,10 +37,10 @@ def main():
         print(constant)
         pass
 
-    print("Generated syscalls for legacy compatibility successfully!", file=sys.stderr)
+    print("Generated syscall C stubs successfully!", file=sys.stderr)
     pass
 
-class CompatAdapter:
+class SyscallCStubsAdapter:
     def translate_type(self, type_obj: Type) -> str:
         TYPE_TRANSLATION = {
             "unit": "void",
@@ -87,11 +102,14 @@ static sys_err_t sys_{syscall.name}({fn_args}) {{
     def render_constant(self, constant: Constant) -> str:
         name = f"SYS_{constant.name.upper()}"
         value = hex(constant.value)
-        return f"#define {name} {value}"
+        type = self.translate_type(constant.type)
+        return f"#define {name} (({type}) {value})"
 
     def render_error(self, error: SyscallError) -> str:
-        # TODO: also generate something for the error handling and so
-        return ""
+        return [
+            f"    SYS_{error.name.upper()} = {hex(error.code)}, // {error.message}",
+            f"        case SYS_{error.name.upper()}: return \"{error.message}\";",
+        ]
 
 if __name__ == "__main__":
     main()

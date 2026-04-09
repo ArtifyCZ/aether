@@ -17,7 +17,7 @@ impl<T> TryFrom<u64> for UserPtr<*mut T> {
         if value < 0x800000000000 {
             Ok(Self(value as *mut T))
         } else {
-            Err(SyscallError::SYS_EFAULT)
+            Err(SyscallError::Efault)
         }
     }
 }
@@ -29,7 +29,7 @@ impl<T> TryFrom<u64> for UserPtr<*const T> {
         if value < 0x800000000000 {
             Ok(Self(value as *const T))
         } else {
-            Err(SyscallError::SYS_EFAULT)
+            Err(SyscallError::Efault)
         }
     }
 }
@@ -57,7 +57,7 @@ impl TryFrom<u64> for UserPtr<usize> {
         if value < 0x800000000000 {
             Ok(Self(value as usize))
         } else {
-            Err(SyscallError::SYS_EFAULT)
+            Err(SyscallError::Efault)
         }
     }
 }

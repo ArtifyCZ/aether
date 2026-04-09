@@ -48,7 +48,7 @@ impl SyscallCommandHandler<SysWriteCommand> for SyscallHandler {
         // stdout or stderr
         if command.fd != 1 && command.fd != 2 {
             // EBADF: Bad File Descriptor
-            return Err((command.task_frame, SyscallError::SYS_EBADF));
+            return Err((command.task_frame, SyscallError::Ebadf));
         }
 
         unsafe {
