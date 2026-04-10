@@ -96,6 +96,7 @@ rust_binary(
         ":init_c",
         "//kernel/api/init:init_contract_rust",
         "//libs/aether_rt",
+        "//libs/aether_sys",
         "@nom",
     ],
 )

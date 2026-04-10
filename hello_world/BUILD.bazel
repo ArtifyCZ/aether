@@ -40,5 +40,6 @@ rust_binary(
     ],
     deps = [
         "//libs/aether_rt",
+        "//libs/aether_sys",
     ],
 )
