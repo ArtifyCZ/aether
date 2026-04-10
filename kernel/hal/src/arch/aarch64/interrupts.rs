@@ -167,3 +167,16 @@ unsafe extern "C" fn handle_fiq_exception(frame: *mut InterruptFrame) {
 unsafe extern "C" fn handle_serror_exception(frame: *mut InterruptFrame) {
     todo!()
 }
+
+/// Returns `(VBAR_EL1 current value, expected exception_vector_table address)`.
+///
+/// The two values should be equal after a correct `interrupts_init()` call.
+/// Used by kernel self-tests to verify the exception vector table has been installed.
+pub unsafe fn read_vector_table_info() -> (usize, usize) {
+    let vbar: usize;
+    unsafe {
+        core::arch::asm!("mrs {}, vbar_el1", out(reg) vbar);
+    }
+    let expected = unsafe { core::ptr::addr_of!(exception_vector_table) as usize };
+    (vbar, expected)
+}

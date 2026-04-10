@@ -23,6 +23,7 @@ pub mod emergency_console {
 pub mod interrupts {
     pub(crate) use super::implementation::interrupts::InterruptFrame;
     pub use super::implementation::interrupts::init;
+    pub use super::implementation::interrupts::read_vector_table_info;
 }
 
 pub mod mmu {

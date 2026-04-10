@@ -130,4 +130,10 @@ impl PhysicalMemoryManager {
 
         Ok(PhysicalPageFrame::new(page_frame)?)
     }
+
+    pub unsafe fn free_frame(frame: PhysicalPageFrame) {
+        unsafe {
+            pmm_free_frame(frame.inner());
+        }
+    }
 }

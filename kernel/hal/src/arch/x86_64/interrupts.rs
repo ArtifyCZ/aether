@@ -225,3 +225,23 @@ unsafe extern "C" fn x86_64_interrupt_dispatcher(frame: *mut InterruptFrame) -> 
 
     return_frame as usize
 }
+
+/// Returns `(IDT base address, IDT limit)` read directly from the CPU via `sidt`.
+///
+/// The limit for a fully-populated 256-entry IDT is 4095 (256 × 16 − 1).
+/// Used by kernel self-tests to verify the IDT has been loaded correctly.
+pub unsafe fn read_vector_table_info() -> (usize, usize) {
+    #[repr(C, packed)]
+    struct IdtDescriptor {
+        limit: u16,
+        base: u64,
+    }
+    let mut desc = IdtDescriptor { limit: 0, base: 0 };
+    unsafe {
+        core::arch::asm!("sidt [{}]", in(reg) &mut desc);
+    }
+    // Use unaligned reads to avoid UB on packed-struct fields.
+    let base = unsafe { core::ptr::addr_of!(desc.base).read_unaligned() } as usize;
+    let limit = unsafe { core::ptr::addr_of!(desc.limit).read_unaligned() } as usize;
+    (base, limit)
+}

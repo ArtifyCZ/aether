@@ -11,6 +11,7 @@ mod interrupt_safe_spin_lock;
 mod logging;
 mod platform;
 mod scheduler;
+mod self_tests;
 mod spin_lock;
 mod syscall_handler;
 mod tarball_parsing;
@@ -89,6 +90,9 @@ pub fn main(
         switch_to_paged_allocator(&raw const PAGED_ALLOCATOR);
         println!("Switched to paged allocator!");
 
+        // ── Early self-tests: PMM, VMM, interrupt vector table setup ──────────
+        self_tests::run_early();
+
         println!("Hello from Rust!");
         let registry = TaskRegistry::new();
         println!("Foo1");
@@ -98,14 +102,21 @@ pub fn main(
 
         let syscall_handler = SyscallHandler::init(scheduler, registry);
         Syscalls::init(|ctx| syscall_handler.handle(ctx));
-        Interrupts::set_irq_handler(|frame, irq| {
-            Interrupts::mask_irq(irq);
-            scheduler.signal_irq(irq, frame)
-        });
         println!("Baz1");
         Ticker::init(100, scheduler);
         Interrupts::enable();
         println!("Qaz1");
+
+        // ── Interrupt delivery self-test ──────────────────────────────────────
+        // Run after the LAPIC/GIC timer is live but before the production IRQ
+        // handler is installed, so the test can temporarily own the handler slot.
+        self_tests::run_interrupt_delivery();
+
+        // Install the production IRQ handler now that delivery has been verified.
+        Interrupts::set_irq_handler(|frame, irq| {
+            Interrupts::mask_irq(irq);
+            scheduler.signal_irq(irq, frame)
+        });
 
         println!("Gez1");
         let elf = Elf::init(hhdm_offset);
@@ -117,3 +128,4 @@ pub fn main(
         kernel_hal::tasks::switch_to(scheduler.start())
     }
 }
+
