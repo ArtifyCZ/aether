@@ -91,60 +91,6 @@ pub unsafe extern "C" fn _entry(boot_info: *mut boot_info) -> ! {
 }
 
 unsafe extern "C" {
-    fn main(boot_info: *mut boot_info);
-}
-
-#[unsafe(no_mangle)]
-unsafe extern "C" fn elf_load(
-    data: *mut c_void,
-    data_length: usize,
-    out_vaddr_entrypoint: *mut usize,
-    out_proc_handle: *mut u64,
-) -> i32 {
-    let data = unsafe { core::slice::from_raw_parts(data.cast(), data_length) };
-    let Ok(elf) = parse_elf_file(data) else {
-        return -1;
-    };
-
-    let (proc_handle, entrypoint) = load_elf_program(&elf);
-
-    unsafe {
-        out_vaddr_entrypoint.write(entrypoint);
-        out_proc_handle.write(proc_handle);
-    }
-
-    0
-}
-
-#[unsafe(no_mangle)]
-unsafe extern "C" fn tar_find_file(
-    tar_addr: *mut c_void,
-    tar_size: usize,
-    filename: *const c_char,
-    file_data: *mut *mut c_void,
-    file_size: *mut usize,
-) {
-    let tar_data: &[u8] = core::slice::from_raw_parts(tar_addr.cast(), tar_size);
-    let filename = unsafe { core::ffi::CStr::from_ptr(filename) };
-
-    let first_byte = tar_data[0];
-
-    let tarball = parse_tarball_archive(tar_data).expect("Failed to parse a tarball!");
-    let file = tarball.iter().find(|h| h.name == filename);
-
-    match file {
-        Some(file) => unsafe {
-            file_data.write(file.file_data.as_ptr() as *mut u8 as *mut c_void);
-            file_size.write(file.size);
-        },
-        None => {
-            file_data.write(null_mut());
-            file_size.write(0);
-        }
-    }
-}
-
-unsafe extern "C" {
     fn serial_init() -> bool;
     fn keyboard_init();
 }
