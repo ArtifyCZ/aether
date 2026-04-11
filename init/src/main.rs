@@ -27,6 +27,21 @@ fn print(message: &str) {
     }
 }
 
+mod legacy_bindings {
+    use super::sys_write;
+
+    #[unsafe(no_mangle)]
+    unsafe extern "C" fn print(message: *const u8) {
+        let mut length = 0;
+        while unsafe { *message.add(length) } != 0 {
+            length += 1;
+        }
+        unsafe {
+            sys_write(1, message, length).unwrap();
+        }
+    }
+}
+
 struct Logger;
 
 impl Write for Logger {
@@ -131,6 +146,7 @@ unsafe extern "C" fn tar_find_file(
 
 unsafe extern "C" {
     fn serial_init() -> bool;
+    fn keyboard_init();
 }
 
 unsafe extern "C" fn second_thread() -> ! {
@@ -176,9 +192,52 @@ fn rmain(boot_info: *mut boot_info) -> ! {
     let stack_top = unsafe { stack_base.add(stack_size) };
     unsafe { aether_sys::sys_proc_spawn(0, 0, stack_top, second_thread as *mut u8, 0) }.unwrap();
 
+    println!("Parent is moving on...");
     unsafe {
-        main(boot_info);
+        keyboard_init();
     }
+    println!("Keyboard initialized!");
+
+    let initrd = unsafe {
+        let initrd_start = boot_info.read().initrd_start;
+        let initrd_len = boot_info.read().initrd_size;
+        core::slice::from_raw_parts(initrd_start as *mut u8, initrd_len as usize)
+    };
+    let initrd = parse_tarball_archive(initrd).unwrap();
+    let hello_world_elf = initrd
+        .iter()
+        .find(|file| file.name == c"bin/hello_world")
+        .unwrap();
+    println!("/bin/hello_world found!");
+    let hello_world_elf = parse_elf_file(hello_world_elf.file_data).unwrap();
+    let (hello_world_handle, hello_world_entrypoint) = load_elf_program(&hello_world_elf);
+    let stack_size = 0x4000;
+    let stack_base = unsafe {
+        aether_sys::sys_proc_mmap(
+            hello_world_handle,
+            0x7FFFFFFF8000 as *mut u8,
+            stack_size as *mut u8,
+            aether_sys::SYS_PROT_READ | aether_sys::SYS_PROT_WRITE,
+            0,
+        )
+    }
+    .unwrap();
+    if stack_base.addr() < 0x400000 {
+        panic!("Mmap failed or returned invalid address!");
+    }
+    let stack_top = unsafe { stack_base.add(stack_size) };
+    println!("Spawning hello_world process...");
+    unsafe {
+        aether_sys::sys_proc_spawn(
+            hello_world_handle,
+            0,
+            stack_top,
+            hello_world_entrypoint as *mut u8,
+            0,
+        )
+    }
+    .unwrap();
+    println!("hello_world process spawned!");
 
     loop {}
 }
