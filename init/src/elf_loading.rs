@@ -28,8 +28,8 @@ pub fn load_elf_program(elf: &ElfFile<'_>) -> (u64, usize) {
         let memory_chunk = unsafe {
             sys_proc_mmap(
                 proc_handle,
-                page_start as *mut c_void,
-                phdr.memsz as *mut c_void,
+                page_start as *mut u8,
+                phdr.memsz as *mut u8,
                 0x01 | 0x02,
                 0x01,
             )
@@ -46,8 +46,8 @@ pub fn load_elf_program(elf: &ElfFile<'_>) -> (u64, usize) {
             );
             sys_proc_mprot(
                 proc_handle,
-                page_start as *mut c_void,
-                phdr.memsz as *mut c_void,
+                page_start as *mut u8,
+                phdr.memsz as *mut u8,
                 flags,
             )
             .unwrap();

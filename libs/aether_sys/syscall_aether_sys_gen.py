@@ -1,10 +1,22 @@
-from syscall_parser import VALID_SYSCALL_VALUE_TYPES, Constant, SyscallDefinition, SyscallError, SyscallParser, Type
 import sys
+
+from syscall_parser import (
+    VALID_SYSCALL_VALUE_TYPES,
+    Constant,
+    SyscallDefinition,
+    SyscallError,
+    SyscallParser,
+    Type,
+)
+
 
 def main():
     # Retrieve the toml path from the argv
     if len(sys.argv) != 3:
-        print("Usage: python syscall_aether_sys_gen.py <path_to_syscalls.toml> <path_to_errors.toml>", file=sys.stderr)
+        print(
+            "Usage: python syscall_aether_sys_gen.py <path_to_syscalls.toml> <path_to_errors.toml>",
+            file=sys.stderr,
+        )
         sys.exit(1)
         pass
     toml_path = sys.argv[1]
@@ -80,12 +92,18 @@ impl SyscallError {
 }
     """)
 
+    for constant in generated_output.constants:
+        print(constant)
+        pass
+
     print("Generated syscall definitions successfully!", file=sys.stderr)
     pass
 
+
 def snake_case_to_upper_camel_case(snake_str: str) -> str:
-    components = snake_str.split('_')
-    return ''.join(x.title() for x in components)
+    components = snake_str.split("_")
+    return "".join(x.title() for x in components)
+
 
 class SyscallAetherSysAdapter:
     def translate_type(self, type_obj: Type) -> str:
@@ -96,13 +114,15 @@ class SyscallAetherSysAdapter:
             "uint32": "u32",
             "uint64": "u64",
             "int32": "i32",
-            "uptr": "*mut ::core::ffi::c_void",
+            "uptr": "*mut u8",
             "usize": "usize",
             "const uint8*": "*const u8",
         }
 
         for valid_type in VALID_SYSCALL_VALUE_TYPES:
-            assert valid_type in TYPE_TRANSLATION, f"Missing translation for type: {valid_type}"
+            assert valid_type in TYPE_TRANSLATION, (
+                f"Missing translation for type: {valid_type}"
+            )
             pass
 
         return TYPE_TRANSLATION[type_obj.name]
@@ -111,7 +131,9 @@ class SyscallAetherSysAdapter:
         return_type = self.translate_type(syscall.return_type)
         name = syscall.name.lower()
 
-        fn_args = ", ".join([f"{arg.name}: {self.translate_type(arg.type)}" for arg in syscall.args])
+        fn_args = ", ".join(
+            [f"{arg.name}: {self.translate_type(arg.type)}" for arg in syscall.args]
+        )
 
         body_args = ", ".join([f"({arg.name} as u64)" for arg in syscall.args])
         if len(syscall.args) == 0:
@@ -147,7 +169,7 @@ pub unsafe fn sys_{name}({fn_args}) -> Result<{return_type}, SyscallError> {{
         type = self.translate_type(constant.type)
         return f"pub const {name}: {type} = {value};"
 
-    def render_error(self, error: SyscallError) -> str:
+    def render_error(self, error: SyscallError) -> list[str]:
         name = snake_case_to_upper_camel_case(error.name)
         code = hex(error.code)
         message = error.message
@@ -155,6 +177,7 @@ pub unsafe fn sys_{name}({fn_args}) -> Result<{return_type}, SyscallError> {{
             f"    {name} = {code}, // {message}",
             f"{code} => SyscallError::{name},",
         ]
+
 
 if __name__ == "__main__":
     main()
