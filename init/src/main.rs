@@ -129,10 +129,17 @@ unsafe extern "C" fn tar_find_file(
     }
 }
 
+unsafe extern "C" {
+    fn serial_init() -> bool;
+}
+
 fn rmain(boot_info: *mut boot_info) -> ! {
     println!("Hello Rust init world!");
     // @FIXME: support for PIC needed to be able to use formatting
     // println!("Boot info at: {:p}", boot_info);
+    if unsafe { serial_init() } {
+        panic!("Failed to initialize the serial driver");
+    }
 
     unsafe {
         main(boot_info);
