@@ -4,6 +4,7 @@
 extern crate aether_rt;
 extern crate alloc;
 
+use aether_rt::stack_allocator;
 use alloc::boxed::Box;
 use core::arch::asm;
 use core::ffi::{c_char, c_void};
@@ -115,27 +116,17 @@ unsafe extern "C" fn second_thread() -> ! {
 }
 
 fn rmain(boot_info: *mut boot_info) -> ! {
+    unsafe {
+        stack_allocator::init(0x4000);
+    }
+
     println!("Hello Rust init world!");
     // @FIXME: support for PIC needed to be able to use formatting
     // println!("Boot info at: {:p}", boot_info);
     if unsafe { serial_init() } {
         panic!("Failed to initialize the serial driver");
     }
-    let stack_size = 0x4000;
-    let stack_base = unsafe {
-        aether_sys::sys_proc_mmap(
-            0,
-            0x7FFFFFFF8000 as *mut u8,
-            stack_size as *mut u8,
-            aether_sys::SYS_PROT_READ | aether_sys::SYS_PROT_WRITE,
-            0,
-        )
-    }
-    .unwrap();
-    if stack_base.addr() < 0x400000 {
-        panic!("Mmap failed or returned invalid address!");
-    }
-    let stack_top = unsafe { stack_base.add(stack_size) };
+    let stack_top = stack_allocator::allocate(0x4000);
     unsafe { aether_sys::sys_proc_spawn(0, 0, stack_top, second_thread as *mut u8, 0) }.unwrap();
 
     println!("Parent is moving on...");
