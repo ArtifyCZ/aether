@@ -6,7 +6,6 @@ package(default_visibility = ["//visibility:public"])
 cc_library(
     name = "init_c",
     srcs = glob([
-        "src/*.c",
         "include/**/*.h",
         "src/*.h",
     ]) + select({
