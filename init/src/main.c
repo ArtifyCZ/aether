@@ -34,15 +34,6 @@ void rest(void) {
   }
 }
 
-__attribute__((noreturn)) void second_thread(void) {
-  print("Hello from second thread!\n");
-  rest();
-  sys_exit();
-  print("THIS SHOULD NOT HAPPEN!\n");
-  while (1) {
-  }
-}
-
 void spawn_hello_world(const uint64_t proc_handle,
                        const uintptr_t entrypoint_addr) {
   print("Allocating stack...\n");
@@ -78,25 +69,6 @@ void spawn_hello_world(const uint64_t proc_handle,
 }
 
 int main(struct boot_info *boot_info) {
-  const char message[] = "Hello world from user-space!\n";
-  print(message);
-
-  print("Trying to invoke clone syscall...\n");
-  uintptr_t stack_base;
-  if (sys_mmap(0x7FFFFFFF8000, 0x4000, 0, 0, &stack_base)) {
-    print("Failed to allocate stack!\n");
-    while (1)
-      ;
-  }
-  const void *stack_top = (void *)(stack_base + 0x4000);
-  if (stack_base < 0x400000) {
-    // If it returned something tiny like 3, it's an error!
-    print("mmap failed or returned invalid address!\n");
-    while (1)
-      ;
-  }
-
-  sys_clone(0, stack_top, second_thread, NULL);
   print("Parent is moving on...\n");
   keyboard_init();
   print("Keyboard initialized!\n");

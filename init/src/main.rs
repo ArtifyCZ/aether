@@ -133,6 +133,25 @@ unsafe extern "C" {
     fn serial_init() -> bool;
 }
 
+unsafe extern "C" fn second_thread() -> ! {
+    println!("Hello from second thread in Rust!");
+    for j in 0u8..10u8 {
+        for _ in 0..1000000 {
+            // Busy wait
+            core::hint::spin_loop();
+        }
+        let number = [j + b'0', b'\n', 0x00];
+        unsafe {
+            aether_sys::sys_write(1, number.as_ptr(), number.len());
+        }
+    }
+
+    unsafe {
+        aether_sys::sys_exit();
+    }
+    panic!("This should never be reached!");
+}
+
 fn rmain(boot_info: *mut boot_info) -> ! {
     println!("Hello Rust init world!");
     // @FIXME: support for PIC needed to be able to use formatting
@@ -140,6 +159,22 @@ fn rmain(boot_info: *mut boot_info) -> ! {
     if unsafe { serial_init() } {
         panic!("Failed to initialize the serial driver");
     }
+    let stack_size = 0x4000;
+    let stack_base = unsafe {
+        aether_sys::sys_proc_mmap(
+            0,
+            0x7FFFFFFF8000 as *mut u8,
+            stack_size as *mut u8,
+            aether_sys::SYS_PROT_READ | aether_sys::SYS_PROT_WRITE,
+            0,
+        )
+    }
+    .unwrap();
+    if stack_base.addr() < 0x400000 {
+        panic!("Mmap failed or returned invalid address!");
+    }
+    let stack_top = unsafe { stack_base.add(stack_size) };
+    unsafe { aether_sys::sys_proc_spawn(0, 0, stack_top, second_thread as *mut u8, 0) }.unwrap();
 
     unsafe {
         main(boot_info);
