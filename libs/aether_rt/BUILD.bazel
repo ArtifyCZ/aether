@@ -9,5 +9,8 @@ rust_library(
         "@platforms//cpu:aarch64": ["@platforms//cpu:aarch64"],
     }),
     visibility = ["//visibility:public"],
+    deps = [
+        "//libs/aether_sys",
+    ],
     alwayslink = True,
 )

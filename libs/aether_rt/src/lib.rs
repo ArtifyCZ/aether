@@ -4,6 +4,7 @@ extern crate alloc;
 
 mod allocator;
 mod panic;
+pub mod stack_allocator;
 mod start;
 
 #[unsafe(no_mangle)]
