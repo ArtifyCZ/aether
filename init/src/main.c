@@ -78,13 +78,6 @@ void spawn_hello_world(const uint64_t proc_handle,
 }
 
 int main(struct boot_info *boot_info) {
-  if (serial_init()) {
-    const char message[] = "Failed to initialize serial port!\n";
-    sys_write(1, message, sizeof(message));
-    while (1)
-      ;
-  }
-
   const char message[] = "Hello world from user-space!\n";
   print(message);
 
