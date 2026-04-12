@@ -1,7 +1,8 @@
 use core::ffi::CStr;
 use core::str::FromStr;
 
-use crate::elf::Elf;
+use crate::elf_loading::load_elf_program;
+use crate::elf_parsing::parse_elf_file;
 use crate::platform::memory_layout::PAGE_FRAME_SIZE;
 use crate::platform::physical_memory_manager::PhysicalMemoryManager;
 use crate::platform::virtual_address_allocator::VirtualAddressAllocator;
@@ -18,10 +19,11 @@ use kernel_hal::mmu::VirtualMemoryMappingFlags;
 
 fn load_init_into_memory(
     init_elf: &[u8],
-    elf: &Elf,
     init_ctx: &VirtualMemoryManagerContext,
+    hhdm_offset: usize,
 ) -> usize {
-    let entrypoint_vaddr = unsafe { elf.load(init_ctx, init_elf.as_ptr()) }.unwrap();
+    let elf = parse_elf_file(init_elf).unwrap();
+    let entrypoint_vaddr = unsafe { load_elf_program(init_ctx, &elf, hhdm_offset) };
     entrypoint_vaddr
 }
 
@@ -134,7 +136,7 @@ fn allocate_init_stack(init_ctx: &VirtualMemoryManagerContext) -> usize {
     INIT_STACK_TOP_VADDR
 }
 
-pub fn spawn_init_process(init_program_name: &str, elf: &Elf, scheduler: &Scheduler) {
+pub fn spawn_init_process(init_program_name: &str, scheduler: &Scheduler, hhdm_offset: usize) {
     let initrd = unsafe { Modules::find(c"initrd") }.expect("Initrd module not found");
     let initrd_tarball = parse_tarball_archive(initrd).unwrap();
     let init_elf = initrd_tarball
@@ -152,7 +154,7 @@ pub fn spawn_init_process(init_program_name: &str, elf: &Elf, scheduler: &Schedu
         })
         .expect("Could not find the init program in initrd tarball!");
     let init_ctx = unsafe { VirtualMemoryManagerContext::create() };
-    let entrypoint_vaddr = load_init_into_memory(&init_elf.file_data, elf, &init_ctx);
+    let entrypoint_vaddr = load_init_into_memory(init_elf.file_data, &init_ctx, hhdm_offset);
     let (initrd_vaddr, initrd_size) = load_initrd_into_memory(initrd, &init_ctx);
     let stack_top_vaddr = allocate_init_stack(&init_ctx);
     let arg = load_boot_info_into_memory(&init_ctx, initrd_vaddr, initrd_size);
