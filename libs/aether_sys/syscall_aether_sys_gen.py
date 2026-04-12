@@ -58,7 +58,6 @@ unsafe fn do_syscall(syscall_number: u64, arg0: u64, arg1: u64, arg2: u64, arg3:
             in("x2") arg2,
             in("x3") arg3,
             in("x4") arg4,
-            options(preserves_flags),
         );
     }
     if err_code != 0 {
