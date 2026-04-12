@@ -108,9 +108,11 @@ syscalls_raw_handler:
     popq %r11            /* RFLAGS for sysret */
     popq %r8             /* User RSP */
 
-    movw $0x23, %bx
-    movw %bx, %ds
-    movw %bx, %es
+    pushq %rax
+    movw $0x23, %ax
+    movw %ax, %ds
+    movw %ax, %es
+    popq %rax
 
     swapgs
     movq %r8, %rsp

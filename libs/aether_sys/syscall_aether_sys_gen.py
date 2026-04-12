@@ -37,12 +37,7 @@ unsafe fn do_syscall(syscall_number: u64, arg0: u64, arg1: u64, arg2: u64, arg3:
     unsafe {
         #[cfg(target_arch = "x86_64")]
         core::arch::asm!(
-            // We need to preserve rbx ourselves,
-            // as kernel is leaking garbage into it,
-            // and violates the x86_64 System V ABI therefore.
-            "push rbx", // @FIXME: The kernel should preserve rbx
             "syscall",
-            "pop rbx",
             inout("rax") syscall_number => ret,
             inout("rdi") arg0 => _,
             inout("rsi") arg1 => _,
