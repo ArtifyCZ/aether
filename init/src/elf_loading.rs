@@ -4,12 +4,12 @@ use crate::elf_parsing::{ElfFile, PhdrType};
 use aether_sys::{sys_proc_create, sys_proc_mmap, sys_proc_mprot};
 
 fn elf_flags_to_vmm_prot(elf_flags: u32) -> u32 {
-    let mut vmm_flags = 0x01; // PROT_READ
+    let mut vmm_flags = aether_sys::SYS_PROT_READ;
     if elf_flags & 0x02 != 0 {
-        vmm_flags |= 0x02; // PROT_WRITE
+        vmm_flags |= aether_sys::SYS_PROT_WRITE;
     }
     if elf_flags & 0x01 != 0 {
-        vmm_flags |= 0x04; // PROT_EXEC
+        vmm_flags |= aether_sys::SYS_PROT_EXEC;
     }
     vmm_flags
 }
@@ -25,19 +25,19 @@ pub fn load_elf_program(elf: &ElfFile<'_>) -> (u64, usize) {
         let flags = elf_flags_to_vmm_prot(phdr.flags);
         let virt_start = phdr.vaddr;
         let page_start = virt_start & !0xFFF;
+        let page_offset = virt_start & 0xFFF;
         let memory_chunk = unsafe {
             sys_proc_mmap(
                 proc_handle,
                 page_start as *mut u8,
-                phdr.memsz as *mut u8,
-                0x01 | 0x02,
-                0x01,
+                (phdr.memsz + page_offset) as *mut u8,
+                aether_sys::SYS_PROT_READ | aether_sys::SYS_PROT_WRITE,
+                aether_sys::SYS_MMAP_FL_MIRROR,
             )
         }
         .unwrap() as *mut u8;
-        unsafe { core::ptr::write_bytes(memory_chunk, 0, phdr.memsz) };
+        unsafe { core::ptr::write_bytes(memory_chunk.byte_add(page_offset), 0, phdr.memsz) };
 
-        let page_offset = virt_start & 0xFFF;
         unsafe {
             core::ptr::copy_nonoverlapping(
                 phdr.data.as_ptr(),
