@@ -5,7 +5,8 @@ extern crate alloc;
 
 pub mod allocator;
 mod args;
-mod elf;
+mod elf_loading;
+mod elf_parsing;
 mod init_process;
 mod interrupt_safe_spin_lock;
 mod logging;
@@ -42,7 +43,6 @@ unsafe extern "C" {
 }
 
 use crate::args::KernelArgs;
-use crate::elf::Elf;
 use crate::platform::early_console::EarlyConsole;
 use crate::platform::interrupts::Interrupts;
 use crate::platform::modules::Modules;
@@ -108,8 +108,7 @@ pub fn main(
         println!("Qaz1");
 
         println!("Gez1");
-        let elf = Elf::init(hhdm_offset);
-        spawn_init_process(args.init_program, &elf, scheduler);
+        spawn_init_process(args.init_program, scheduler, hhdm_offset as usize);
 
         println!("Disabling early console...");
         logging::disable_early_console();
