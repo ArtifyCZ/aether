@@ -42,11 +42,7 @@ rust_binary(
     edition = "2024",
     rustc_flags = [
         "-C",
-        "link-arg=-Ttext=0x400000",
-        "-C",
         "link-arg=-nostdlib",
-        "-C",
-        "link-arg=-static",
         "-C",
         "link-arg=-zmax-page-size=0x1000",
         "-C",
@@ -54,7 +50,7 @@ rust_binary(
         "-C",
         "link-arg=--gc-sections",
         "-C",
-        "relocation-model=static",
+        "relocation-model=pie",
         "-C",
         "target-feature=-reserve-x18",
         "-C",
@@ -68,7 +64,7 @@ rust_binary(
         "-C",
         "link-arg=--no-undefined",
         "-C",
-        "link-arg=-no-pie",  # Force the linker to NOT produce a Position Independent Executable
+        "link-arg=-pie",  # Force the linker to produce a Position Independent Executable
         "-C",
         "link-arg=-z",  # Pair with next line
         "-C",
@@ -79,10 +75,6 @@ rust_binary(
         "link-arg=-z",
         "-C",
         "link-arg=notext",
-        "-C",
-        "link-arg=-z",
-        "-C",
-        "link-arg=nmagic",  # Disable page alignment of segments
         "-C",
         "link-arg=-z",
         "-C",
