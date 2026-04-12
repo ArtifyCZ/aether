@@ -1,13 +1,16 @@
 use core::arch::naked_asm;
 
+use crate::{process::StartupInfo, stack_allocator};
+
 #[unsafe(no_mangle)]
 #[unsafe(naked)]
-pub unsafe extern "C" fn _start() -> ! {
+pub unsafe extern "C" fn _start(startup_info: *const u8) -> ! {
     #[cfg(target_arch = "x86_64")]
     unsafe {
         naked_asm!(
             // Clear the frame pointer so backtraces stop here
             "xor rbp, rbp",
+            "mov rdi, rdi", // startup_info is already in rdi, but this is for clarity
             // Align the stack to 16 bytes (System V ABI requirement)
             // The kernel gave us a stack top, but we ensure it's aligned
             // before we call into complex Rust code.
@@ -27,6 +30,7 @@ pub unsafe extern "C" fn _start() -> ! {
     #[cfg(target_arch = "aarch64")]
     unsafe {
         naked_asm!(
+            "mov x0, x0", // startup_info is already in x0, but this is for clarity
             "mov x1, sp",
             "and x1, x1, 0xfffffffffffffff0", // Force 16-byte alignment
             "sub x1, x1, #16",
@@ -45,9 +49,14 @@ pub unsafe extern "C" fn _start() -> ! {
 }
 
 unsafe extern "C" {
-    fn main(arg: usize) -> !;
+    fn main() -> !;
 }
 
-unsafe extern "C" fn start(arg: usize) -> ! {
-    unsafe { main(arg) }
+unsafe extern "C" fn start(startup_info: *const u8) -> ! {
+    unsafe {
+        let startup_info = StartupInfo::from_ptr(startup_info).unwrap();
+        stack_allocator::init(startup_info.stack_base);
+
+        main();
+    }
 }

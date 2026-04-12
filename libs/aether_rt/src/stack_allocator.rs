@@ -9,27 +9,7 @@ static NEXT_AVAILABLE_STACK_TOP: AtomicPtr<u8> = AtomicPtr::new(null_mut());
 /// # SAFETY
 ///
 /// Must be called exactly once, during in the init phase of a process.
-///
-/// The stack after this call must be still in the highest page of the initial stack.
-pub unsafe fn init(stack_size: usize) {
-    let highest_stack_page = unsafe {
-        let sp: *mut u8;
-        #[cfg(target_arch = "x86_64")]
-        asm!(
-            "mov {}, rsp",
-            out(reg) sp,
-            options(nomem, nostack),
-        );
-        #[cfg(target_arch = "aarch64")]
-        asm!(
-            "mov {}, sp",
-            out(reg) sp,
-            options(nomem, nostack),
-        );
-        sp.map_addr(|sp| sp & (!0xfff))
-    };
-
-    let stack_base = unsafe { highest_stack_page.byte_sub(stack_size).byte_add(4096) };
+pub unsafe fn init(stack_base: *mut u8) {
     let next_available_stack_top = unsafe { stack_base.byte_sub(4096) }; // Empty stack guard page
     assert_eq!(
         next_available_stack_top.addr() % 4096,

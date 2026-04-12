@@ -31,7 +31,7 @@ macro_rules! println {
 }
 
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn main(ipc_base: usize) {
+pub unsafe extern "C" fn main() {
     unsafe {
         // @FIXME: For some reason, with the println it crashes on aarch64.
         #[cfg(not(target_arch = "aarch64"))]

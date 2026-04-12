@@ -4,6 +4,7 @@
 extern crate aether_rt;
 extern crate alloc;
 
+use aether_rt::process::StartupInfo;
 use aether_rt::stack_allocator;
 use alloc::boxed::Box;
 use core::arch::asm;
@@ -19,6 +20,7 @@ use aether_sys::sys_write;
 
 mod elf_loading;
 mod elf_parsing;
+mod entry;
 mod tarball_parsing;
 
 fn print(message: &str) {
@@ -60,37 +62,6 @@ macro_rules! println {
     });
 }
 
-#[unsafe(no_mangle)]
-#[unsafe(naked)] // CRITICAL: No compiler prologue/epilogue
-pub unsafe extern "C" fn _entry(boot_info: *mut boot_info) -> ! {
-    #[cfg(target_arch = "x86_64")]
-    core::arch::naked_asm!(
-        "xor rbp, rbp",      // Clear frame pointer for clean backtrace
-        "mov rdi, rdi",      // boot_info is already in rdi, but this is for clarity
-        "and rsp, -16",      // Align stack to 16 bytes
-        "sub rsp, 8",        // Standard ABI: stack should be (16n + 8) at function entry
-                             // (because the 'call' instruction pushes an 8-byte return address)
-        "call {rmain}",
-        "1: pause",
-        "jmp 1b",
-        rmain = sym rmain,
-    );
-
-    #[cfg(target_arch = "aarch64")]
-    core::arch::naked_asm!(
-        "mov x29, #0",
-        "mov x30, #0",
-        "mov x1, sp",
-        "and x1, x1, #0xfffffffffffffff0",
-        "sub x1, x1, #16",
-        "mov sp, x1",
-        "bl {rmain}",
-        "1: wfe",
-        "b 1b",
-        rmain = sym rmain,
-    );
-}
-
 unsafe extern "C" {
     fn serial_init() -> bool;
     fn keyboard_init();
@@ -115,11 +86,13 @@ unsafe extern "C" fn second_thread() -> ! {
     panic!("This should never be reached!");
 }
 
-fn rmain(boot_info: *mut boot_info) -> ! {
-    unsafe {
-        stack_allocator::init(0x4000);
-    }
+#[unsafe(no_mangle)]
+unsafe extern "C" fn main() -> ! {
+    let boot_info = entry::get_boot_info_ptr();
+    rmain(boot_info)
+}
 
+fn rmain(boot_info: *mut boot_info) -> ! {
     println!("Hello Rust init world!");
     // @FIXME: support for PIC needed to be able to use formatting
     // println!("Boot info at: {:p}", boot_info);
@@ -162,6 +135,24 @@ fn rmain(boot_info: *mut boot_info) -> ! {
     if stack_base.addr() < 0x400000 {
         panic!("Mmap failed or returned invalid address!");
     }
+    let startup_info_addr = 0x7FFFFFFF9000 as *mut StartupInfo;
+    let startup_info_ptr: *mut StartupInfo = unsafe {
+        aether_sys::sys_proc_mmap(
+            hello_world_handle,
+            startup_info_addr.cast(),
+            size_of::<StartupInfo>() as *mut u8,
+            aether_sys::SYS_PROT_READ | aether_sys::SYS_PROT_WRITE,
+            aether_sys::SYS_MMAP_FL_MIRROR,
+        )
+    }
+    .unwrap()
+    .cast();
+    let startup_info = StartupInfo {
+        magic: StartupInfo::MAGIC,
+        version: 1,
+        stack_base,
+    };
+    unsafe { startup_info_ptr.write(startup_info) };
     let stack_top = unsafe { stack_base.add(stack_size) };
     println!("Spawning hello_world process...");
     unsafe {
@@ -170,7 +161,7 @@ fn rmain(boot_info: *mut boot_info) -> ! {
             0,
             stack_top,
             hello_world_entrypoint as *mut u8,
-            0,
+            startup_info_addr as u64,
         )
     }
     .unwrap();
