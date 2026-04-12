@@ -52,7 +52,7 @@ def _impl(ctx):
         "-mgeneral-regs-only",
         "-mno-red-zone",
         "-fno-lto",
-        "-fno-PIC",
+        "-fPIC",
         "-ffunction-sections",
         "-fdata-sections",
     ]
