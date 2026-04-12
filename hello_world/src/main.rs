@@ -34,6 +34,7 @@ macro_rules! println {
 pub unsafe extern "C" fn main() {
     unsafe {
         // @FIXME: For some reason, with the println it crashes on aarch64.
+        println!("Hello world {} from hello_world binary!", 42);
         #[cfg(not(target_arch = "aarch64"))]
         println!("Hello world from hello_world binary!");
         #[cfg(target_arch = "aarch64")]

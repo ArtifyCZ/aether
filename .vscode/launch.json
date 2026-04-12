@@ -17,8 +17,11 @@
             "type": "lldb-dap",
             "request": "attach",
             "program": "${workspaceFolder}/bazel-bin/init/init",
-            "gdb-remote-port": 1234,
-            "gdb-remote-hostname": "127.0.0.1",
+            "attachCommands": [
+                "platform select remote-gdb-server",
+                "gdb-remote localhost:1234",
+                "target modules load --file ${workspaceFolder}/bazel-bin/init/init --slide 0x55550000",
+            ],
         },
         {
             "name": "Debug hello_world in Qemu",

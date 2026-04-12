@@ -30,20 +30,29 @@ def main():
 #![allow(dead_code)]\n
     """)
     print("""
+#[inline(always)]
 unsafe fn do_syscall(syscall_number: u64, arg0: u64, arg1: u64, arg2: u64, arg3: u64, arg4: u64) -> Result<u64, SyscallError> {
-    let ret: u64;
-    let err_code: u64;
+    let mut ret: u64 = 0;
+    let mut err_code: u64 = 0;
     unsafe {
         #[cfg(target_arch = "x86_64")]
         core::arch::asm!(
+            // We need to preserve rbx ourselves,
+            // as kernel is leaking garbage into it,
+            // and violates the x86_64 System V ABI therefore.
+            "push rbx", // @FIXME: The kernel should preserve rbx
             "syscall",
+            "pop rbx",
             inout("rax") syscall_number => ret,
-            in("rdi") arg0,
-            in("rsi") arg1,
+            inout("rdi") arg0 => _,
+            inout("rsi") arg1 => _,
             inout("rdx") arg2 => err_code,
-            in("r10") arg3,
-            in("r8") arg4,
-            options(nostack, preserves_flags),
+            inout("r10") arg3 => _,
+            inout("r8") arg4 => _,
+            // clobbers
+            out("rcx") _,
+            out("r9") _,
+            out("r11") _,
         );
         #[cfg(target_arch = "aarch64")]
         core::arch::asm!(
@@ -54,7 +63,7 @@ unsafe fn do_syscall(syscall_number: u64, arg0: u64, arg1: u64, arg2: u64, arg3:
             in("x2") arg2,
             in("x3") arg3,
             in("x4") arg4,
-            options(nostack, preserves_flags),
+            options(preserves_flags),
         );
     }
     if err_code != 0 {
