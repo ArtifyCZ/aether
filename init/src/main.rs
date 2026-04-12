@@ -95,7 +95,7 @@ unsafe extern "C" fn main() -> ! {
 fn rmain(boot_info: *mut boot_info) -> ! {
     println!("Hello Rust init world!");
     // @FIXME: support for PIC needed to be able to use formatting
-    // println!("Boot info at: {:p}", boot_info);
+    println!("Boot info at: {:p}", boot_info);
     if unsafe { serial_init() } {
         panic!("Failed to initialize the serial driver");
     }
