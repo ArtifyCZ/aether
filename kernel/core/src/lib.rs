@@ -64,7 +64,6 @@ pub fn main(
     cmdline: &str,
     hhdm_offset: u64,
     memmap: *mut kernel_bindings_gen::limine_memmap_response,
-    framebuffer: *mut kernel_bindings_gen::limine_framebuffer,
     rsdp_address: u64,
     switch_to_paged_allocator: impl FnOnce(*const allocator::Allocator),
     boot_info: impl BootInfo,
@@ -81,7 +80,7 @@ pub fn main(
         println!("\nEarly console initialized!\n");
         Modules::init(boot_info.get_modules());
         Platform::init(rsdp_address);
-        Terminal::init(NonNull::new(framebuffer).unwrap());
+        Terminal::init(boot_info.get_framebuffer().unwrap());
         println!("Terminal initialized!");
         let args = KernelArgs::parse(cmdline);
         println!("Cmdline: {:?}", args);

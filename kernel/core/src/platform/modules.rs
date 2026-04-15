@@ -10,7 +10,7 @@ pub struct Modules;
 static mut MODULES: Option<Vec<BootModule>> = None;
 
 impl Modules {
-    pub unsafe fn init(modules: impl Iterator<Item = BootModule>) {
+    pub unsafe fn init(modules: impl Iterator<Item = BootModule<'static>>) {
         unsafe {
             let modules = modules.collect();
             MODULES = Some(modules);

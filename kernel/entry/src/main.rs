@@ -1,6 +1,8 @@
 #![no_std]
 #![no_main]
 
+use core::ptr::NonNull;
+
 use crate::early_allocator::EarlyAllocator;
 use crate::proxy_allocator::ProxyAllocator;
 use kernel_core::boot::BootInfo;
@@ -67,7 +69,7 @@ static EARLY_ALLOCATOR: EarlyAllocator = unsafe { EarlyAllocator::init() };
 struct LimineBootInfo;
 
 impl BootInfo for LimineBootInfo {
-    fn get_modules(&self) -> impl Iterator<Item = kernel_core::boot::BootModule> {
+    fn get_modules(&self) -> impl Iterator<Item = kernel_core::boot::BootModule<'static>> {
         let module_response = unsafe { MODULE_REQUEST.get_response().unwrap() };
         let modules = module_response.modules();
         modules.iter().map(|module| kernel_core::boot::BootModule {
@@ -77,16 +79,22 @@ impl BootInfo for LimineBootInfo {
             },
         })
     }
+
+    fn get_framebuffer(&self) -> Option<kernel_core::boot::BootFramebuffer> {
+        let framebuffer_response = FRAMEBUFFER_REQUEST.get_response()?;
+        let framebuffer = framebuffer_response.framebuffers().next()?;
+        Some(kernel_core::boot::BootFramebuffer {
+            address: NonNull::new(framebuffer.addr())?,
+            width: framebuffer.width() as usize,
+            height: framebuffer.height() as usize,
+            pitch: framebuffer.pitch() as usize,
+            bpp: framebuffer.bpp() as usize,
+        })
+    }
 }
 
 unsafe fn main() -> ! {
     assert!(BASE_REVISION.is_supported());
-
-    let framebuffer_response: *mut kernel_bindings_gen::limine_framebuffer_response =
-        (FRAMEBUFFER_REQUEST.get_response().unwrap() as *const _
-            as *mut limine::response::FramebufferResponse)
-            .cast();
-    let framebuffer = unsafe { framebuffer_response.read().framebuffers.read() };
 
     unsafe {
         PROXY_ALLOCATOR.switch_to_early_allocator(&raw const EARLY_ALLOCATOR);
@@ -101,7 +109,6 @@ unsafe fn main() -> ! {
         (MEMMAP_REQUEST.get_response().unwrap() as *const _
             as *mut limine::response::MemoryMapResponse)
             .cast(),
-        framebuffer,
         RSDP_REQUEST.get_response().unwrap().address() as u64,
         |paged_allocator| unsafe {
             PROXY_ALLOCATOR.switch_to_paged_allocator(paged_allocator);
