@@ -3,8 +3,13 @@
 
 use crate::early_allocator::EarlyAllocator;
 use crate::proxy_allocator::ProxyAllocator;
+use kernel_core::boot::BootInfo;
 use limine::BaseRevision;
-use limine::request::{ExecutableAddressRequest, ExecutableCmdlineRequest, FramebufferRequest, HhdmRequest, MemoryMapRequest, ModuleRequest, RequestsEndMarker, RequestsStartMarker, RsdpRequest, StackSizeRequest};
+use limine::request::{
+    ExecutableAddressRequest, ExecutableCmdlineRequest, FramebufferRequest, HhdmRequest,
+    MemoryMapRequest, ModuleRequest, RequestsEndMarker, RequestsStartMarker, RsdpRequest,
+    StackSizeRequest,
+};
 
 mod early_allocator;
 mod proxy_allocator;
@@ -59,6 +64,21 @@ static PROXY_ALLOCATOR: ProxyAllocator = unsafe { ProxyAllocator::init() };
 
 static EARLY_ALLOCATOR: EarlyAllocator = unsafe { EarlyAllocator::init() };
 
+struct LimineBootInfo;
+
+impl BootInfo for LimineBootInfo {
+    fn get_modules(&self) -> impl Iterator<Item = kernel_core::boot::BootModule> {
+        let module_response = unsafe { MODULE_REQUEST.get_response().unwrap() };
+        let modules = module_response.modules();
+        modules.iter().map(|module| kernel_core::boot::BootModule {
+            name: module.string(),
+            data: unsafe {
+                core::slice::from_raw_parts(module.addr() as *const u8, module.size() as usize)
+            },
+        })
+    }
+}
+
 unsafe fn main() -> ! {
     assert!(BASE_REVISION.is_supported());
 
@@ -82,12 +102,10 @@ unsafe fn main() -> ! {
             as *mut limine::response::MemoryMapResponse)
             .cast(),
         framebuffer,
-        (MODULE_REQUEST.get_response().unwrap() as *const _
-            as *mut limine::response::ModuleResponse)
-            .cast(),
         RSDP_REQUEST.get_response().unwrap().address() as u64,
         |paged_allocator| unsafe {
             PROXY_ALLOCATOR.switch_to_paged_allocator(paged_allocator);
         },
+        LimineBootInfo,
     )
 }
