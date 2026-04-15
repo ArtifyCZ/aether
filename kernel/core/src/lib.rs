@@ -5,6 +5,7 @@ extern crate alloc;
 
 pub mod allocator;
 mod args;
+pub mod boot;
 mod elf_loading;
 mod elf_parsing;
 mod init_process;
@@ -19,6 +20,7 @@ mod task_id;
 mod task_registry;
 mod ticker;
 
+use crate::boot::BootInfo;
 use crate::init_process::spawn_init_process;
 use crate::platform::platform::Platform;
 use core::ptr::NonNull;
@@ -63,9 +65,9 @@ pub fn main(
     hhdm_offset: u64,
     memmap: *mut kernel_bindings_gen::limine_memmap_response,
     framebuffer: *mut kernel_bindings_gen::limine_framebuffer,
-    modules: *mut kernel_bindings_gen::limine_module_response,
     rsdp_address: u64,
     switch_to_paged_allocator: impl FnOnce(*const allocator::Allocator),
+    boot_info: impl BootInfo,
 ) -> ! {
     unsafe {
         VirtualAddressAllocator::init();
@@ -77,7 +79,7 @@ pub fn main(
         const SERIAL_BASE: usize = 0x9000000;
         EarlyConsole::init(SERIAL_BASE);
         println!("\nEarly console initialized!\n");
-        Modules::init(modules);
+        Modules::init(boot_info.get_modules());
         Platform::init(rsdp_address);
         Terminal::init(NonNull::new(framebuffer).unwrap());
         println!("Terminal initialized!");
