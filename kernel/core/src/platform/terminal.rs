@@ -1,9 +1,9 @@
+use crate::boot::BootFramebuffer;
 use crate::interrupt_safe_spin_lock::InterruptSafeSpinLock;
 use crate::platform::modules::Modules;
 use crate::println;
 use core::ptr::NonNull;
 use eclipse_framebuffer::ScrollingTextRenderer;
-use kernel_bindings_gen::limine_framebuffer;
 
 static TERMINAL: InterruptSafeSpinLock<Option<Terminal>> = InterruptSafeSpinLock::new(None);
 
@@ -14,16 +14,15 @@ pub struct Terminal {
 // @TODO: remove the dependency on the `eclipse_framebuffer` crate
 
 impl Terminal {
-    pub unsafe fn init(framebuffer: NonNull<limine_framebuffer>) {
+    pub unsafe fn init(framebuffer: BootFramebuffer) {
         println!("Initializing terminal...");
-        let framebuffer = unsafe { framebuffer.as_ref() };
         let font = unsafe { Modules::find(c"kernel-font.psf") }.unwrap();
         ScrollingTextRenderer::init(
-            framebuffer.address.cast(),
-            framebuffer.width as usize,
-            framebuffer.height as usize,
-            framebuffer.pitch as usize,
-            framebuffer.bpp as usize,
+            framebuffer.address.as_ptr(),
+            framebuffer.width,
+            framebuffer.height,
+            framebuffer.pitch,
+            framebuffer.bpp,
             font,
         );
         let renderer = ScrollingTextRenderer::get();
