@@ -33,12 +33,14 @@ all: $(DIST)/$(diskImageBasename)
 ifneq ($(ARCH),host)
 $(BUILD)/host/%: FORCE
 	@echo "  RECURSE MAKE HOST $@"
-	@$(MAKE) -C $(SRCTREE) $@ ARCH=host
+	@$(MAKE) $@ ARCH=host
 endif
 
 include $(SRCTREE)/3rdparty/package.mk
 include $(SRCTREE)/image/image.mk
+include $(SRCTREE)/mk/compile_commands.json.mk
 include $(SRCTREE)/mk/qemu.mk
+include $(SRCTREE)/mk/rust-project.json.mk
 
 %/: # A pattern rule to create directories
 	@mkdir -p $@
@@ -48,5 +50,9 @@ clean:
 	@rm -rf $(BUILD)
 	@echo "  CLEAN    $(DIST)"
 	@rm -rf $(DIST)
+	@echo "  CLEAN    compile_commands.json"
+	@rm -rf compile_commands.json
+	@echo "  CLEAN    rust-project.json"
+	@rm -rf rust-project.json
 
 .PHONY: $(PHONY)

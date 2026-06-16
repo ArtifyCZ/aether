@@ -4,24 +4,21 @@
         {
             "label": "Sync Project (C + Rust)",
             "type": "shell",
-            "command": "bazel run //tooling/sync_ide --config ${input:targetArch}",
+            "command": "make compile_commands.json rust-project.json ARCH=${input:targetArch}",
             "problemMatcher": [],
             "group": {
                 "kind": "build",
-                "isDefault": true
-            }
-        }
+                "isDefault": true,
+            },
+        },
     ],
     "inputs": [
         {
             "id": "targetArch",
             "type": "pickString",
             "description": "Which architecture are you targeting?",
-            "options": [
-                "x86_64",
-                "aarch64"
-            ],
-            "default": "x86_64"
-        }
-    ]
+            "options": ["x86_64", "aarch64"],
+            "default": "x86_64",
+        },
+    ],
 }

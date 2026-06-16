@@ -4,7 +4,7 @@
 [
     {
         "label": "Sync Project for x86_64 (C + Rust)",
-        "command": "bazel run //tooling/sync_ide --config x86_64",
+        "command": "make compile_commands.json rust-project.json ARCH=x86_64",
         //"args": [],
         // Env overrides for the command, will be appended to the terminal's environment from the settings.
         "env": { "foo": "bar" },
