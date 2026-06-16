@@ -1,13 +1,11 @@
 this_makefile := $(abspath $(lastword $(MAKEFILE_LIST)))
 
-export O ?= $(CURDIR)
 export ARCH ?= x86_64
-export DIST ?= $(O)/dist
 
-export CURDIR := $(abspath .)
 export SRCTREE := $(abspath $(dir $(this_makefile)))
-export BUILD := $(O)/build
+export BUILD := build
 export OUT := $(BUILD)/$(ARCH)
+export DIST := dist
 
 PHONY :=
 __default: all
