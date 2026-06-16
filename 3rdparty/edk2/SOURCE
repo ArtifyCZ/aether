@@ -1,0 +1,12 @@
+edk2-aarch64-code.fd.bz2
+
+Vendored from the QEMU source tree:
+  https://github.com/qemu/qemu/blob/v10.2.1/pc-bios/edk2-aarch64-code.fd.bz2
+  commit 2d3df8abca265c9bcc9e438d691d561592060998 (tag v10.2.1)
+
+QEMU itself only redistributes this prebuilt binary; the upstream source is the
+edk2 (TianoCore) project. See QEMU's pc-bios/README and pc-bios/edk2-licenses.txt
+for licensing details.
+
+To update: download the file from the desired QEMU tag at the URL above and
+replace edk2-aarch64-code.fd.bz2.

@@ -1,6 +1,7 @@
 .clwb/
 /bazel-*
 build/
+dist/
 dependencies/
 /external
 local.mk
