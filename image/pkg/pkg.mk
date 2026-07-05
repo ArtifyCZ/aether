@@ -12,19 +12,12 @@ $(OUT)/image/pkg/kernel: FORCE
 	@rm -f $@
 	@cp $(SRCTREE)/bazel-bin/kernel/entry/kernel $@
 
-$(OUT)/image/pkg/initrd.tar: FORCE
-	@echo "  BAZEL    //image/initrd"
-	@cd $(SRCTREE) && bazel build //image/initrd --config=$(ARCH)
-	@mkdir -p $(@D)
-	@rm -f $@
-	@cp $(SRCTREE)/bazel-bin/image/initrd/initrd.tar $@
-
 imagePkgAdditionalFiles := \
     $(SRCTREE)/image/pkg/boot/Mik_8x16.psf \
     $(SRCTREE)/image/pkg/boot/limine/limine.conf \
     $(addprefix $(limineCache)/,$(limineArtifacts)) \
     $(OUT)/image/pkg/kernel \
-    $(OUT)/image/pkg/initrd.tar
+    $(OUT)/image/initrd/initrd.tar
 
 $(OUT)/image/pkg/aether.tar: $(imagePkgAdditionalFiles)
 	@echo "  PACK    $@"
@@ -39,5 +32,5 @@ $(OUT)/image/pkg/aether.tar: $(imagePkgAdditionalFiles)
 	@cp $(SRCTREE)/image/pkg/boot/Mik_8x16.psf $(imagePkgStagingDir)/boot/
 	@cp $(SRCTREE)/image/pkg/boot/limine/limine.conf $(imagePkgStagingDir)/boot/limine/
 	@cp $(OUT)/image/pkg/kernel $(imagePkgStagingDir)/boot/
-	@cp $(OUT)/image/pkg/initrd.tar $(imagePkgStagingDir)/boot/
-	@tar -cf $@ -C $(imagePkgStagingDir) .
+	@cp $(OUT)/image/initrd/initrd.tar $(imagePkgStagingDir)/boot/
+	@COPYFILE_DISABLE=1 tar --format=ustar -cf $@ -C $(imagePkgStagingDir) EFI boot
