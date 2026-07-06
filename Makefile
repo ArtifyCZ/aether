@@ -6,6 +6,8 @@ export SRCTREE := $(abspath $(dir $(this_makefile)))
 export BUILD := build
 export OUT := $(BUILD)/$(ARCH)
 export DIST := dist
+export SYSROOT := $(OUT)/sysroot
+export PKGS := $(OUT)/packages
 
 PHONY :=
 __default: all
@@ -34,7 +36,7 @@ $(BUILD)/host/%: FORCE
 	@$(MAKE) $@ ARCH=host
 endif
 
-include $(SRCTREE)/3rdparty/package.mk
+include $(SRCTREE)/package.mk
 include $(SRCTREE)/image/image.mk
 include $(SRCTREE)/mk/compile_commands.json.mk
 include $(SRCTREE)/mk/qemu.mk

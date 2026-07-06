@@ -139,6 +139,9 @@ fn allocate_init_stack(init_ctx: &VirtualMemoryManagerContext) -> usize {
 pub fn spawn_init_process(init_program_name: &str, scheduler: &Scheduler, hhdm_offset: usize) {
     let initrd = unsafe { Modules::find(c"initrd") }.expect("Initrd module not found");
     let initrd_tarball = parse_tarball_archive(initrd).unwrap();
+    for h in &initrd_tarball {
+        println!("  INITRD  {}", h.name.to_string_lossy());
+    }
     let init_elf = initrd_tarball
         .iter()
         .find(|h| {
