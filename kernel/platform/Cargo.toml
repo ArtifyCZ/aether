@@ -1,0 +1,12 @@
+[package]
+name = "kernel_bindings_gen"
+edition = "2024"
+
+[lib]
+path = "lib.rs"
+
+[dependencies]
+
+[build-dependencies]
+bindgen = "0.71.0"
+cc = "1.0"

@@ -8,8 +8,9 @@ $(SYSROOT)/boot/kernel: $(PKGS)/kernel/kernel | $(SYSROOT)/boot/
 	rm -f $@
 	cp $< $@
 
+pkgKernelOut := $(OUT)/packages/kernel
+pkgKernelOut := $(abspath $(pkgKernelOut))
+
 $(PKGS)/kernel/kernel: FORCE | $(PKGS)/kernel/
-	@echo "  BAZEL  //kernel"
-	cd $(SRCTREE) && bazel build //kernel --config=$(ARCH)
-	@rm -f $@
-	cp $(SRCTREE)/bazel-bin/kernel/entry/kernel $@
+	@echo "  MAKE  pkg/kernel"
+	$(MAKE) -C $(SRCTREE)/kernel OUT=$(pkgKernelOut) -f build.mk

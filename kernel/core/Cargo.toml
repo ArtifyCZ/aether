@@ -1,0 +1,13 @@
+[package]
+name = "kernel_core"
+edition = "2024"
+
+[dependencies]
+init_contract_rust.workspace = true
+kernel_bindings_gen.workspace = true
+kernel_hal.workspace = true
+syscalls_rust.workspace = true
+
+bitflags.workspace = true
+eclipse_framebuffer.workspace = true
+nom.workspace = true

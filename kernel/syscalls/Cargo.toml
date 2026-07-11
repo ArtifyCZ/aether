@@ -1,0 +1,6 @@
+[package]
+name = "syscalls_rust"
+edition = "2024"
+
+[lib]
+path = "lib.rs"

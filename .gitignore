@@ -12,3 +12,4 @@ rust-project.json
 /.cache/
 /aquery_out.json
 /compile_commands.json
+__pycache__/
