@@ -1,0 +1,13 @@
+[package]
+name = "init"
+edition = "2024"
+
+[dependencies]
+aether_rt.workspace = true
+aether_sys.workspace = true
+init_contract_rust = { path = "../kernel/api/init" }
+
+nom = { version = "8.0.0", default-features = false, features = ["alloc"] }
+
+[build-dependencies]
+cc = "1.0"

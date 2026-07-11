@@ -13,3 +13,4 @@ rust-project.json
 /aquery_out.json
 /compile_commands.json
 __pycache__/
+target/

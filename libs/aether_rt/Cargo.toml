@@ -1,0 +1,6 @@
+[package]
+name = "aether_rt"
+edition = "2024"
+
+[dependencies]
+aether_sys.workspace = true

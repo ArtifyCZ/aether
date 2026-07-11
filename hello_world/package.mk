@@ -8,8 +8,9 @@ $(SYSROOT)/bin/hello_world: $(PKGS)/hello_world/hello_world | $(SYSROOT)/bin/
 	rm -f $@
 	cp $< $@
 
+pkgHelloWorldOut := $(PKGS)/hello_world
+pkgHelloWorldOut := $(abspath $(pkgHelloWorldOut))
+
 $(PKGS)/hello_world/hello_world: FORCE | $(PKGS)/hello_world/
-	@echo "  BAZEL  //hello_world"
-	cd $(SRCTREE) && bazel build //hello_world --config=$(ARCH)
-	@rm -f $@
-	cp $(SRCTREE)/bazel-bin/hello_world/hello_world $@
+	@echo "  MAKE  pkg/hello_world"
+	$(MAKE) -C $(SRCTREE)/hello_world OUT=$(pkgHelloWorldOut) -f build.mk

@@ -2,7 +2,7 @@
 
 #include <stdint.h>
 #include <stddef.h>
-#include "libs/libsyscall/syscalls.h"
+#include "syscall/syscalls.h"
 
 // Private register offsets for the PL011
 #define UART_DR    (0x00 / 4)

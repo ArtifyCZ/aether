@@ -69,7 +69,7 @@ static sys_result_t syscall_raw(const struct syscall_args *args) {
     syscall_raw(&_args); \
 })
 
-#include "libs/libsyscall/syscall_c_stubs.h"
+#include "syscall/syscall_c_stubs.h"
 
 // @TODO: replace all usages and remove this function
 static sys_err_t sys_clone(uint64_t flags, const void *sp, const void *ip, uint64_t *out) {

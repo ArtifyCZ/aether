@@ -8,7 +8,7 @@ $(SYSROOT)/boot/kernel: $(PKGS)/kernel/kernel | $(SYSROOT)/boot/
 	rm -f $@
 	cp $< $@
 
-pkgKernelOut := $(OUT)/packages/kernel
+pkgKernelOut := $(PKGS)/kernel
 pkgKernelOut := $(abspath $(pkgKernelOut))
 
 $(PKGS)/kernel/kernel: FORCE | $(PKGS)/kernel/

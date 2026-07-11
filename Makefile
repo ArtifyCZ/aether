@@ -6,7 +6,7 @@ export SRCTREE := $(abspath $(dir $(this_makefile)))
 export BUILD := build
 export OUT := $(BUILD)/$(ARCH)
 export DIST := dist
-export SYSROOT := $(OUT)/sysroot
+export SYSROOT := $(abspath $(OUT)/sysroot)
 export PKGS := $(OUT)/packages
 
 PHONY :=

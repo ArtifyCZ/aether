@@ -31,11 +31,6 @@ fn main() {
         _ => panic!("Unsupported target architecture: {arch}"),
     };
     cc::Build::new()
-        // .no_default_flags(false)
-        // .flag("-fPIC")
-        // .flag("-ffreestanding")
-        // .flag("-target")
-        // .flag(format!("{}-unknown-none", arch))
         .archiver("llvm-ar")
         .files(asm_files)
         .compile("kernel_platform_asm");

@@ -1,0 +1,6 @@
+[package]
+name = "aether_sys"
+edition = "2024"
+
+[lib]
+path = "lib.rs"

@@ -5,7 +5,7 @@
 #include "stddef.h"
 #include "stdint.h"
 #include "../../../io.x86_64.h"
-#include "libs/libsyscall/syscalls.h"
+#include "syscall/syscalls.h"
 
 #define KEYBOARD_COMMAND_PORT 0x64
 #define KEYBOARD_DATA_PORT 0x60

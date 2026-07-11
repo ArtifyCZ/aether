@@ -1,6 +1,6 @@
 #include "drivers/keyboard/keyboard.h"
 
-#include "libs/libsyscall/syscalls.h"
+#include "syscall/syscalls.h"
 
 #define UART_IRQ 0x01
 

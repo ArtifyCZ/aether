@@ -1,0 +1,12 @@
+[workspace]
+members = [
+    "hello_world",
+    "init",
+    "libs/aether_rt",
+    "libs/aether_sys",
+]
+resolver = "2"
+
+[workspace.dependencies]
+aether_rt = { path = "libs/aether_rt" }
+aether_sys = { path = "libs/aether_sys" }

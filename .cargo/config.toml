@@ -1,0 +1,34 @@
+[build]
+target = "aarch64-unknown-none"
+
+# Rustflags for userspace binaries (init, hello_world) — must match the kernel's
+# ABI expectations: no SSE (kernel doesn't enable OSFXSR/OSXMMEXCPT for user
+# mode), no red zone (kernel doesn't preserve it across interrupt entry), no
+# linker relaxation (loader only applies R_*_RELATIVE relocations, so relaxation
+# into GOT/PLT-style relocs would leave dangling symbols at runtime), plus the
+# usual freestanding link posture. The kernel workspace has its own
+# .cargo/config.toml whose rustflags override these for kernel builds.
+[target.x86_64-unknown-none]
+rustflags = [
+    "-C", "no-redzone",
+    "-C", "target-feature=-sse,-sse2,-sse3,-ssse3,-sse4.1,-sse4.2,-mmx",
+    "-C", "link-arg=-nostdlib",
+    "-C", "link-arg=--no-dynamic-linker",
+    "-C", "link-arg=-zmax-page-size=0x1000",
+    "-C", "link-arg=--no-relax",
+    "-C", "link-arg=-z", "-C", "link-arg=norelro",
+    "-C", "link-arg=-z", "-C", "link-arg=notext",
+    "-C", "link-arg=-z", "-C", "link-arg=nodefaultlib",
+]
+
+[target.aarch64-unknown-none]
+rustflags = [
+    "-C", "target-feature=-reserve-x18",
+    "-C", "link-arg=-nostdlib",
+    "-C", "link-arg=--no-dynamic-linker",
+    "-C", "link-arg=-zmax-page-size=0x1000",
+    "-C", "link-arg=--no-relax",
+    "-C", "link-arg=-z", "-C", "link-arg=norelro",
+    "-C", "link-arg=-z", "-C", "link-arg=notext",
+    "-C", "link-arg=-z", "-C", "link-arg=nodefaultlib",
+]
