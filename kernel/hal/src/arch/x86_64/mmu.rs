@@ -5,11 +5,6 @@ use core::arch::asm;
 static mut KERNEL_CONTEXT: usize = 0;
 static mut HHDM_OFFSET: usize = 0;
 
-#[allow(non_upper_case_globals)]
-#[unsafe(no_mangle)]
-static mut g_kernel_context: kernel_bindings_gen::vmm_context =
-    kernel_bindings_gen::vmm_context { root: 0 };
-
 const X86_ADDR_MASK: usize = 0x000FFFFFFFFFF000;
 
 bitflags! {
@@ -60,7 +55,6 @@ pub unsafe fn init(hhdm_offset: usize) {
             out(reg) cr3,
         );
         KERNEL_CONTEXT = cr3 & X86_ADDR_MASK;
-        g_kernel_context.root = KERNEL_CONTEXT;
 
         // Initialize the whole kernel's root level page directory (all higher-half entries)
         // so that after cloning into other address spaces (for processes), it stays synchronized

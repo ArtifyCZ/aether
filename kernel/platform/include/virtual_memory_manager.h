@@ -21,6 +21,4 @@ struct vmm_context {
     uintptr_t root; // Physical address of L0 (AArch64) or L4 (x86_64)
 };
 
-extern struct vmm_context g_kernel_context;
-
 bool vmm_map_page(const struct vmm_context *context, uintptr_t virt, uintptr_t phys, vmm_flags_t flags);

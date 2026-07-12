@@ -1,14 +1,9 @@
 use crate::mmu::VirtualMemoryMappingFlags;
-use bitflags::{bitflags, Flags};
+use bitflags::bitflags;
 use core::arch::asm;
 
 static mut KERNEL_CONTEXT: usize = 0;
 static mut HHDM_OFFSET: usize = 0;
-
-#[allow(non_upper_case_globals)]
-#[unsafe(no_mangle)]
-static mut g_kernel_context: kernel_bindings_gen::vmm_context =
-    kernel_bindings_gen::vmm_context { root: 0 };
 
 const ATTR_DEVICE_IDX: usize = 0;
 const ATTR_NORMAL_IDX: usize = 1;
@@ -120,14 +115,11 @@ pub unsafe fn init(hhdm_offset: usize) {
         );
 
         KERNEL_CONTEXT = current_root & USERSPACE_PAGE_MASK;
-        g_kernel_context.root = KERNEL_CONTEXT;
     }
 }
 
 pub unsafe fn get_kernel_context() -> usize {
-    unsafe {
-        KERNEL_CONTEXT
-    }
+    unsafe { KERNEL_CONTEXT }
 }
 
 pub unsafe fn create_context() -> usize {
