@@ -14,7 +14,7 @@
     "lsp": {
         "rust-analyzer": {
             "initialization_options": {
-                "rust-analyzer.linkedProjects": ["rust-project.json"],
+                "linkedProjects": ["Cargo.toml", "kernel/Cargo.toml"],
             },
             "enable_lsp_tasks": true,
         },
