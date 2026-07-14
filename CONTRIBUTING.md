@@ -33,11 +33,6 @@ There are no branch naming requirements for personal forks.
   format on save.
 - **C/C++:** follow the `clang-format` style defined in `.clangd` at the repo
   root. Format with `clang-format -i <file>` or configure your editor.
-- **Bazel:** format `BUILD.bazel` / `MODULE.bazel` files with
-  [`buildifier`](https://github.com/bazelbuild/buildtools):
-  ```sh
-  buildifier --mode=fix --lint=fix -r .
-  ```
 
 ## Commit Messages
 

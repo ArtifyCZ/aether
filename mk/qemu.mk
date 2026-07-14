@@ -8,4 +8,4 @@ endif
 
 PHONY += qemu
 qemu: $(OUT)/$(diskImageBasename) $(if $(filter aarch64,$(ARCH)),$(qemuBios))
-	/usr/bin/env bash $(SRCTREE)/tooling/qemu/run_qemu.sh $< $(ARCH) $(qemuBios)
+	/usr/bin/env bash $(SRCTREE)/run_qemu.sh $< $(ARCH) $(qemuBios)

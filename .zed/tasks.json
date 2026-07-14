@@ -53,7 +53,7 @@
     },
     {
         "label": "Qemu run x86_64",
-        "command": "bazel run //:qemu --config x86_64",
+        "command": "make qemu ARCH=x86_64",
         "use_new_terminal": false,
         "allow_concurrent_runs": false,
         "reveal": "always",
@@ -65,7 +65,7 @@
     },
     {
         "label": "Qemu run aarch64",
-        "command": "bazel run //:qemu --config aarch64",
+        "command": "make qemu ARCH=aarch64",
         "use_new_terminal": false,
         "allow_concurrent_runs": false,
         "reveal": "always",
@@ -77,19 +77,7 @@
     },
     {
         "label": "Qemu debug aarch64",
-        "command": "bazel run //tooling/qemu:debug --config aarch64 -c dbg",
-        "use_new_terminal": false,
-        "allow_concurrent_runs": false,
-        "reveal": "always",
-        "reveal_target": "dock",
-        "hide": "on_success",
-        "shell": "system",
-        "show_summary": false,
-        "show_command": true,
-    },
-    {
-        "label": "Reformat Bazel",
-        "command": "buildifier --mode=fix --lint=fix -r .",
+        "command": "make qemu ARCH=aarch64 DEBUG=1",
         "use_new_terminal": false,
         "allow_concurrent_runs": false,
         "reveal": "always",

@@ -64,15 +64,4 @@ All possible error codes for the current syscall set are defined in
    new file `sys_my_syscall.rs` and implement the logic. Register the handler
    in `kernel/core/src/syscall_handler/mod.rs`.
 
-3. **Regenerate bindings** by building the relevant targets:
-
-   ```sh
-   bazel build //libs/libsyscall //libs/aether_sys --config x86_64
-   ```
-
-   The generated C header is written to
-   `bazel-bin/libs/libsyscall/syscalls.h` and the Rust crate sources to
-   `bazel-bin/libs/aether_sys/`.
-
-4. **Add error codes** (if needed) in `kernel/api/syscalls/errors.toml`.
-
+3. **Add error codes** (if needed) in `kernel/api/syscalls/errors.toml`.

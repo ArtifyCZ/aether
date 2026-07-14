@@ -8,7 +8,7 @@
             "name": "Debug kernel in Qemu",
             "type": "lldb-dap",
             "request": "attach",
-            "program": "${workspaceFolder}/bazel-bin/kernel/entry/kernel",
+            // "program": "", TODO: add program path
             "gdb-remote-port": 1234,
             "gdb-remote-hostname": "127.0.0.1",
         },
@@ -16,18 +16,18 @@
             "name": "Debug init in Qemu",
             "type": "lldb-dap",
             "request": "attach",
-            "program": "${workspaceFolder}/bazel-bin/init/init",
+            // "program": "", TODO: add program path
             "attachCommands": [
                 "platform select remote-gdb-server",
                 "gdb-remote localhost:1234",
-                "target modules load --file ${workspaceFolder}/bazel-bin/init/init --slide 0x55550000",
+                // "target modules load --file dummy_path --slide 0x55550000", TODO: add program path
             ],
         },
         {
             "name": "Debug hello_world in Qemu",
             "type": "lldb-dap",
             "request": "attach",
-            "program": "${workspaceFolder}/bazel-bin/hello_world/hello_world",
+            // "program": "", TODO: add program path
             "gdb-remote-port": 1234,
             "gdb-remote-hostname": "127.0.0.1",
         },
