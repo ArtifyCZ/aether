@@ -6,6 +6,11 @@ Interrupt Requests (IRQs) are used to identify hardware events.
 They are represented as `uint8_t` values.
 Userspace programs (such as a driver) can use syscalls to wait for an IRQ.
 
+Before waiting for an IRQ, a userspace task must unmask it by calling
+`irq_unmask(irq)`. Afterwards, `irq_wait(irq)` blocks the task until the
+hardware raises the interrupt. See [syscalls.md](syscalls.md) for the full
+syscall reference.
+
 ## x86_64
 
 Since APIC is exclusively in use (meaning no legacy PIC),
