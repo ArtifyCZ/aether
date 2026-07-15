@@ -58,22 +58,6 @@ unsafe extern "C" fn pmm_alloc_frame() -> usize {
     unsafe { pop_frame() }
 }
 
-#[unsafe(no_mangle)]
-unsafe extern "C" fn pmm_free_frame(frame: usize) -> bool {
-    unsafe {
-        if frame == 0 {
-            panic!("Attempted to free null page frame!");
-        }
-
-        if frame % PAGE_FRAME_SIZE != 0 {
-            panic!("Attempted to free non-page-aligned page frame!");
-        }
-
-        push_frame(frame);
-        true
-    }
-}
-
 impl PhysicalMemoryManager {
     pub unsafe fn init(memmap: *mut limine_memmap_response) {
         let memmap = NonNull::new(memmap).expect("Memmap response not provided!");

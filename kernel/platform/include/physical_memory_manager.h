@@ -13,5 +13,3 @@
  * physical frames
  */
 uintptr_t pmm_alloc_frame(void);
-
-bool pmm_free_frame(uintptr_t physical_frame_address);
