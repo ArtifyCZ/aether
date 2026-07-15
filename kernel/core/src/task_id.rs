@@ -1,5 +1,5 @@
-use core::sync::atomic::AtomicU64;
 use crate::platform::syscalls::{SyscallReturnValue, SyscallReturnable};
+use core::sync::atomic::AtomicU64;
 
 /// Each task has a unique ID.
 ///

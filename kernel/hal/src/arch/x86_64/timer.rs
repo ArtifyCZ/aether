@@ -96,11 +96,7 @@ where
 pub unsafe fn interrupt_handler(frame: *mut InterruptFrame) -> *mut InterruptFrame {
     TICKS.fetch_add(1, Ordering::SeqCst);
 
-    let task_frame = unsafe {
-        Box::new(TaskFrame {
-            hw_frame: frame,
-        })
-    };
+    let task_frame = unsafe { Box::new(TaskFrame { hw_frame: frame }) };
 
     let return_frame = unsafe {
         #[allow(static_mut_refs)]

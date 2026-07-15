@@ -115,5 +115,6 @@ pub unsafe fn switch_to(task_frame: Box<TaskFrame>) -> ! {
 
             in("rax") rsp,
             options(noreturn),
-        ) }
+        )
+    }
 }

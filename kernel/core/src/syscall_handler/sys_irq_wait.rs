@@ -1,8 +1,8 @@
-use alloc::boxed::Box;
-use kernel_hal::tasks::TaskFrame;
 use crate::platform::syscalls::{SyscallContext, SyscallError, SyscallIntent};
 use crate::syscall_handler::{SyscallCommand, SyscallCommandHandler, SyscallHandler};
 use crate::task_id::TaskId;
+use alloc::boxed::Box;
+use kernel_hal::tasks::TaskFrame;
 
 pub struct SysIrqWaitCommand {
     frame: Box<TaskFrame>,
@@ -12,8 +12,7 @@ pub struct SysIrqWaitCommand {
 impl SyscallCommand for SysIrqWaitCommand {
     type Error = SyscallError;
 
-    fn parse(ctx: SyscallContext) -> Result<Self, (Box<TaskFrame>, Self::Error)>
-    {
+    fn parse(ctx: SyscallContext) -> Result<Self, (Box<TaskFrame>, Self::Error)> {
         let irq = ctx.args[0] as u8;
         let frame = ctx.task_frame;
 

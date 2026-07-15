@@ -16,9 +16,7 @@ impl<T> TryFrom<(UserPtr<*const T>, usize)> for UserSlice<*const [T]> {
 
 impl<T> UserSlice<*const [T]> {
     pub unsafe fn as_slice(&self) -> &[T] {
-        unsafe {
-            &*self.0
-        }
+        unsafe { &*self.0 }
     }
 }
 

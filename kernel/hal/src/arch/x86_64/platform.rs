@@ -1,7 +1,7 @@
-use core::ffi::c_void;
-use core::ptr::NonNull;
 use crate::arch::x86_64::{acpi, gdt, msr};
 use crate::early_console;
+use core::ffi::c_void;
+use core::ptr::NonNull;
 
 #[unsafe(no_mangle)]
 unsafe extern "C" fn platform_init(config: *const kernel_bindings_gen::platform_config) {

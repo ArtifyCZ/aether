@@ -58,20 +58,14 @@ impl Interrupts {
     }
 
     pub unsafe fn are_enabled() -> bool {
-        unsafe {
-            interrupts::are_enabled()
-        }
+        unsafe { interrupts::are_enabled() }
     }
 
     pub unsafe fn enable() {
-        unsafe {
-            interrupts::enable()
-        }
+        unsafe { interrupts::enable() }
     }
 
     pub unsafe fn disable() {
-        unsafe {
-            interrupts::disable()
-        }
+        unsafe { interrupts::disable() }
     }
 }

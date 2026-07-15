@@ -39,9 +39,7 @@ pub unsafe fn send_eoi() {
 }
 
 pub unsafe fn read(reg: u32) -> u32 {
-    unsafe {
-        LAPIC_BASE.byte_add(reg as usize).read_volatile()
-    }
+    unsafe { LAPIC_BASE.byte_add(reg as usize).read_volatile() }
 }
 
 pub unsafe fn write(reg: u32, value: u32) {

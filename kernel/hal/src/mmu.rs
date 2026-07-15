@@ -1,5 +1,5 @@
 use crate::arch;
-use bitflags::{bitflags};
+use bitflags::bitflags;
 use kernel_bindings_gen::{
     vmm_flags_t_VMM_FLAG_DEVICE, vmm_flags_t_VMM_FLAG_EXEC, vmm_flags_t_VMM_FLAG_NOCACHE,
     vmm_flags_t_VMM_FLAG_PRESENT, vmm_flags_t_VMM_FLAG_USER, vmm_flags_t_VMM_FLAG_WRITE,
@@ -24,9 +24,7 @@ pub unsafe fn init(hhdm_offset: usize) {
 }
 
 pub unsafe fn get_kernel_context() -> usize {
-    unsafe {
-        arch::mmu::get_kernel_context()
-    }
+    unsafe { arch::mmu::get_kernel_context() }
 }
 
 pub unsafe fn create_context() -> usize {

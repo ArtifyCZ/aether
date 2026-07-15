@@ -65,13 +65,9 @@ pub unsafe fn prepare_switch(kernel_stack_top: usize, task_id: u64) {
 }
 
 pub unsafe fn get_current_id() -> u64 {
-    unsafe {
-        tasks::get_current_id()
-    }
+    unsafe { tasks::get_current_id() }
 }
 
 pub unsafe fn switch_to(task_frame: Box<TaskFrame>) -> ! {
-    unsafe {
-        tasks::switch_to(task_frame)
-    }
+    unsafe { tasks::switch_to(task_frame) }
 }

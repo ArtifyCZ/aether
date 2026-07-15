@@ -40,9 +40,18 @@ fn pick_python() -> String {
     if let Ok(explicit) = env::var("PYTHON") {
         return explicit;
     }
-    for candidate in ["python3.14", "python3.13", "python3.12", "python3.11", "python3"] {
+    for candidate in [
+        "python3.14",
+        "python3.13",
+        "python3.12",
+        "python3.11",
+        "python3",
+    ] {
         let ok = Command::new(candidate)
-            .args(["-c", "import sys; sys.exit(0 if sys.version_info >= (3, 11) else 1)"])
+            .args([
+                "-c",
+                "import sys; sys.exit(0 if sys.version_info >= (3, 11) else 1)",
+            ])
             .status()
             .map(|s| s.success())
             .unwrap_or(false);

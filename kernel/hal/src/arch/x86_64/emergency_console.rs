@@ -1,6 +1,6 @@
-use core::arch::asm;
-use crate::arch::x86_64::io_wrapper::{inb, outb};
 use crate::arch::cpu::hcf;
+use crate::arch::x86_64::io_wrapper::{inb, outb};
+use core::arch::asm;
 
 pub unsafe fn init(serial_base: u64) -> u64 {
     unsafe {

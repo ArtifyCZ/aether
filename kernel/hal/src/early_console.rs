@@ -1,5 +1,5 @@
 use crate::arch;
-use core::ffi::{c_char, CStr};
+use core::ffi::{CStr, c_char};
 
 static mut SERIAL_BASE: u64 = 0;
 

@@ -28,8 +28,6 @@ impl VirtualAddressAllocator {
     }
 
     pub unsafe fn alloc_range(size: usize) -> VirtualPageAddress {
-        unsafe { vaa_alloc_range(size) }
-            .try_into()
-            .unwrap()
+        unsafe { vaa_alloc_range(size) }.try_into().unwrap()
     }
 }

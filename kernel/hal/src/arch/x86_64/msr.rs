@@ -66,9 +66,7 @@ pub unsafe fn init() {
 }
 
 pub unsafe fn get_kernel_stack() -> usize {
-    unsafe {
-        CPU_LOCAL_STORAGE.kernel_stack as usize
-    }
+    unsafe { CPU_LOCAL_STORAGE.kernel_stack as usize }
 }
 
 pub unsafe fn set_kernel_stack(stack: usize) {
@@ -78,9 +76,7 @@ pub unsafe fn set_kernel_stack(stack: usize) {
 }
 
 pub unsafe fn get_task_id() -> u64 {
-    unsafe {
-        CPU_LOCAL_STORAGE.task_id
-    }
+    unsafe { CPU_LOCAL_STORAGE.task_id }
 }
 
 pub unsafe fn set_task_id(task_id: u64) {

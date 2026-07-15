@@ -110,10 +110,7 @@ pub unsafe fn init() {
 
         let limit = (size_of_val(&GDT) - 1) as u16;
         let base = &raw const GDT as u64;
-        let gdt_ptr = GdtPtr {
-            limit,
-            base,
-        };
+        let gdt_ptr = GdtPtr { limit, base };
 
         asm!("lgdt [{}]", in(reg) &gdt_ptr);
 

@@ -21,7 +21,8 @@ const INT_RX: u32 = 1 << 4; // Receive Interrupt bit
 
 pub unsafe fn init(serial_base: u64) -> u64 {
     unsafe {
-        let virtual_base = kernel_bindings_gen::vaa_alloc_range(kernel_bindings_gen::VMM_PAGE_SIZE as usize);
+        let virtual_base =
+            kernel_bindings_gen::vaa_alloc_range(kernel_bindings_gen::VMM_PAGE_SIZE as usize);
 
         let kernel_context = mmu::get_kernel_context();
         if !mmu::map_page(
@@ -46,7 +47,9 @@ pub unsafe fn init(serial_base: u64) -> u64 {
         uart_base.add(UART_LCRH).write_volatile((3 << 5) | (1 << 4));
 
         // Enable UART, TX, and RX (Polling mode is now active)
-        uart_base.add(UART_CR).write_volatile((1 << 0) | (1 << 8) | (1 << 9));
+        uart_base
+            .add(UART_CR)
+            .write_volatile((1 << 0) | (1 << 8) | (1 << 9));
 
         uart_base as u64
     }
