@@ -1,9 +1,7 @@
 use crate::platform::memory_layout::PAGE_FRAME_SIZE;
 use crate::platform::physical_page_frame::{PhysicalPageFrame, PhysicalPageFrameParseError};
-use crate::println;
 use core::ptr::NonNull;
 use kernel_bindings_gen::{LIMINE_MEMMAP_USABLE, limine_memmap_entry, limine_memmap_response};
-use nom::multi::many_till;
 
 pub struct PhysicalMemoryManager;
 
@@ -56,45 +54,6 @@ unsafe fn pop_frame() -> usize {
 }
 
 #[unsafe(no_mangle)]
-unsafe extern "C" fn pmm_init(memmap: *mut limine_memmap_response) {
-    let memmap = NonNull::new(memmap).expect("Memmap response not provided!");
-
-    let entries = unsafe {
-        let memmap = memmap.as_ref();
-        let base = memmap.entries;
-        let count = memmap.entry_count as usize;
-        core::slice::from_raw_parts::<*mut limine_memmap_entry>(base, count)
-    };
-
-    for entry in entries.into_iter() {
-        let entry = match NonNull::new(*entry) {
-            None => continue,
-            Some(entry) => unsafe { entry.as_ref() },
-        };
-        if entry.type_ != LIMINE_MEMMAP_USABLE as u64 {
-            continue;
-        }
-
-        let base = entry.base as usize;
-        let len = entry.length as usize;
-
-        let start = align_up(base, PAGE_FRAME_SIZE);
-        let end = align_down(base + len, PAGE_FRAME_SIZE);
-
-        if start >= end {
-            continue;
-        }
-
-        let pages_in_chunk = (end - start) / PAGE_FRAME_SIZE;
-        for i in 0..pages_in_chunk {
-            unsafe {
-                push_frame(start + i * PAGE_FRAME_SIZE);
-            }
-        }
-    }
-}
-
-#[unsafe(no_mangle)]
 unsafe extern "C" fn pmm_alloc_frame() -> usize {
     unsafe { pop_frame() }
 }
@@ -117,8 +76,40 @@ unsafe extern "C" fn pmm_free_frame(frame: usize) -> bool {
 
 impl PhysicalMemoryManager {
     pub unsafe fn init(memmap: *mut limine_memmap_response) {
-        unsafe {
-            pmm_init(memmap);
+        let memmap = NonNull::new(memmap).expect("Memmap response not provided!");
+
+        let entries = unsafe {
+            let memmap = memmap.as_ref();
+            let base = memmap.entries;
+            let count = memmap.entry_count as usize;
+            core::slice::from_raw_parts::<*mut limine_memmap_entry>(base, count)
+        };
+
+        for entry in entries.into_iter() {
+            let entry = match NonNull::new(*entry) {
+                None => continue,
+                Some(entry) => unsafe { entry.as_ref() },
+            };
+            if entry.type_ != LIMINE_MEMMAP_USABLE as u64 {
+                continue;
+            }
+
+            let base = entry.base as usize;
+            let len = entry.length as usize;
+
+            let start = align_up(base, PAGE_FRAME_SIZE);
+            let end = align_down(base + len, PAGE_FRAME_SIZE);
+
+            if start >= end {
+                continue;
+            }
+
+            let pages_in_chunk = (end - start) / PAGE_FRAME_SIZE;
+            for i in 0..pages_in_chunk {
+                unsafe {
+                    push_frame(start + i * PAGE_FRAME_SIZE);
+                }
+            }
         }
     }
 
