@@ -1,12 +1,18 @@
 [package]
-name = "kernel_entry"
+name = "atom_entry"
 edition = "2024"
 
 [[bin]]
-name = "kernel"
+name = "atom"
 path = "src/main.rs"
+test = false
+doctest = false
+bench = false
 
 [dependencies]
-kernel_core.workspace = true
+# workspace
 
+# 3rd party
+embedded-graphics.workspace = true
+# embedded-term.workspace = true
 limine.workspace = true

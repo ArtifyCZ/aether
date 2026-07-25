@@ -1,4 +1,5 @@
-PACKAGES += hello_world
+# @TODO: enable the package once implementing syscalls in the new kernel
+# PACKAGES += hello_world
 
 PHONY += pkg/hello_world/install
 pkg/hello_world/install: $(SYSROOT)/bin/hello_world

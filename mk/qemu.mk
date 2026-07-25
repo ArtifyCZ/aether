@@ -6,6 +6,8 @@ else
 qemuBios := -
 endif
 
+DEBUG ?= 0
+
 PHONY += qemu
 qemu: $(OUT)/$(diskImageBasename) $(if $(filter aarch64,$(ARCH)),$(qemuBios))
-	/usr/bin/env bash $(SRCTREE)/run_qemu.sh $< $(ARCH) $(qemuBios)
+	/usr/bin/env bash $(SRCTREE)/run_qemu.sh $< $(ARCH) $(qemuBios) $(DEBUG)

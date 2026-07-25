@@ -1,16 +1,19 @@
+use core::arch::naked_asm;
+
 #[unsafe(no_mangle)]
 #[unsafe(naked)]
 #[cfg(target_arch = "x86_64")]
 pub unsafe extern "C" fn _start() -> ! {
-    use core::arch::naked_asm;
-
     naked_asm!(
         "cli",
+
         "call {main_func}",
+
         "3:",
         "cli",
         "hlt",
         "jmp 3b",
+
         main_func = sym crate::main,
     )
 }
@@ -19,8 +22,6 @@ pub unsafe extern "C" fn _start() -> ! {
 #[unsafe(naked)]
 #[cfg(target_arch = "aarch64")]
 pub unsafe extern "C" fn _start() -> ! {
-    use core::arch::naked_asm;
-
     naked_asm!(
         "mov x0, sp",
         "bic x0, x0, #0xf", // Force 16-byte alignment

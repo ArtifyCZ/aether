@@ -1,4 +1,5 @@
-PACKAGES += init
+# @TODO: enable the package once implementing syscalls in the new kernel
+# PACKAGES += init
 
 PHONY += pkg/init/install
 pkg/init/install: pkg/libs/libsyscall/install $(SYSROOT)/bin/init

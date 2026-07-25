@@ -1,0 +1,12 @@
+[package]
+name = "kernel_entry"
+edition = "2024"
+
+[[bin]]
+name = "kernel"
+path = "src/main.rs"
+
+[dependencies]
+kernel_core.workspace = true
+
+limine.workspace = true

@@ -1,8 +1,12 @@
 initrdStagingDir := $(OUT)/image/initrd-staging
 
 initrdFiles :=
-initrdFiles += bin/hello_world
-initrdFiles += bin/init
+# @TODO: enable once the package's are enabled again
+# initrdFiles += bin/hello_world
+# initrdFiles += bin/init
+# @TODO: remove this once there is another file in initrd
+# This file is just a stub so that at least something is in initrd
+initrdFiles += boot/limine/limine.conf
 
 initrdSysrootFiles := $(initrdFiles:%=$(SYSROOT)/%)
 

@@ -8,7 +8,7 @@ QEMUFLAGS=""
 QEMUFLAGS="$QEMUFLAGS -no-reboot"
 QEMUFLAGS="$QEMUFLAGS -m 2G"
 
-if [ "$DEBUG" = "DEBUG" ]; then
+if [ "$DEBUG" = "DEBUG" ] || [ "$DEBUG" = "1" ]; then
     QEMUFLAGS="$QEMUFLAGS -s -S"
 fi
 

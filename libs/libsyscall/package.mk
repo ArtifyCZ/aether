@@ -1,4 +1,5 @@
-PACKAGES += libs/libsyscall
+# @TODO: enable the package once implementing syscalls in the new kernel
+# PACKAGES += libs/libsyscall
 
 PHONY += pkg/libs/libsyscall/install
 pkg/libs/libsyscall/install: \

@@ -13,3 +13,4 @@ rust-project.json
 /compile_commands.json
 __pycache__/
 target/
+git_toolbox_prj.xml
