@@ -15,12 +15,14 @@ pub unsafe fn init(framebuffer: &'static limine::framebuffer::Framebuffer) {
     let fb_char_width = (framebuffer.width / FONT.character_size.width as u64) as u32;
     let fb_char_height = (framebuffer.height / FONT.character_size.height as u64) as u32;
     let framebuffer_char_size = Size::new(fb_char_width, fb_char_height);
-    let display = EarlyConsoleDisplay {
+    let console_display = EarlyConsoleDisplay {
         framebuffer,
         cursor,
         framebuffer_char_size,
     };
-    *DISPLAY.lock() = Some(display);
+    let mut display = DISPLAY.lock();
+    *display = Some(console_display);
+    write_char(display.as_mut().unwrap(), '\n');
 }
 
 const FONT: &'static MonoFont = &FONT_10X20;

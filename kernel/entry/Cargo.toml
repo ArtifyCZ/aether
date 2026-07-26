@@ -14,5 +14,5 @@ bench = false
 
 # 3rd party
 embedded-graphics.workspace = true
-# embedded-term.workspace = true
 limine.workspace = true
+log.workspace = true
