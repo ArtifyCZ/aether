@@ -3,9 +3,17 @@
 version = 4
 
 [[package]]
+name = "atom_core"
+version = "0.0.0"
+dependencies = [
+ "log",
+]
+
+[[package]]
 name = "atom_entry"
 version = "0.0.0"
 dependencies = [
+ "atom_core",
  "embedded-graphics",
  "limine",
  "log",

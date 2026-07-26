@@ -1,11 +1,13 @@
 [workspace]
 members = [
+    "core",
     "entry",
 ]
 resolver = "2"
 
 [workspace.dependencies]
 # workspace
+atom_core = { path = "core" }
 
 # 3rd party
 embedded-graphics = { version = "0.8.2" }
