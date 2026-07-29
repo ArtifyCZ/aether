@@ -1,5 +1,8 @@
-use atom_hal::sync::Spinlock;
+use atom_core::logger::EarlyConsole;
+use core::cell::UnsafeCell;
 use core::convert::Infallible;
+use core::fmt::Write;
+use core::mem::MaybeUninit;
 use embedded_graphics::geometry::{OriginDimensions, Size};
 use embedded_graphics::mono_font::ascii::FONT_10X20;
 use embedded_graphics::mono_font::{MonoFont, MonoTextStyle};
@@ -8,31 +11,51 @@ use embedded_graphics::prelude::{DrawTarget, Point};
 use embedded_graphics::text::Text;
 use embedded_graphics::{Drawable, Pixel};
 
-static DISPLAY: Spinlock<Option<EarlyConsoleDisplay>> = Spinlock::new(None);
+struct InstanceWrapper(UnsafeCell<MaybeUninit<EarlyConsoleDisplay>>);
+unsafe impl Sync for InstanceWrapper {}
+static DISPLAY_INSTANCE: InstanceWrapper = InstanceWrapper(UnsafeCell::new(MaybeUninit::uninit()));
 
-pub unsafe fn init(framebuffer: &'static limine::framebuffer::Framebuffer) {
+/// Initializes early console
+///
+/// Returns a mutable reference to the early console instance.
+///
+/// # Safety
+///
+/// This function must never be called more than once.
+#[allow(clippy::mut_from_ref)]
+pub unsafe fn init(
+    framebuffer: &'static limine::framebuffer::Framebuffer,
+) -> &'static mut dyn EarlyConsole {
     let cursor = Point::new(0, 0);
     let fb_char_width = (framebuffer.width / FONT.character_size.width as u64) as u32;
     let fb_char_height = (framebuffer.height / FONT.character_size.height as u64) as u32;
     let framebuffer_char_size = Size::new(fb_char_width, fb_char_height);
-    let console_display = EarlyConsoleDisplay {
+    let mut display = EarlyConsoleDisplay {
         framebuffer,
         cursor,
         framebuffer_char_size,
     };
-    let mut display = DISPLAY.lock();
-    *display = Some(console_display);
-    write_char(display.as_mut().unwrap(), '\n');
+    writeln!(&mut display).unwrap();
+    unsafe {
+        *DISPLAY_INSTANCE.0.get() = MaybeUninit::new(display);
+        (*DISPLAY_INSTANCE.0.get()).assume_init_mut()
+    }
 }
 
-const FONT: &'static MonoFont = &FONT_10X20;
+const FONT: &MonoFont = &FONT_10X20;
 
-pub fn write_str(s: &str) {
-    let mut display = DISPLAY.lock();
-    if let Some(display) = &mut *display {
+impl EarlyConsole for EarlyConsoleDisplay {
+    fn close(&mut self) {
+        todo!()
+    }
+}
+
+impl Write for EarlyConsoleDisplay {
+    fn write_str(&mut self, s: &str) -> core::fmt::Result {
         for c in s.chars() {
-            write_char(display, c);
+            write_char(self, c);
         }
+        Ok(())
     }
 }
 

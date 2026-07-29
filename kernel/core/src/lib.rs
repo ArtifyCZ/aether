@@ -1,8 +1,12 @@
 #![no_std]
 
+pub mod logger;
+
+use crate::logger::EarlyConsole;
 use log::info;
 
-pub fn bsp_main() -> ! {
+pub fn bsp_main(early_console: &'static mut dyn EarlyConsole) -> ! {
+    logger::init(early_console);
     info!("Booting Atom kernel...");
     info!("Bootstrap core starting...");
     let chars = ['a', 'b', 'c', 'd', 'e', 'f'];
