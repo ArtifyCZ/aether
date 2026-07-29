@@ -3,12 +3,13 @@
 pub mod logger;
 
 use crate::logger::EarlyConsole;
-use log::info;
+use log::{info, warn};
 
 pub fn bsp_main(early_console: &'static mut dyn EarlyConsole) -> ! {
     logger::init(early_console);
     info!("Booting Atom kernel...");
     info!("Bootstrap core starting...");
+    warn!("Hello warning world!");
     let chars = ['a', 'b', 'c', 'd', 'e', 'f'];
     for i in 0..150 {
         let c = chars[i % chars.len()];

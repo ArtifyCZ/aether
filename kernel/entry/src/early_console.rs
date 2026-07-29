@@ -4,10 +4,11 @@ use core::convert::Infallible;
 use core::fmt::Write;
 use core::mem::MaybeUninit;
 use embedded_graphics::geometry::{OriginDimensions, Size};
-use embedded_graphics::mono_font::ascii::FONT_10X20;
-use embedded_graphics::mono_font::{MonoFont, MonoTextStyle};
+use embedded_graphics::mono_font::iso_8859_16::{FONT_9X18, FONT_9X18_BOLD};
+use embedded_graphics::mono_font::{MonoFont, MonoTextStyleBuilder};
 use embedded_graphics::pixelcolor::{Rgb888, RgbColor};
-use embedded_graphics::prelude::{DrawTarget, Point};
+use embedded_graphics::prelude::{DrawTarget, Point, Primitive, WebColors};
+use embedded_graphics::primitives::{PrimitiveStyleBuilder, Rectangle};
 use embedded_graphics::text::Text;
 use embedded_graphics::{Drawable, Pixel};
 
@@ -34,6 +35,11 @@ pub unsafe fn init(
         framebuffer,
         cursor,
         framebuffer_char_size,
+        foreground_color: DEFAULT_FOREGROUND_COLOR,
+        foreground_style: DEFAULT_FOREGROUND_STYLE,
+        foreground_high_intensity: DEFAULT_FOREGROUND_HIGH_INTENSITY,
+        background_color: DEFAULT_BACKGROUND_COLOR,
+        background_high_intensity: DEFAULT_BACKGROUND_HIGH_INTENSITY,
     };
     writeln!(&mut display).unwrap();
     unsafe {
@@ -42,7 +48,14 @@ pub unsafe fn init(
     }
 }
 
-const FONT: &MonoFont = &FONT_10X20;
+const FONT: &MonoFont = &FONT_9X18;
+const FONT_BOLD: &MonoFont = &FONT_9X18_BOLD;
+
+const DEFAULT_FOREGROUND_COLOR: AsciiColor = AsciiColor::White;
+const DEFAULT_FOREGROUND_STYLE: AsciiForegroundStyle = AsciiForegroundStyle::Regular;
+const DEFAULT_FOREGROUND_HIGH_INTENSITY: bool = true;
+const DEFAULT_BACKGROUND_COLOR: AsciiColor = AsciiColor::Black;
+const DEFAULT_BACKGROUND_HIGH_INTENSITY: bool = true;
 
 impl EarlyConsole for EarlyConsoleDisplay {
     fn close(&mut self) {
@@ -50,12 +63,216 @@ impl EarlyConsole for EarlyConsoleDisplay {
     }
 }
 
+fn parse_number_from_chars(chars: impl Iterator<Item = char>) -> usize {
+    let mut acc = 0;
+    for c in chars {
+        let c = c as u32;
+        if c >= '0' as u32 && c <= '9' as u32 {
+            acc *= 10;
+            acc += c as usize - '0' as usize;
+        }
+    }
+    acc
+}
+
+#[derive(Debug, Copy, Clone)]
+enum AsciiEscapeCode {
+    Foreground {
+        color: AsciiColor,
+        style: AsciiForegroundStyle,
+        high_intensity: bool,
+    },
+    Background {
+        color: AsciiColor,
+        high_intensity: bool,
+    },
+    Reset,
+}
+
+#[derive(Debug, Copy, Clone)]
+enum AsciiForegroundStyle {
+    Regular,
+    Bold,
+    Underline,
+}
+
+#[derive(Debug, Copy, Clone)]
+enum AsciiColor {
+    Black,
+    Red,
+    Green,
+    Yellow,
+    Blue,
+    Purple,
+    Cyan,
+    White,
+}
+
+fn color_from_byte(byte: u8) -> Option<AsciiColor> {
+    match byte {
+        0 => Some(AsciiColor::Black),
+        1 => Some(AsciiColor::Red),
+        2 => Some(AsciiColor::Green),
+        3 => Some(AsciiColor::Yellow),
+        4 => Some(AsciiColor::Blue),
+        5 => Some(AsciiColor::Purple),
+        6 => Some(AsciiColor::Cyan),
+        7 => Some(AsciiColor::White),
+        _ => None,
+    }
+}
+
+fn parse_ascii_code(mut code_chars: impl Iterator<Item = char> + Clone) -> Option<AsciiEscapeCode> {
+    let n1 = parse_number_from_chars(code_chars.clone().take_while(|c| c.is_ascii_digit()));
+    match n1 {
+        40..=47 => {
+            // regular background: \x1b[40m to \x1b[47m
+            Some(AsciiEscapeCode::Background {
+                color: color_from_byte(n1 as u8 - 40)?,
+                high_intensity: false,
+            })
+        }
+        1 => {
+            let separator = (&mut code_chars).skip_while(|c| c.is_ascii_digit()).next();
+            if separator != Some(';') {
+                return None;
+            }
+            let n2 = parse_number_from_chars(code_chars.take_while(|c| c.is_ascii_digit()));
+            match n2 {
+                // bold foreground: \x1b[1;30m to \x1b[1;37m
+                30..=37 => Some(AsciiEscapeCode::Foreground {
+                    color: color_from_byte(n2 as u8 - 30)?,
+                    style: AsciiForegroundStyle::Bold,
+                    high_intensity: false,
+                }),
+                // bold high-intensity foreground: \x1b[1;90m to \x1b[1;97m
+                90..=97 => Some(AsciiEscapeCode::Foreground {
+                    color: color_from_byte(n2 as u8 - 90)?,
+                    style: AsciiForegroundStyle::Bold,
+                    high_intensity: true,
+                }),
+                _ => None,
+            }
+        }
+        0 => {
+            let separator = (&mut code_chars).skip_while(|c| c.is_ascii_digit()).next();
+            if separator.is_none() {
+                // reset: \x1b[0m
+                return Some(AsciiEscapeCode::Reset);
+            }
+            if separator != Some(';') {
+                return None;
+            }
+            let n2 = parse_number_from_chars(code_chars.take_while(|c| c.is_ascii_digit()));
+            match n2 {
+                // regular foreground: \x1b[0;30m to \x1b[0;37m
+                30..=37 => Some(AsciiEscapeCode::Foreground {
+                    color: color_from_byte(n2 as u8 - 30)?,
+                    style: AsciiForegroundStyle::Regular,
+                    high_intensity: false,
+                }),
+                // regular high-intensity foreground: \x1b[0;90m to \x1b[0;97m
+                90..=97 => Some(AsciiEscapeCode::Foreground {
+                    color: color_from_byte(n2 as u8 - 90)?,
+                    style: AsciiForegroundStyle::Regular,
+                    high_intensity: true,
+                }),
+                // high-intensity background: \x1b[0;100m to \x1b[0;107m
+                100..=107 => Some(AsciiEscapeCode::Background {
+                    color: color_from_byte(n2 as u8 - 100)?,
+                    high_intensity: true,
+                }),
+                _ => None,
+            }
+        }
+        4 => {
+            let separator = (&mut code_chars).skip_while(|c| c.is_ascii_digit()).nth(1);
+            if separator != Some(';') {
+                return None;
+            }
+            let n2 = parse_number_from_chars(code_chars.take_while(|c| c.is_ascii_digit()));
+            match n2 {
+                // underline foreground: \x1b[4;30m to \x1b[4;37m
+                30..=37 => Some(AsciiEscapeCode::Foreground {
+                    color: color_from_byte(n2 as u8 - 30)?,
+                    style: AsciiForegroundStyle::Underline,
+                    high_intensity: false,
+                }),
+                _ => None,
+            }
+        }
+        _ => None,
+    }
+}
+
 impl Write for EarlyConsoleDisplay {
     fn write_str(&mut self, s: &str) -> core::fmt::Result {
-        for c in s.chars() {
-            write_char(self, c);
+        let mut chars = s.chars().peekable();
+        while let Some(c) = chars.next() {
+            if c == '\x1b' && chars.peek() == Some(&'[') {
+                // ASCII color codes
+                let code_chars = chars.clone().skip(1).take_while(|c| *c != 'm');
+                let code = parse_ascii_code(code_chars);
+                if let Some(code) = code {
+                    while let Some(c) = chars.next()
+                        && c != 'm'
+                    {}
+                    match code {
+                        AsciiEscapeCode::Foreground {
+                            color,
+                            style,
+                            high_intensity,
+                        } => {
+                            self.foreground_color = color;
+                            self.foreground_style = style;
+                            self.foreground_high_intensity = high_intensity;
+                        }
+                        AsciiEscapeCode::Background {
+                            color,
+                            high_intensity,
+                        } => {
+                            self.background_color = color;
+                            self.background_high_intensity = high_intensity;
+                        }
+                        AsciiEscapeCode::Reset => {
+                            self.foreground_color = DEFAULT_FOREGROUND_COLOR;
+                            self.foreground_style = DEFAULT_FOREGROUND_STYLE;
+                            self.foreground_high_intensity = DEFAULT_FOREGROUND_HIGH_INTENSITY;
+                            self.background_color = DEFAULT_BACKGROUND_COLOR;
+                            self.background_high_intensity = DEFAULT_BACKGROUND_HIGH_INTENSITY;
+                        }
+                    }
+                }
+            } else {
+                write_char(self, c);
+            }
         }
         Ok(())
+    }
+}
+
+fn ascii_color_to_rgb888(color: AsciiColor, high_intensity: bool) -> Rgb888 {
+    match high_intensity {
+        false => match color {
+            AsciiColor::Black => Rgb888::CSS_DARK_GRAY,
+            AsciiColor::Red => Rgb888::CSS_DARK_RED,
+            AsciiColor::Green => Rgb888::CSS_GREEN,
+            AsciiColor::Yellow => Rgb888::CSS_YELLOW,
+            AsciiColor::Blue => Rgb888::CSS_BLUE,
+            AsciiColor::Purple => Rgb888::CSS_DARK_MAGENTA,
+            AsciiColor::Cyan => Rgb888::CSS_CYAN,
+            AsciiColor::White => Rgb888::CSS_WHITE,
+        },
+        true => match color {
+            AsciiColor::Black => Rgb888::CSS_BLACK,
+            AsciiColor::Red => Rgb888::CSS_RED,
+            AsciiColor::Green => Rgb888::CSS_LIGHT_GREEN,
+            AsciiColor::Yellow => Rgb888::CSS_LIGHT_YELLOW,
+            AsciiColor::Blue => Rgb888::CSS_LIGHT_BLUE,
+            AsciiColor::Purple => Rgb888::CSS_MAGENTA,
+            AsciiColor::Cyan => Rgb888::CSS_LIGHT_CYAN,
+            AsciiColor::White => Rgb888::CSS_WHITE,
+        },
     }
 }
 
@@ -90,12 +307,26 @@ fn write_char(display: &mut EarlyConsoleDisplay, c: char) {
 
     let mut char_str = [0u8; 4];
     let char_str = c.encode_utf8(&mut char_str);
-    let _ = Text::new(
-        char_str,
-        pixel_coord,
-        MonoTextStyle::new(FONT, Rgb888::CYAN),
-    )
-    .draw(display);
+    let _ = Rectangle::new(pixel_coord, FONT.character_size)
+        .into_styled(
+            PrimitiveStyleBuilder::<Rgb888>::new()
+                .fill_color(ascii_color_to_rgb888(
+                    display.background_color,
+                    display.background_high_intensity,
+                ))
+                .build(),
+        )
+        .draw(display);
+    let text_style_builder = MonoTextStyleBuilder::new().text_color(ascii_color_to_rgb888(
+        display.foreground_color,
+        display.foreground_high_intensity,
+    ));
+    let text_style_builder = match display.foreground_style {
+        AsciiForegroundStyle::Regular => text_style_builder.font(FONT),
+        AsciiForegroundStyle::Bold => text_style_builder.font(FONT_BOLD),
+        AsciiForegroundStyle::Underline => text_style_builder.font(FONT).underline(),
+    };
+    let _ = Text::new(char_str, pixel_coord, text_style_builder.build()).draw(display);
 }
 
 fn scroll(display: &mut EarlyConsoleDisplay) {
@@ -140,6 +371,11 @@ struct EarlyConsoleDisplay {
     framebuffer: &'static limine::framebuffer::Framebuffer,
     cursor: Point,
     framebuffer_char_size: Size,
+    foreground_color: AsciiColor,
+    foreground_style: AsciiForegroundStyle,
+    foreground_high_intensity: bool,
+    background_color: AsciiColor,
+    background_high_intensity: bool,
 }
 
 unsafe impl Send for EarlyConsoleDisplay {}

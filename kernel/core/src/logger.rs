@@ -1,6 +1,6 @@
 use atom_hal::sync::Spinlock;
 use core::fmt::Write;
-use log::{LevelFilter, Log, Metadata, Record};
+use log::{Level, LevelFilter, Log, Metadata, Record};
 
 struct KernelLoggerInner {
     early_console: &'static mut dyn EarlyConsole,
@@ -40,7 +40,13 @@ impl Log for KernelLogger {
             let _ = writeln!(
                 inner.as_mut().unwrap().early_console,
                 "[{}] {}",
-                record.level(),
+                match record.level() {
+                    Level::Error => "\x1b[1;31mERROR\x1b[0m",
+                    Level::Warn => "\x1b[1;33mWARN\x1b[0m",
+                    Level::Info => "\x1b[1;32mINFO\x1b[0m",
+                    Level::Debug => "\x1b[1;32mDEBUG\x1b[0m",
+                    Level::Trace => "\x1b[1;32mTRACE\x1b[0m",
+                },
                 record.args(),
             );
         }
