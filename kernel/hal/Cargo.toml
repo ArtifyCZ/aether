@@ -1,0 +1,15 @@
+[package]
+name = "atom_hal"
+edition = "2024"
+
+[lib]
+path = "src/lib.rs"
+test = false
+doctest = false
+bench = false
+
+[dependencies]
+# workspace
+atom_primitives.workspace = true
+
+# 3rd party

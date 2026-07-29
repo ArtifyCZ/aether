@@ -1,13 +1,10 @@
 #![no_std]
 #![no_main]
 
-use log::info;
-
 mod early_console;
 mod logger;
 mod panic;
 mod requests;
-mod spinlock;
 mod start;
 
 unsafe fn main() -> ! {

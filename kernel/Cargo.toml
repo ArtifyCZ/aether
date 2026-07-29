@@ -2,12 +2,16 @@
 members = [
     "core",
     "entry",
+    "hal",
+    "primitives",
 ]
 resolver = "2"
 
 [workspace.dependencies]
 # workspace
 atom_core = { path = "core" }
+atom_hal = { path = "hal" }
+atom_primitives = { path = "primitives" }
 
 # 3rd party
 embedded-graphics = { version = "0.8.2" }

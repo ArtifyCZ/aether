@@ -12,6 +12,7 @@ bench = false
 [dependencies]
 # workspace
 atom_core.workspace = true
+atom_hal.workspace = true
 
 # 3rd party
 embedded-graphics.workspace = true

@@ -14,10 +14,22 @@ name = "atom_entry"
 version = "0.0.0"
 dependencies = [
  "atom_core",
+ "atom_hal",
  "embedded-graphics",
  "limine",
  "log",
 ]
+
+[[package]]
+name = "atom_hal"
+version = "0.0.0"
+dependencies = [
+ "atom_primitives",
+]
+
+[[package]]
+name = "atom_primitives"
+version = "0.0.0"
 
 [[package]]
 name = "autocfg"

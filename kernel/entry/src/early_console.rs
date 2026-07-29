@@ -1,4 +1,4 @@
-use crate::spinlock::Spinlock;
+use atom_hal::sync::Spinlock;
 use core::convert::Infallible;
 use embedded_graphics::geometry::{OriginDimensions, Size};
 use embedded_graphics::mono_font::ascii::FONT_10X20;
