@@ -344,6 +344,25 @@ fn scroll(display: &mut FramebufferDisplay) {
             _ => todo!(),
         };
     }
+    let _ = Rectangle::new(
+        Point::new(
+            0,
+            (display.framebuffer_char_size.height as i32 - 1) * FONT.character_size.height as i32,
+        ),
+        Size::new(
+            display.framebuffer_char_size.width * FONT.character_size.width,
+            FONT.character_size.height,
+        ),
+    )
+    .into_styled(
+        PrimitiveStyleBuilder::<Rgb888>::new()
+            .fill_color(ascii_color_to_rgb888(
+                display.background_color,
+                display.background_high_intensity,
+            ))
+            .build(),
+    )
+    .draw(display);
 }
 
 pub struct FramebufferDisplay {
@@ -388,10 +407,12 @@ impl DrawTarget for FramebufferDisplay {
         for Pixel(coord, color) in pixels {
             if coord.x >= 0 && coord.x < width as i32 && coord.y >= 0 && coord.y < height as i32 {
                 let idx = coord.x as usize + (coord.y as u64 * width) as usize;
+                #[expect(clippy::identity_op)]
                 let direct_color: u32 = 0
                     | ((color.r() as u32 >> (8 - red_mask_size)) << red_mask_shift)
                     | ((color.g() as u32 >> (8 - green_mask_size)) << green_mask_shift)
                     | ((color.b() as u32 >> (8 - blue_mask_size)) << blue_mask_shift);
+                #[expect(clippy::identity_op)]
                 match self.framebuffer.bpp {
                     8 => unsafe { (base_ptr as *mut u8).add(idx).write(direct_color as u8) },
                     15 | 16 => unsafe {
