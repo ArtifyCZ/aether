@@ -1,47 +1,32 @@
 # Aether
 
-Aether is a hobby operating system kernel written in Rust and C, targeting
-**x86_64** and **aarch64** architectures. It is a microkernel-inspired design
-where a small, privileged kernel manages memory, scheduling, and hardware
-interrupts, while the first userspace process (`init`) is responsible for
-loading and launching further programs.
+Aether is a hobby operating system in development.
+Code is written primarily in the [Rust](https://rust-lang.org/) language.
+The OS targets rather modern machines with x86_64 (amd64) and aarch64 (64-bit arm) architectures.
 
-The project is in early stages of development. See [BACKLOG.md](BACKLOG.md)
-for known limitations and planned improvements.
+The architecture is of a [microkernel](https://en.wikipedia.org/wiki/Microkernel) design.
+Most OS responsibilities should be fulfilled by userspace servers,
+as opposed to fulfilled by a kernel of [monolithic](https://en.wikipedia.org/wiki/Monolithic_kernel) design.
+
+The project is in its early stages of development.
+See [BACKLOG.md](BACKLOG.md) for known limitations and planned improvements.
+
+> Note that currently the [kernel](kernel) is being rewritten.
 
 ## Features
 
 - Dual-architecture support: **x86_64** and **aarch64**
 - Limine bootloader integration (UEFI + BIOS on x86_64, UEFI on aarch64)
-- Pre-emptive single-core multi-process scheduler
-- Hardware interrupt routing via APIC (x86_64) and GIC (aarch64)
-- Memory-mapped I/O device mapping and virtual memory management
-- ELF userspace process loading from an in-memory tarball (`initrd`)
-- Syscall ABI defined in TOML and auto-generated for C and Rust userspace
-- A Rust userspace runtime library (`aether_rt`) and syscall library (`aether_sys`)
-- A C syscall stub library (`libsyscall`) for the `init` program
-- Serial console output from both kernel and userspace
-- Framebuffer terminal support
-
-## Repository Layout
-
-| Directory | Description |
-|---|---|
-| `kernel/entry` | Kernel entry point; uses the Limine bootloader protocol to set up allocators and call into `kernel_core` |
-| `kernel/core` | Main kernel logic: scheduler, syscall dispatch, ELF loading, memory management, task registry |
-| `kernel/hal` | Hardware Abstraction Layer — architecture-specific implementations (interrupts, MMU, tasks, timer, syscalls) |
-| `kernel/platform` | Low-level C platform code used by `kernel_hal` (APIC, GIC, GDT, MMU page tables, etc.) |
-| `kernel/api` | Shared ABI: `boot_info.h` passed to `init`, and the TOML-based syscall definition + code generators |
-| `init` | First userspace process (C): parses the initrd, loads ELF binaries, exposes keyboard/serial drivers |
-| `hello_world` | Minimal Rust userspace binary used for integration testing |
-| `libs/aether_rt` | Rust userspace runtime (entry point, heap allocator, panic handler, libc shims) |
-| `libs/aether_sys` | Auto-generated Rust syscall wrappers |
-| `libs/libsyscall` | Auto-generated C syscall stubs and constants |
-| `image` | Makefiles to assemble the bootable disk image (ISO / raw) and initrd tarball |
-| `3rdparty` | External dependencies |
-| `docs` | Extended documentation (architecture, building, syscalls, …) |
+- Framebuffer early state logging support
 
 ## Quick Start
+
+### Documentation
+
+The documentation is available in the [docs/ directory](docs/README.md).
+
+Note that due to the ongoing kernel rewrite,
+the docs are not up to date right now.
 
 ### Prerequisites
 
@@ -51,15 +36,11 @@ for known limitations and planned improvements.
 
 ### Building and Running
 
-Build and run in QEMU for **x86_64**:
+Build and run in QEMU:
 
 ```sh
 make qemu ARCH=x86_64
-```
-
-Build and run in QEMU for **aarch64**:
-
-```sh
+# or
 make qemu ARCH=aarch64
 ```
 
@@ -76,25 +57,12 @@ make all ARCH=aarch64
 Start QEMU with a GDB/LLDB stub on port `1234` (execution paused at start):
 
 ```sh
-make qemu-debug ARCH=x86_64
+make qemu ARCH=x86_64 DEBUG=1
 # or
-make qemu-debug ARCH=aarch64
+make qemu ARCH=aarch64 DEBUG=1
 ```
 
-Then attach your debugger. VS Code users can use the **"Debug kernel in Qemu"**
-launch configuration in `.vscode/launch.json`. Zed users can use the
-**"Qemu debug"** task in `.zed/debug.json`.
-
-## Documentation
-
-| Document | Contents |
-|---|---|
-| [docs/architecture.md](docs/architecture.md) | Component architecture, boot flow, and design decisions |
-| [docs/building.md](docs/building.md) | Full build instructions and host prerequisites |
-| [docs/development.md](docs/development.md) | IDE setup, debugging workflow, and other development tips |
-| [docs/syscalls.md](docs/syscalls.md) | Syscall ABI reference and how to add new syscalls |
-| [docs/hardware-interrupts.md](docs/hardware-interrupts.md) | IRQ conventions for x86_64 and aarch64 |
-| [docs/kernel/init_contract.md](docs/kernel/init_contract.md) | Contract between the kernel and the `init` process |
+Then attach your debugger.
 
 ## Licensing
 
