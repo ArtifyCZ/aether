@@ -46,12 +46,7 @@ pub unsafe fn create_framebuffer_unsafe_token() -> FramebufferUnsafeToken {
     }
 }
 
-/// Initializes early console framebuffer backend
-///
-/// # Safety
-///
-/// This function must never be called more than once per framebuffer.
-pub unsafe fn init(framebuffer: Framebuffer) -> FramebufferConsole {
+pub fn init(framebuffer: Framebuffer) -> FramebufferConsole {
     let cursor = Point::new(0, 0);
     let fb_char_width = (framebuffer.width / FONT.character_size.width as usize) as u32;
     let fb_char_height = (framebuffer.height / FONT.character_size.height as usize) as u32;

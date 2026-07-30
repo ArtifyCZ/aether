@@ -2,11 +2,15 @@
 
 pub mod logger;
 
-use crate::logger::EarlyConsole;
+use atom_hal::framebuffer_console::Framebuffer;
+use atom_hal::serial_console::SerialConsoleConfig;
 use log::{info, warn};
 
-pub fn bsp_main(early_console: &'static mut dyn EarlyConsole) -> ! {
-    logger::init(early_console);
+pub fn bsp_main(
+    framebuffer: Option<Framebuffer>,
+    serial_console_config: Option<SerialConsoleConfig>,
+) -> ! {
+    logger::init(framebuffer, serial_console_config);
     info!("Booting Atom kernel...");
     info!("Bootstrap core starting...");
     warn!("Hello warning world!");
