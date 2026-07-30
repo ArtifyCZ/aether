@@ -15,5 +15,4 @@ atom_core.workspace = true
 atom_hal.workspace = true
 
 # 3rd party
-embedded-graphics.workspace = true
 limine.workspace = true

@@ -16,7 +16,6 @@ version = "0.0.0"
 dependencies = [
  "atom_core",
  "atom_hal",
- "embedded-graphics",
  "limine",
 ]
 
@@ -25,6 +24,7 @@ name = "atom_hal"
 version = "0.0.0"
 dependencies = [
  "atom_primitives",
+ "embedded-graphics",
 ]
 
 [[package]]

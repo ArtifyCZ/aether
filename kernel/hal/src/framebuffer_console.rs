@@ -1,5 +1,6 @@
 use core::convert::Infallible;
 use core::fmt::Write;
+use core::marker::PhantomData;
 use embedded_graphics::geometry::{OriginDimensions, Size};
 use embedded_graphics::mono_font::iso_8859_16::{FONT_9X18, FONT_9X18_BOLD};
 use embedded_graphics::mono_font::{MonoFont, MonoTextStyleBuilder};
@@ -9,15 +10,51 @@ use embedded_graphics::primitives::{PrimitiveStyleBuilder, Rectangle};
 use embedded_graphics::text::Text;
 use embedded_graphics::{Drawable, Pixel};
 
+pub struct Framebuffer {
+    pub address: *mut (),
+    pub width: usize,
+    pub height: usize,
+    pub bpp: u16,
+    pub red_mask_size: u8,
+    pub red_mask_shift: u8,
+    pub green_mask_size: u8,
+    pub green_mask_shift: u8,
+    pub blue_mask_size: u8,
+    pub blue_mask_shift: u8,
+    pub unsafe_token: FramebufferUnsafeToken,
+}
+
+pub struct FramebufferUnsafeToken {
+    _phantom: PhantomData<()>,
+}
+
+/// The [FramebufferUnsafeToken] and this constructor function exist
+/// to make it unsafe to construct [Framebuffer].
+///
+/// The only use for this function is when creating [Framebuffer].
+///
+/// # Safety
+///
+/// The caller has to ensure the validity of the values passed into the fields of [Framebuffer].
+///
+/// This function is not unsafe on its own,
+/// but it is the only way to construct [FramebufferUnsafeToken] that is required to construct [Framebuffer].
+/// The point of the token is to ensure constructing [Framebuffer] is marked as unsafe.
+pub unsafe fn create_framebuffer_unsafe_token() -> FramebufferUnsafeToken {
+    FramebufferUnsafeToken {
+        _phantom: PhantomData,
+    }
+}
+
 /// Initializes early console framebuffer backend
 ///
 /// # Safety
 ///
 /// This function must never be called more than once per framebuffer.
-pub unsafe fn init(framebuffer: &'static limine::framebuffer::Framebuffer) -> FramebufferDisplay {
+pub unsafe fn init(framebuffer: Framebuffer) -> FramebufferDisplay {
     let cursor = Point::new(0, 0);
-    let fb_char_width = (framebuffer.width / FONT.character_size.width as u64) as u32;
-    let fb_char_height = (framebuffer.height / FONT.character_size.height as u64) as u32;
+    let fb_char_width = (framebuffer.width / FONT.character_size.width as usize) as u32;
+    let fb_char_height = (framebuffer.height / FONT.character_size.height as usize) as u32;
     let framebuffer_char_size = Size::new(fb_char_width, fb_char_height);
     let mut display = FramebufferDisplay {
         framebuffer,
@@ -309,8 +346,8 @@ fn write_char(display: &mut FramebufferDisplay, c: char) {
 }
 
 fn scroll(display: &mut FramebufferDisplay) {
-    let base_ptr = display.framebuffer.address();
-    let fb_width = display.framebuffer.width as usize;
+    let base_ptr = display.framebuffer.address;
+    let fb_width = display.framebuffer.width;
     let char_height = FONT.character_size.height as usize;
     let height = display.framebuffer_char_size.height as usize;
     let start_idx = fb_width * char_height;
@@ -366,7 +403,7 @@ fn scroll(display: &mut FramebufferDisplay) {
 }
 
 pub struct FramebufferDisplay {
-    framebuffer: &'static limine::framebuffer::Framebuffer,
+    framebuffer: Framebuffer,
     cursor: Point,
     framebuffer_char_size: Size,
     foreground_color: AsciiColor,
@@ -395,7 +432,7 @@ impl DrawTarget for FramebufferDisplay {
     where
         I: IntoIterator<Item = Pixel<Self::Color>>,
     {
-        let base_ptr = self.framebuffer.address();
+        let base_ptr = self.framebuffer.address;
         let width = self.framebuffer.width;
         let height = self.framebuffer.height;
         let red_mask_size = self.framebuffer.red_mask_size;
@@ -406,7 +443,7 @@ impl DrawTarget for FramebufferDisplay {
         let blue_mask_shift = self.framebuffer.blue_mask_shift;
         for Pixel(coord, color) in pixels {
             if coord.x >= 0 && coord.x < width as i32 && coord.y >= 0 && coord.y < height as i32 {
-                let idx = coord.x as usize + (coord.y as u64 * width) as usize;
+                let idx = coord.x as usize + coord.y as usize * width;
                 #[expect(clippy::identity_op)]
                 let direct_color: u32 = 0
                     | ((color.r() as u32 >> (8 - red_mask_size)) << red_mask_shift)
