@@ -18,7 +18,6 @@ dependencies = [
  "atom_hal",
  "embedded-graphics",
  "limine",
- "log",
 ]
 
 [[package]]
