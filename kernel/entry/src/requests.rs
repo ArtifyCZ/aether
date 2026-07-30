@@ -1,5 +1,5 @@
 use limine::framebuffer::Framebuffer;
-use limine::request::{FramebufferRequest, StackSizeRequest};
+use limine::request::{FramebufferRequest, HhdmRequest, StackSizeRequest};
 use limine::{BaseRevision, RequestsEndMarker, RequestsStartMarker};
 
 #[unsafe(link_section = ".limine_requests_start")]
@@ -17,6 +17,9 @@ static _STACK_SIZE_REQUEST: StackSizeRequest = StackSizeRequest::new(0x10000);
 #[unsafe(link_section = ".limine_requests")]
 static FRAMEBUFFER_REQUEST: FramebufferRequest = FramebufferRequest::new();
 
+#[unsafe(link_section = ".limine_requests")]
+static HHDM_REQUEST: HhdmRequest = HhdmRequest::new();
+
 pub fn framebuffer() -> Option<&'static Framebuffer> {
     let framebuffers = FRAMEBUFFER_REQUEST.response()?.framebuffers();
     if framebuffers.is_empty() {
@@ -24,4 +27,8 @@ pub fn framebuffer() -> Option<&'static Framebuffer> {
     } else {
         Some(framebuffers[0])
     }
+}
+
+pub fn hhdm_offset() -> usize {
+    HHDM_REQUEST.response().unwrap().offset as usize
 }

@@ -2,6 +2,9 @@ mod framebuffer;
 
 use crate::early_console::framebuffer::FramebufferDisplay;
 use atom_core::logger::EarlyConsole;
+use atom_hal::serial_console;
+use atom_hal::serial_console::SerialConsole;
+use atom_hal::serial_console::SerialPortConfig;
 use core::cell::UnsafeCell;
 use core::fmt::Write;
 use core::mem::MaybeUninit;
@@ -17,12 +20,17 @@ static INSTANCE: InstanceWrapper = InstanceWrapper(UnsafeCell::new(MaybeUninit::
 /// # Safety
 ///
 /// This function must never be called more than once.
-#[allow(clippy::mut_from_ref)]
+#[expect(clippy::mut_from_ref)]
 pub unsafe fn init(
     framebuffer: &'static limine::framebuffer::Framebuffer,
+    serial_config: SerialPortConfig,
 ) -> &'static mut dyn EarlyConsole {
     let framebuffer = unsafe { framebuffer::init(framebuffer) };
-    let console = EarlyConsoleImpl { framebuffer };
+    let serial = unsafe { serial_console::init(serial_config) };
+    let console = EarlyConsoleImpl {
+        framebuffer,
+        serial,
+    };
     unsafe {
         *INSTANCE.0.get() = MaybeUninit::new(console);
         (*INSTANCE.0.get()).assume_init_mut()
@@ -31,6 +39,7 @@ pub unsafe fn init(
 
 struct EarlyConsoleImpl {
     framebuffer: FramebufferDisplay,
+    serial: SerialConsole,
 }
 
 impl EarlyConsole for EarlyConsoleImpl {
@@ -41,6 +50,8 @@ impl EarlyConsole for EarlyConsoleImpl {
 
 impl Write for EarlyConsoleImpl {
     fn write_str(&mut self, s: &str) -> core::fmt::Result {
-        self.framebuffer.write_str(s)
+        self.framebuffer.write_str(s)?;
+        self.serial.write_str(s)?;
+        Ok(())
     }
 }
