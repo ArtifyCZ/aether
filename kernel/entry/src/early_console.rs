@@ -1,4 +1,4 @@
-use crate::early_console::framebuffer_console::{Framebuffer, FramebufferDisplay};
+use crate::early_console::framebuffer_console::{Framebuffer, FramebufferConsole};
 use atom_core::logger::EarlyConsole;
 use atom_hal::serial_console::SerialConsole;
 use atom_hal::serial_console::SerialPortConfig;
@@ -50,7 +50,7 @@ pub unsafe fn init(
 }
 
 struct EarlyConsoleImpl {
-    framebuffer: FramebufferDisplay,
+    framebuffer: FramebufferConsole,
     serial: SerialConsole,
 }
 

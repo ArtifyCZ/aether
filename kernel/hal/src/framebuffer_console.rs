@@ -51,12 +51,12 @@ pub unsafe fn create_framebuffer_unsafe_token() -> FramebufferUnsafeToken {
 /// # Safety
 ///
 /// This function must never be called more than once per framebuffer.
-pub unsafe fn init(framebuffer: Framebuffer) -> FramebufferDisplay {
+pub unsafe fn init(framebuffer: Framebuffer) -> FramebufferConsole {
     let cursor = Point::new(0, 0);
     let fb_char_width = (framebuffer.width / FONT.character_size.width as usize) as u32;
     let fb_char_height = (framebuffer.height / FONT.character_size.height as usize) as u32;
     let framebuffer_char_size = Size::new(fb_char_width, fb_char_height);
-    let mut display = FramebufferDisplay {
+    let mut display = FramebufferConsole {
         framebuffer,
         cursor,
         framebuffer_char_size,
@@ -221,7 +221,7 @@ fn parse_ascii_code(mut code_chars: impl Iterator<Item = char> + Clone) -> Optio
     }
 }
 
-impl Write for FramebufferDisplay {
+impl Write for FramebufferConsole {
     fn write_str(&mut self, s: &str) -> core::fmt::Result {
         let mut chars = s.chars().peekable();
         while let Some(c) = chars.next() {
@@ -292,7 +292,7 @@ fn ascii_color_to_rgb888(color: AsciiColor, high_intensity: bool) -> Rgb888 {
     }
 }
 
-fn write_char(display: &mut FramebufferDisplay, c: char) {
+fn write_char(display: &mut FramebufferConsole, c: char) {
     let cursor = display.cursor;
     let (new_cursor, should_print) = match c {
         '\n' => (Point::new(0, cursor.y + 1), false),
@@ -345,7 +345,7 @@ fn write_char(display: &mut FramebufferDisplay, c: char) {
     let _ = Text::new(char_str, pixel_coord, text_style_builder.build()).draw(display);
 }
 
-fn scroll(display: &mut FramebufferDisplay) {
+fn scroll(display: &mut FramebufferConsole) {
     let base_ptr = display.framebuffer.address;
     let fb_width = display.framebuffer.width;
     let char_height = FONT.character_size.height as usize;
@@ -402,7 +402,7 @@ fn scroll(display: &mut FramebufferDisplay) {
     .draw(display);
 }
 
-pub struct FramebufferDisplay {
+pub struct FramebufferConsole {
     framebuffer: Framebuffer,
     cursor: Point,
     framebuffer_char_size: Size,
@@ -413,9 +413,9 @@ pub struct FramebufferDisplay {
     background_high_intensity: bool,
 }
 
-unsafe impl Send for FramebufferDisplay {}
+unsafe impl Send for FramebufferConsole {}
 
-impl OriginDimensions for FramebufferDisplay {
+impl OriginDimensions for FramebufferConsole {
     fn size(&self) -> Size {
         Size::new(
             self.framebuffer.width as u32,
@@ -424,7 +424,7 @@ impl OriginDimensions for FramebufferDisplay {
     }
 }
 
-impl DrawTarget for FramebufferDisplay {
+impl DrawTarget for FramebufferConsole {
     type Color = Rgb888;
     type Error = Infallible;
 
