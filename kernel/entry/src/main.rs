@@ -1,9 +1,15 @@
 #![no_std]
 #![no_main]
 
+use atom_core::memory_regions::{MemoryRegion, MemoryRegionKind};
 use atom_hal::framebuffer_console::Framebuffer;
 use atom_hal::serial_console::{SerialConsoleConfig, SerialPortConfig};
 use atom_hal::{framebuffer_console, serial_console};
+use limine::memmap::{
+    MEMMAP_ACPI_NVS, MEMMAP_ACPI_RECLAIMABLE, MEMMAP_BAD_MEMORY, MEMMAP_BOOTLOADER_RECLAIMABLE,
+    MEMMAP_EXECUTABLE_AND_MODULES, MEMMAP_FRAMEBUFFER, MEMMAP_MAPPED_RESERVED, MEMMAP_RESERVED,
+    MEMMAP_USABLE,
+};
 
 mod panic;
 mod requests;
@@ -34,5 +40,23 @@ unsafe fn main() -> ! {
         port_config: serial_port_config,
         unsafe_token: unsafe { serial_console::create_serial_console_unsafe_token() },
     });
-    atom_core::bsp_main(framebuffer, serial_console_config);
+    let memory_regions = requests::memory_regions()
+        .iter()
+        .map(|region| MemoryRegion {
+            base_address: region.base as usize,
+            length: region.length as usize,
+            kind: match region.type_ {
+                MEMMAP_USABLE => MemoryRegionKind::Usable,
+                MEMMAP_RESERVED => MemoryRegionKind::Reserved,
+                MEMMAP_ACPI_RECLAIMABLE => MemoryRegionKind::Reclaimable,
+                MEMMAP_ACPI_NVS => MemoryRegionKind::Reserved,
+                MEMMAP_BAD_MEMORY => MemoryRegionKind::BadMemory,
+                MEMMAP_BOOTLOADER_RECLAIMABLE => MemoryRegionKind::Reclaimable,
+                MEMMAP_EXECUTABLE_AND_MODULES => MemoryRegionKind::ExecutableAndModules,
+                MEMMAP_FRAMEBUFFER => MemoryRegionKind::Reserved,
+                MEMMAP_MAPPED_RESERVED => MemoryRegionKind::Reserved,
+                _ => panic!("Unsupported memory region type"),
+            },
+        });
+    atom_core::bsp_main(framebuffer, serial_console_config, memory_regions);
 }

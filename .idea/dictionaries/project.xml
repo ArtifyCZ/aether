@@ -4,6 +4,8 @@
       <w>aarch</w>
       <w>hhdm</w>
       <w>limine</w>
+      <w>memmap</w>
+      <w>mmap</w>
     </words>
   </dictionary>
 </component>

@@ -1,5 +1,6 @@
 use limine::framebuffer::Framebuffer;
-use limine::request::{FramebufferRequest, HhdmRequest, StackSizeRequest};
+use limine::memmap::Entry;
+use limine::request::{FramebufferRequest, HhdmRequest, MemmapRequest, StackSizeRequest};
 use limine::{BaseRevision, RequestsEndMarker, RequestsStartMarker};
 
 #[unsafe(link_section = ".limine_requests_start")]
@@ -17,9 +18,6 @@ static _STACK_SIZE_REQUEST: StackSizeRequest = StackSizeRequest::new(0x10000);
 #[unsafe(link_section = ".limine_requests")]
 static FRAMEBUFFER_REQUEST: FramebufferRequest = FramebufferRequest::new();
 
-#[unsafe(link_section = ".limine_requests")]
-static HHDM_REQUEST: HhdmRequest = HhdmRequest::new();
-
 pub fn framebuffer() -> Option<&'static Framebuffer> {
     let framebuffers = FRAMEBUFFER_REQUEST.response()?.framebuffers();
     if framebuffers.is_empty() {
@@ -29,6 +27,16 @@ pub fn framebuffer() -> Option<&'static Framebuffer> {
     }
 }
 
+#[unsafe(link_section = ".limine_requests")]
+static HHDM_REQUEST: HhdmRequest = HhdmRequest::new();
+
 pub fn hhdm_offset() -> usize {
     HHDM_REQUEST.response().unwrap().offset as usize
+}
+
+#[unsafe(link_section = ".limine_requests")]
+static MEMORY_MAP_REQUEST: MemmapRequest = MemmapRequest::new();
+
+pub fn memory_regions() -> &'static [&'static Entry] {
+    MEMORY_MAP_REQUEST.response().unwrap().entries()
 }
