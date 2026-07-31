@@ -1,7 +1,6 @@
 #![no_std]
 
-// @TODO: make logger module private
-pub mod logger;
+mod logger;
 pub mod memory_regions;
 
 use crate::memory_regions::MemoryRegion;
