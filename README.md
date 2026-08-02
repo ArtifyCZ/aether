@@ -11,7 +11,7 @@ as opposed to fulfilled by a kernel of [monolithic](https://en.wikipedia.org/wik
 The project is in its early stages of development.
 See [BACKLOG.md](BACKLOG.md) for known limitations and planned improvements.
 
-> Note that currently the [kernel](kernel) is being rewritten.
+> Note that currently the [kernel](kernel) is currently being rewritten.
 
 ## Features
 
@@ -23,10 +23,8 @@ See [BACKLOG.md](BACKLOG.md) for known limitations and planned improvements.
 
 ### Documentation
 
-The documentation is available in the [docs/ directory](docs/README.md).
-
-Note that due to the ongoing kernel rewrite,
-the docs are not up to date right now.
+The documentation of the project is kept as a book (using mdBook) in the `docs/` directory.
+See [docs/src/SUMMARY.md](docs/src/SUMMARY.md) for more info.
 
 ### Prerequisites
 

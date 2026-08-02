@@ -1,0 +1,10 @@
+[book]
+title = "Aether documentation"
+authors = [
+    "Richard Tichý",
+]
+language = "en"
+
+[output.html]
+git-repository-url = "https://github.com/ArtifyCZ/aether"
+git-repository-icon = "fab-github"
