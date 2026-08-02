@@ -6,5 +6,6 @@ authors = [
 language = "en"
 
 [output.html]
+site-url = "/aether/"
 git-repository-url = "https://github.com/ArtifyCZ/aether"
 git-repository-icon = "fab-github"
