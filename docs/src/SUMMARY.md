@@ -2,6 +2,8 @@
 
 [Introduction](README.md)
 
+[Licensing](licensing.md)
+
 - [Old docs (prior to the kernel rewrite)](pre-kernel-rewrite/README.md)
     - [Architecture](pre-kernel-rewrite/architecture.md)
     - [Building](pre-kernel-rewrite/building.md)
