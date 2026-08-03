@@ -28,7 +28,14 @@ pub fn bsp_main(
     info!(
         "Huge pages (1 GiB): {}",
         paged_memory_regions
+            .clone()
             .filter(|page| matches!(page, MemoryRegionPage::Huge(_)))
+            .count()
+    );
+    info!(
+        "Large pages (2 MiB): {}",
+        paged_memory_regions
+            .filter(|page| matches!(page, MemoryRegionPage::Large(_)))
             .count()
     );
     warn!("Continuing...");
