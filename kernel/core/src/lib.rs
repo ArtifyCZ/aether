@@ -3,7 +3,9 @@
 mod logger;
 pub mod memory_regions;
 
-use crate::memory_regions::{IntoPagedMemoryRegionIterator, MemoryRegion, MemoryRegionKind};
+use crate::memory_regions::{
+    IntoPagedMemoryRegionIterator, MemoryRegion, MemoryRegionKind, MemoryRegionPage,
+};
 use atom_hal::framebuffer_console::Framebuffer;
 use atom_hal::serial_console::SerialConsoleConfig;
 use log::{info, warn};
@@ -20,11 +22,15 @@ pub fn bsp_main(
     for memory_region in memory_regions.clone() {
         info!("Memory region: {:x?}", memory_region);
     }
-    let pages_count = memory_regions
+    let paged_memory_regions = memory_regions
         .filter(|region| region.kind == MemoryRegionKind::Usable)
-        .into_paged_iter()
-        .count();
-    warn!("Pages: {}", pages_count);
+        .into_paged_iter();
+    info!(
+        "Huge pages (1 GiB): {}",
+        paged_memory_regions
+            .filter(|page| matches!(page, MemoryRegionPage::Huge(_)))
+            .count()
+    );
     warn!("Continuing...");
     let chars = ['a', 'b', 'c', 'd', 'e', 'f'];
     for i in 0..150 {

@@ -6,7 +6,7 @@ DEBUG=$4
 QEMU="qemu-system-$ARCH"
 QEMUFLAGS=""
 QEMUFLAGS="$QEMUFLAGS -no-reboot"
-QEMUFLAGS="$QEMUFLAGS -m 2G"
+QEMUFLAGS="$QEMUFLAGS -m 16G"
 
 if [ "$DEBUG" = "DEBUG" ] || [ "$DEBUG" = "1" ]; then
     QEMUFLAGS="$QEMUFLAGS -s -S"
