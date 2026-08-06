@@ -7,6 +7,7 @@ name = "atom_core"
 version = "0.0.0"
 dependencies = [
  "atom_hal",
+ "atom_primitives",
  "log",
 ]
 
@@ -16,6 +17,7 @@ version = "0.0.0"
 dependencies = [
  "atom_core",
  "atom_hal",
+ "atom_primitives",
  "limine",
 ]
 

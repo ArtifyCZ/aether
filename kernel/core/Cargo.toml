@@ -11,6 +11,7 @@ bench = false
 [dependencies]
 # workspace
 atom_hal.workspace = true
+atom_primitives.workspace = true
 
 # 3rd party
 log.workspace = true

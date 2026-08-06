@@ -1,10 +1,11 @@
 use crate::arch::interface::serial_port::ArchSerialPort;
+use atom_primitives::HhdmOffset;
 
 pub struct ArchSerialPortImpl;
 
 pub struct SerialPortConfig {
     pub uart_phys_base: usize,
-    pub hhdm_offset: usize,
+    pub hhdm_offset: HhdmOffset,
 }
 
 impl ArchSerialPort for ArchSerialPortImpl {

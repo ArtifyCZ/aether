@@ -13,6 +13,7 @@ bench = false
 # workspace
 atom_core.workspace = true
 atom_hal.workspace = true
+atom_primitives.workspace = true
 
 # 3rd party
 limine.workspace = true

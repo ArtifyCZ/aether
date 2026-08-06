@@ -58,5 +58,10 @@ unsafe fn main() -> ! {
                 _ => panic!("Unsupported memory region type"),
             },
         });
-    atom_core::bsp_main(framebuffer, serial_console_config, memory_regions);
+    atom_core::bsp_main(
+        framebuffer,
+        requests::hhdm_offset(),
+        serial_console_config,
+        memory_regions,
+    );
 }
