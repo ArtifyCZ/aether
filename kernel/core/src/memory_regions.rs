@@ -53,6 +53,7 @@ fn is_aligned(n: usize, align: usize) -> bool {
 pub enum MemoryRegionPage {
     Huge(MemoryPage<HUGE_PAGE_SIZE>),
     Large(MemoryPage<LARGE_PAGE_SIZE>),
+    Normal(MemoryPage<NORMAL_PAGE_SIZE>),
 }
 
 #[derive(Debug, Clone)]
@@ -93,13 +94,13 @@ where
             {
                 let next_region = self.iter.next()?;
                 if self.current_page_start >= self.current_region_end {
-                    self.current_page_start = align_up(next_region.base_address, LARGE_PAGE_SIZE);
+                    self.current_page_start = align_up(next_region.base_address, NORMAL_PAGE_SIZE);
                 }
-                self.current_region_end = next_region.base_address + next_region.length;
+                self.current_region_end = self
+                    .current_region_end
+                    .max(next_region.base_address + next_region.length);
                 continue;
             }
-
-            assert_ne!(self.current_page_start, 0);
 
             if is_aligned(self.current_page_start, HUGE_PAGE_SIZE)
                 && self.current_page_start + HUGE_PAGE_SIZE <= self.current_region_end
@@ -111,9 +112,9 @@ where
                 }));
             }
 
-            assert!(is_aligned(self.current_page_start, LARGE_PAGE_SIZE));
-
-            if self.current_page_start + LARGE_PAGE_SIZE <= self.current_region_end {
+            if is_aligned(self.current_page_start, LARGE_PAGE_SIZE)
+                && self.current_page_start + LARGE_PAGE_SIZE <= self.current_region_end
+            {
                 let current_page = self.current_page_start;
                 self.current_page_start += LARGE_PAGE_SIZE;
                 return Some(MemoryRegionPage::Large(MemoryPage {
@@ -121,8 +122,18 @@ where
                 }));
             }
 
+            assert!(is_aligned(self.current_page_start, NORMAL_PAGE_SIZE));
+
+            if self.current_page_start + NORMAL_PAGE_SIZE <= self.current_region_end {
+                let current_page = self.current_page_start;
+                self.current_page_start += NORMAL_PAGE_SIZE;
+                return Some(MemoryRegionPage::Normal(MemoryPage {
+                    base_address: current_page,
+                }));
+            }
+
             let next_region = self.iter.next()?;
-            self.current_page_start = align_up(next_region.base_address, LARGE_PAGE_SIZE);
+            self.current_page_start = align_up(next_region.base_address, NORMAL_PAGE_SIZE);
             self.current_region_end = next_region.base_address + next_region.length;
         }
     }

@@ -30,6 +30,7 @@ pub fn bsp_main(
     warn!("Freeing pages...");
     let mut huge_pages: u32 = 0;
     let mut large_pages: u32 = 0;
+    let mut normal_pages: u32 = 0;
     for page in paged_memory_regions {
         match page {
             MemoryRegionPage::Huge(page) => {
@@ -40,15 +41,23 @@ pub fn bsp_main(
                 physical_memory_allocator::free_large_page(page);
                 large_pages += 1;
             }
+            MemoryRegionPage::Normal(page) => {
+                physical_memory_allocator::free_normal_page(page);
+                normal_pages += 1;
+            }
         }
     }
     info!(
-        "Inserted huge pages into physical memory allocator: {}",
+        "Inserted huge pages (1 GiB) into physical memory allocator: {}",
         huge_pages,
     );
     info!(
-        "Inserted large pages into physical memory allocator: {}",
+        "Inserted large pages (2 MiB) into physical memory allocator: {}",
         large_pages,
+    );
+    info!(
+        "Inserted normal pages (4 kiB) into physical memory allocator: {}",
+        normal_pages,
     );
     let page = physical_memory_allocator::alloc_normal_page();
     info!(
