@@ -50,6 +50,17 @@ pub fn bsp_main(
         "Inserted large pages into physical memory allocator: {}",
         large_pages,
     );
+    let page = physical_memory_allocator::alloc_normal_page();
+    info!(
+        "Allocated normal pages into physical memory allocator: {:?}",
+        page,
+    );
+    unsafe {
+        let ptr = ((page.unwrap().base_address + *hhdm_offset) as *mut u64);
+        ptr.write(42);
+        info!("Written to the allocated page {:#?}", ptr);
+        info!("Reading from the allocated page: {}", ptr.read());
+    }
     warn!("Continuing...");
     let chars = ['a', 'b', 'c', 'd', 'e', 'f'];
     for i in 0..150 {

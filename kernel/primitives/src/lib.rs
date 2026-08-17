@@ -4,6 +4,7 @@ use core::ops::Deref;
 
 pub mod sync;
 
+#[derive(PartialEq, Clone, Copy)]
 #[repr(transparent)]
 pub struct HhdmOffset(usize);
 

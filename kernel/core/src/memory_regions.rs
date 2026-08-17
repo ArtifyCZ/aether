@@ -10,6 +10,11 @@ pub const HUGE_PAGE_SIZE: usize = 512 * 512 * 4096;
 /// A large page is 2 MiB
 pub const LARGE_PAGE_SIZE: usize = 512 * 4096;
 
+/// Normal page size in bytes
+///
+/// A normal page is 4 kiB
+pub const NORMAL_PAGE_SIZE: usize = 4096;
+
 #[derive(Debug, Clone)]
 pub struct MemoryRegion {
     pub base_address: usize,
