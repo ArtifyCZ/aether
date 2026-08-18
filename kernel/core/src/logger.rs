@@ -16,14 +16,6 @@ struct KernelLogger;
 
 static INSTANCE: KernelLogger = KernelLogger;
 
-pub trait EarlyConsole: Write + Send {
-    /// This should disable the early console.
-    /// Once the early console has been disabled,
-    /// any attempt to write through it should
-    /// result in a panic.
-    fn close(&mut self);
-}
-
 pub fn init(framebuffer: Option<Framebuffer>, serial_console_config: Option<SerialConsoleConfig>) {
     let mut inner = INNER.lock();
     assert!(inner.is_none(), "Cannot initialize logger twice");
