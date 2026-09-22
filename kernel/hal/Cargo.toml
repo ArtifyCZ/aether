@@ -13,4 +13,5 @@ bench = false
 atom_primitives.workspace = true
 
 # 3rd party
+bitflags.workspace = true
 embedded-graphics.workspace = true
