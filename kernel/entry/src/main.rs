@@ -63,5 +63,6 @@ unsafe fn main() -> ! {
         requests::hhdm_offset(),
         serial_console_config,
         memory_regions,
+        requests::executable_address(),
     );
 }

@@ -21,7 +21,6 @@ SECTIONS
     /* and because that is what the Limine spec mandates. */
     /* Any address in this region will do, but often 0xffffffff80000000 is chosen as */
     /* that is the beginning of the region. */
-    . = 0xffffffff80000000;
     __kernel_start = .;
 
     /* Define a section to contain the Limine requests and assign it to its own PHDR */
@@ -49,6 +48,26 @@ SECTIONS
         *(.rodata .rodata.*)
     } :rodata
 
+    .dynsym : {
+        *(.dynsym)
+    } :rodata
+
+    .dynstr : {
+        *(.dynstr)
+    } :rodata
+
+    .gnu.hash : {
+        *(.gnu.hash)
+    } :rodata
+
+    .hash : {
+        *(.hash)
+    } :rodata
+
+    .rela.dyn : {
+        *(.rela.dyn .rela.dyn.*)
+    } :rodata
+
     /* Add a .note.gnu.build-id output section in case a build ID flag is added to the */
     /* linker command. */
     .note.gnu.build-id : {
@@ -67,6 +86,10 @@ SECTIONS
     .dynamic : {
         *(.dynamic)
     } :data :dynamic
+
+    .got : {
+        *(.got .got.*)
+    } :data
 
     /* NOTE: .bss needs to be the last thing mapped to :data, otherwise lots of */
     /* unnecessary zeros will be written to the binary. */

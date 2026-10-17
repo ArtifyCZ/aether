@@ -17,12 +17,17 @@ pub fn bsp_main(
     hhdm_offset: HhdmOffset,
     serial_console_config: Option<SerialConsoleConfig>,
     memory_regions: impl Iterator<Item = MemoryRegion>,
+    executable_address: (usize, usize),
 ) -> ! {
     logger::init(framebuffer, serial_console_config);
     info!("Booting Atom kernel...");
     info!("Bootstrap core starting...");
     info!("Initializing physical memory allocator...");
     physical_memory_allocator::init(hhdm_offset);
+    info!(
+        "Executable address: {:p}; {:p}",
+        executable_address.0 as *const (), executable_address.1 as *const (),
+    );
     warn!("Hello warning world!");
     let paged_memory_regions = memory_regions
         .filter(|region| region.kind == MemoryRegionKind::Usable)
