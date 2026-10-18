@@ -11,7 +11,6 @@ use limine::memmap::{
     MEMMAP_USABLE,
 };
 
-mod panic;
 mod requests;
 mod start;
 

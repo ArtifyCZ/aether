@@ -2,6 +2,7 @@
 
 mod logger;
 pub mod memory_regions;
+mod panics;
 mod physical_memory_allocator;
 
 use crate::memory_regions::{
@@ -21,6 +22,8 @@ pub fn bsp_main(
 ) -> ! {
     logger::init(framebuffer, serial_console_config);
     info!("Booting Atom kernel...");
+    info!("Initializing panics...");
+    panics::init();
     info!("Bootstrap core starting...");
     info!("Initializing physical memory allocator...");
     physical_memory_allocator::init(hhdm_offset);
